@@ -42,3 +42,4 @@ qtcreator-*
 CATKIN_IGNORE
 
 **/*.bag
+**/bags/
