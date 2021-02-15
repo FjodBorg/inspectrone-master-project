@@ -41,6 +41,8 @@ xhost +local:"docker inspect --format='{{ .Config.Hostname }}' test7"
 docker start test7
 docker exec -it test7 bash
 
+ln -s /app/extra rovio/.
+
 ### decompressd!
 <node name="republish" type="republish" pkg="image_transport" output="screen" args="compressed in:=/axis_camera raw out:=/axis_camera/image_raw" />
 
