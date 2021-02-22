@@ -1,4 +1,7 @@
+#TODO , remember to add the short links to docker file
+
 docker build -t inspectrone .  #build docker
+yay -S nvidia-container-toolkit 
 
 #chmod +x ros_entrypoint.sh?
 
@@ -8,7 +11,7 @@ docker build -t inspectrone .  #build docker
 # -it runs it as a terminal, -d is for background, name is container name, --network host is for communication
 
 # docker run -it -d --name test --mount type=bind,source=$HOME/repos/inspectrone/packages/,target="/app/" inspectrone #mount host folder to target  (host:container)
-
+# rosrun rqt_tf_tree rqt_tf_tree 
 docker run -it -d --network host --name test -v $HOME/repos/inspectrone/packages/:"/app/" inspectrone #mount host folder to target(host:container) /app/ is over written with contents from packages
 
 
@@ -56,4 +59,67 @@ sudo apt install ros-melodic-image-transport-plugins ros-melodic-image-pipeline
 # rosbags needs --clock and rosparam set use_sim_time true 
 
 ### Debugging
-# rosrun rqt_tf_tree rqt_tf_tree 
+
+## TEASER++
+yay -S python-scikit-learn python-open3d
+https://teaser.readthedocs.io/en/latest/installation.html
+# Remember to run OMP_NUM_THREADS=12 otherwise segmentation fault
+#install dependecies for pcl (repos/f_arch_setup) -> makepkg -Acs in the folder with PKGBUILD (CUDA enabled) -> sudo pacman -U x.pkg.tar.xz
+# install all things in my f_arch_repos
+yay -S python-typing_extensions
+
+###building 
+cd $HOME/repos/
+git clone https://github.com/MIT-SPARK/TEASER-plusplus.git
+cd TEASER-plusplus && mkdir build && cd build
+cmake .. && make
+sudo make install
+
+### C++ example
+cd $HOME/repos/
+cd .. && cd examples/teaser_cpp_ply && mkdir build && cd build
+cmake .. && make
+./teaser_cpp_ply
+
+### PYTHON example
+cd TEASER-plusplus && mkdir build && cd build
+cmake -DTEASERPP_PYTHON_VERSION=3.9.1 .. && make teaserpp_python
+cd python && pip install .
+cd ../.. && cd examples/teaser_python_ply 
+python teaser_python_ply.py
+
+### example
+cd TEASER-plusplus && mkdir build && cd build
+cmake -DTEASERPP_PYTHON_VERSION=3.9.1 .. && make teaserpp_python
+cd python && pip install .
+cd ../.. && cd examples/teaser_python_3dsmooth 
+python teaser_python_3dsmooth.py
+
+
+### FCGF 
+
+# DO NOT INSTALL CUDA 11.0, it seems to be broken for many people and cuda 11.1++ is not avaialbe on conda
+# Cuda 11.2 doesn't seem to work either (Not enough memory error)
+# install cuda 10.2 and use that for compiling minkowskiengine
+# USE THIS COMBINATION, THE OTHERS have drastically more memory usage or doesn't work
+source /opt/anaconda/bin/activate root 
+conda create -n py3-fcgf python=3.7
+conda activate py3-fcgf
+conda install pytorch=1.5.1 cudatoolkit=10.2 cudatoolkit=10.2 torchvision=0.6.1 -c pytorch
+#conda install -c conda-forge pytorch 
+conda install openblas-devel -c anaconda
+# install minkowsky manually
+export CXX=g++; 
+export CC=gcc;
+export CUDA_HOME=/opt/cuda-10.2; 
+pip install -U MinkowskiEngine=0.5 --install-option="--blas=openblas" -v --no-deps
+#pip install git+https://github.com/NVIDIA/MinkowskiEngine.git
+
+
+# install FCGF
+git clone https://github.com/chrischoy/FCGF.git
+cd FCGF
+pip install -r requirements.txt
+# fix benchmark_3dmatch.py, change "_gt.log" to "-evaluation/gt.log"
+# --batch-size 1, everything above is too much for 4GB ram
+
