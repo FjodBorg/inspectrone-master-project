@@ -2,6 +2,7 @@
 # TODO get xserver working with nvidia http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#nvidia-docker2
 # #nvidia-container-toolkit
 # nvidia-docker 
+# watch -n 0.1 nvidia-smi
 
 docker build -t inspectrone .  #build docker
 yay -S nvidia-container-toolkit 
