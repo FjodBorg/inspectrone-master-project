@@ -27,6 +27,13 @@ ENV LC_ALL C.UTF-8
 
 ENV ROS_DISTRO melodic
 
+# with nvidia/cuda drivers
+ENV NVIDIA_VISIBLE_DEVICES \
+    ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES \
+    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+    
+
 # install ros packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-melodic-ros-core=1.4.1-0* curl iputils-ping git openssh-server \ 
@@ -67,6 +74,8 @@ RUN git clone https://github.com/HKUST-Aerial-Robotics/VINS-Fusion.git
 RUN . /opt/ros/melodic/setup.sh && catkin build vins
 
 # RUN sudo /bin/bash -c /opt/ros/melodic/setup.bash && 
+
+RUN apt-get install rviz gedit -y
 
 # setup entrypoint
 COPY ./ros_entrypoint.sh /

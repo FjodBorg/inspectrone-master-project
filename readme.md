@@ -1,4 +1,7 @@
 #TODO , remember to add the short links to docker file
+# TODO get xserver working with nvidia http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#nvidia-docker2
+# #nvidia-container-toolkit
+# nvidia-docker 
 
 docker build -t inspectrone .  #build docker
 yay -S nvidia-container-toolkit 
@@ -105,7 +108,7 @@ python teaser_python_3dsmooth.py
 source /opt/anaconda/bin/activate root 
 conda create -n py3-fcgf python=3.7
 conda activate py3-fcgf
-conda install pytorch=1.5.1 cudatoolkit=10.2 cudatoolkit=10.2 torchvision=0.6.1 -c pytorch
+conda install pytorch=1.5.1 cudatoolkit=10.2 torchvision=0.6.1 -c pytorch
 #conda install -c conda-forge pytorch 
 conda install openblas-devel -c anaconda
 # install minkowsky manually
@@ -122,4 +125,44 @@ cd FCGF
 pip install -r requirements.txt
 # fix benchmark_3dmatch.py, change "_gt.log" to "-evaluation/gt.log"
 # --batch-size 1, everything above is too much for 4GB ram
+
+
+
+
+### Smoothnet 
+# instlla from source prefered
+#source /opt/anaconda/bin/activate root 
+#conda create -n py3-smooth python=3.7
+#conda activate py3-smooth
+#conda install cudatoolkit=10.0 cudnn=7
+#export CXX=g++; 
+#export CC=gcc;
+#export CUDA_HOME=/opt/cuda-10.2; 
+#git clone https://github.com/tensorflow/tensorflow.git
+#cd tensorflow
+#./configure #remember jdk java and bazen 0.4
+#bazel build --config=v1 --config=cuda //tensorflow/tools/pip_package:build_pip_packagebazel build --config=v1 --#config=cuda //tensorflow/tools/pip_package:build_pip_package
+#READ THIS https://github.com/tensorflow/tensorflow/issues/45861
+# https://github.com/grpc/grpc/pull/20048/commits/de6255941a5e1c2fb2d50e57f84e38c09f45023d
+
+#dont install glob3 from requirements list, and change tensforflow version to 1.13.1 
+# find tensorflow from github, choose 1.13 - 1.15.5
+source /opt/anaconda/bin/activate root 
+conda create -n py3-smooth python=3.7
+conda activate py3-smooth
+conda install cudatoolkit=10.0 cudnn=7
+#export CXX=g++; 
+#export CC=gcc;
+#export CUDA_HOME=/opt/cuda-10.2; 
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/opt/cuda-10.2/lib64
+git clone https://github.com/zgojcic/3DSmoothNet
+cd 3DSmoothNet
+gedit CMakeLists.txt
+pip install -r requirements.txt 
+
+# add #include <pcl/impl/point_types.hpp> to core/core.h and change pcl version in cmakelists 
+cmake -DCMAKE_BUILD_TYPE=Release .
+make
+
+
 
