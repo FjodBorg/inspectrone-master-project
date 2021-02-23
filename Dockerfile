@@ -75,7 +75,7 @@ RUN . /opt/ros/melodic/setup.sh && catkin build vins
 
 # RUN sudo /bin/bash -c /opt/ros/melodic/setup.bash && 
 
-RUN apt-get install rviz gedit -y
+RUN apt-get install rviz gedit ros-melodic-image-pipeline ros-melodic-image-transport-plugins  -y
 
 # setup entrypoint
 COPY ./ros_entrypoint.sh /
