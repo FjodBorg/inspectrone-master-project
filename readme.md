@@ -1,5 +1,6 @@
 #TODO , remember to add the short links to docker file
 # TODO get xserver working with nvidia http://wiki.ros.org/docker/Tutorials/Hardware%20Acceleration#nvidia-docker2
+# remove --gpu-all from run if you don't have nvidia instaleld also from docker
 # #nvidia-container-toolkit
 # nvidia-docker 
 # watch -n 0.1 nvidia-smi

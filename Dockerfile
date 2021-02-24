@@ -27,12 +27,6 @@ ENV LC_ALL C.UTF-8
 
 ENV ROS_DISTRO melodic
 
-# with nvidia/cuda drivers
-ENV NVIDIA_VISIBLE_DEVICES \
-    ${NVIDIA_VISIBLE_DEVICES:-all}
-ENV NVIDIA_DRIVER_CAPABILITIES \
-    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
-    
 
 # install ros packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -70,12 +64,20 @@ RUN . /opt/ros/melodic/setup.sh && mkdir ceres-bin && cd ceres-bin && cmake ../c
 && catkin build catkin_simple \
 && catkin build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release
 
-RUN git clone https://github.com/HKUST-Aerial-Robotics/VINS-Fusion.git
-RUN . /opt/ros/melodic/setup.sh && catkin build vins
+# RUN git clone https://github.com/HKUST-Aerial-Robotics/VINS-Fusion.git
+# RUN . /opt/ros/melodic/setup.sh && catkin build vins
 
 # RUN sudo /bin/bash -c /opt/ros/melodic/setup.bash && 
 
 RUN apt-get install rviz gedit ros-melodic-image-pipeline ros-melodic-image-transport-plugins  -y
+
+
+# with nvidia/cuda drivers
+ENV NVIDIA_VISIBLE_DEVICES \
+    ${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES \
+    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+    
 
 # setup entrypoint
 COPY ./ros_entrypoint.sh /
