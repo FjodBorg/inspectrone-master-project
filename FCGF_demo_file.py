@@ -44,7 +44,8 @@ def execute_global_registration(source_down, target_down, source_fpfh,
 
 def demo(config):
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-	print("cuda: ", torch.cuda.is_available())
+	print("cuda for torch: ", torch.cuda.is_available())
+	print("cuda for open3d: ", o3d.cuda.is_available())
 	start_load = time.time()
 	checkpoint = torch.load(config.model)
 	start_model = time.time()
@@ -85,9 +86,11 @@ def demo(config):
 	#  o3d.visualization.draw_geometries([vis_pcd])
 	
 	ref = o3d.pipelines.registration.Feature()
+	#ref.data = (feature_map.detach().cpu().numpy().T)#.astype(np.float64)
 	ref.data = (feature_map.detach().cpu().numpy().T)#.astype(np.float64)
 
 	test = o3d.pipelines.registration.Feature()
+	#test.data = (feature.detach().cpu().numpy().T)#.astype(np.float64)
 	test.data = (feature.detach().cpu().numpy().T)#.astype(np.float64)
 
 
@@ -96,6 +99,7 @@ def demo(config):
 
 	sensor_pcd = o3d.geometry.PointCloud()
 	sensor_pcd.points = o3d.utility.Vector3dVector(xyz_down)
+
 
 	start_global = time.time()
 	result_ransac = execute_global_registration(sensor_pcd, map_pcd, test, ref, config.voxel_size)
@@ -108,7 +112,11 @@ def demo(config):
 	print("Global registration took %.3f sec.\n" % (time.time() - start_global))
 	print(result_ransac.transformation)
 
-	draw_registration_result(sensor_pcd, map_pcd, result_ransac.transformation)
+	in_pc = pcd # full size cloud
+	map_pc = pcd_map  # full size cloud
+	
+	#draw_registration_result(sensor_pcd, map_pcd, result_ransac.transformation)
+	draw_registration_result(in_pc, map_pc, result_ransac.transformation)
 
 def draw_registration_result(source, target, transformation):
 	source_temp = copy.deepcopy(source)
