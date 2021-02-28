@@ -45,7 +45,7 @@ def execute_global_registration(source_down, target_down, source_fpfh,
 def demo(config):
 	device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 	print("cuda for torch: ", torch.cuda.is_available())
-	print("cuda for open3d: ", o3d.cuda.is_available())
+	#print("cuda for open3d: ", o3d.cuda.is_available())
 	start_load = time.time()
 	checkpoint = torch.load(config.model)
 	start_model = time.time()

@@ -168,3 +168,17 @@ make
 
 
 
+###INSTALL teaser for conda enviroment of FCGF
+
+### Add the libraries to path
+export PYTHONPATH=/opt/ros/melodic/lib/python3.9/site-packages
+export PYTHONPATH=$PYTHONPATH:$HOME/repos/FCGF
+export PYTHONPATH=$PYTHONPATH:$HOME/.conda/envs/py3-fcgf/lib/python3.7/site-packages/
+export PYTHONPATH=$PYTHONPATH:$HOME/repos/DeepGlobalRegistration
+export PYTHONPATH=$PYTHONPATH:$HOME/repos/TEASER-plusplus/examples/teaser_python_fpfh_icp
+
+#export PYTHONPATH=$PYTHONPATH:$HOME/repos/TEASER-plusplus/python/
+
+### still in conda enviroment 
+git clone https://github.com/chrischoy/DeepGlobalRegistration.git
+
