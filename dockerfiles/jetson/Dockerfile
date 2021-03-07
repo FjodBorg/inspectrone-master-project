@@ -64,6 +64,7 @@ RUN  apt install -y libjpeg-dev zlib1g-dev dirmngr
 ARG USER="jetson"
 ENV HOME=/home/${USER}
 
+
 # setup basic user
 RUN useradd -ms /bin/bash $USER && usermod -aG sudo $USER && echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
@@ -82,13 +83,14 @@ source /opt/ros/$ROS_DISTRO/setup.bash' >>  $HOME/.bashrc
 USER root 
 RUN rm -rf /var/lib/apt/lists/*
 
-
+#extras
+RUN apt update && apt install -y nano ros-melodic-rviz ros-melodic-pcl-ros
+#RUN apt update && apt install -y nano 
 
 
     
 
-   
-
+WORKDIR $HOME
 
 
 #ENTRYPOINT ["/entrypoint_setup.sh"]

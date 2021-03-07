@@ -44,5 +44,4 @@ catkin_ws/CATKIN_IGNORE
 **/*.bag
 **/bags/
 **/smooth_net/
-**/ply_publisher/
 **/downloads/

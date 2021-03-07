@@ -6,7 +6,7 @@ sudo docker run -it --rm --net=host --runtime nvidia -e DISPLAY=$DISPLAY -v /tmp
 #Native install
 sudo apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfortran
 sudo apt install -y cmake libeigen3-dev libboost-all-dev libopenblas-dev build-essential
-sudo apt-get install -y libjpeg-dev zlib1g-dev
+sudo apt-get install -y libjpeg-dev zlib1g-dev python-catkin-tools
 
 #source these (possibly with bashrc)
 export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
@@ -137,5 +137,6 @@ cd DeepGlobalRegistration
 python3.7 -m pip install -r requirements.txt
 
 # INSTALL ROS
-
+sudo apt install ros-melodic-pcl-ros python-catkin-tools
+catkin build -DPYTHON_EXECUTABLE=$(which python) # on first build
 
