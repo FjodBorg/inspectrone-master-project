@@ -129,3 +129,6 @@ git clone https://github.com/chrischoy/DeepGlobalRegistration.git
 cd DeepGlobalRegistration
 pip install -r requirements.txt
 
+
+### install ros
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
