@@ -181,4 +181,14 @@ export PYTHONPATH=$PYTHONPATH:$HOME/repos/TEASER-plusplus/examples/teaser_python
 
 ### still in conda enviroment 
 git clone https://github.com/chrischoy/DeepGlobalRegistration.git
+cd DeepGlobalRegistration
+python3.7 -m pip install -r requirements.txt
+
+### setup paths  for external python package for conda
+conda develop $HOME/repos/FCGF/
+conda develop $HOME/repos/DeepGlobalRegistration/
+cd ~/repos/
+ln -s inspectrone/src/packages/extra/smooth_net/scripts/helpers.py inspectrone/demo_files/
+
+
 
