@@ -1,3 +1,9 @@
+#DOCKER install 
+cd inspectron/dockerfiles/jetson #Fjodors repo
+docker build -t jetson .
+sudo docker run -it --rm --net=host --runtime nvidia -e DISPLAY=$DISPLAY -v /tmp/.X11-unix/:/tmp/.X11-unix inspectrone
+
+#Native install
 sudo apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfortran
 sudo apt install -y cmake libeigen3-dev libboost-all-dev libopenblas-dev build-essential
 sudo apt-get install -y libjpeg-dev zlib1g-dev
@@ -18,7 +24,7 @@ sudo swapon /swapfile
 
 
 # Open3D dependencies
-sudo apt-get update -y
+sudo apt-get update 
 sudo apt-get install -y apt-utils build-essential git cmake
 sudo apt-get install -y python3 python3-dev python3-pip
 sudo apt-get install -y xorg-dev libglu1-mesa-dev
@@ -130,3 +136,4 @@ cd DeepGlobalRegistration
 # important, comment out torch, open3d and MinkowskiEngine in requirements.txt
 python3.7 -m pip install -r requirements.txt
 
+# INSTALL ROS

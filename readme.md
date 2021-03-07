@@ -10,6 +10,13 @@ yay -S nvidia-container-toolkit python-catkin_tools orocos-kdl-python
 pacman -S ogre 
 modify pkgbuild for ros-melodic-rviz
 
+
+#getting arm64 docker to work on amd64 machine: #IMPORTANT
+apt-get install qemu binfmt-support qemu-user-static
+docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+# docker run -v $(pwd)/qemu-aarch64-static:/usr/bin/qemu-aarch64-static -it arm64v8/debian:stretch-slim bash
+
+
 #chmod +x ros_entrypoint.sh?
 
 #docker run -it inspectrone     #run docker
