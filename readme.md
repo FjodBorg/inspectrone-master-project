@@ -6,7 +6,9 @@
 # watch -n 0.1 nvidia-smi
 
 docker build -t inspectrone .  #build docker
-yay -S nvidia-container-toolkit 
+yay -S nvidia-container-toolkit python-catkin_tools orocos-kdl-python 
+pacman -S ogre 
+modify pkgbuild for ros-melodic-rviz
 
 #chmod +x ros_entrypoint.sh?
 
@@ -182,7 +184,7 @@ export PYTHONPATH=$PYTHONPATH:$HOME/repos/TEASER-plusplus/examples/teaser_python
 ### still in conda enviroment 
 git clone https://github.com/chrischoy/DeepGlobalRegistration.git
 cd DeepGlobalRegistration
-python3.7 -m pip install -r requirements.txt
+python -m pip install -r requirements.txt
 
 ### setup paths  for external python package for conda
 conda develop $HOME/repos/FCGF/
@@ -191,4 +193,32 @@ cd ~/repos/
 ln -s inspectrone/src/packages/extra/smooth_net/scripts/helpers.py inspectrone/demo_files/
 
 
+
+add these two lines to the cmakefile of ply publisher just below the definition of the project
+```
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+```
+
+### other dependencies
+git clone https://github.com/eric-wieser/ros_numpy.git
+cd ros_numpy
+python setup.py install
+
+
+
+
+
+
+source /opt/anaconda/bin/activate root 
+conda activate py3-fcgf
+
+export ROS_PYTHON_VERSION=3
+catkin build -DPYTHON_EXECUTABLE=$(which python) # on first build
+
+source ~/repos/inspectrone/catkin_ws/devel/setup.bash 
+source /opt/anaconda/bin/activate root 
+conda activate py3-fcgf
+
+export ROS_PYTHON_VERSION=3
 
