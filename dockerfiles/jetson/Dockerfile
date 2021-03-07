@@ -8,11 +8,9 @@ SHELL ["/bin/bash", "-c"]
 
 # set up basic variables
 ARG ROS_PKG=ros-melodic-ros-base 
-ARG USER="jetson"
 ENV ROS_DISTRO=melodic
 ENV ROS_ROOT=/opt/ros/${ROS_DISTRO}
 
-ENV HOME=home/${USER}/
 
 # setup environment
 ENV LANG C.UTF-8
@@ -62,6 +60,9 @@ RUN  apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfor
 RUN  apt install -y cmake libeigen3-dev libboost-all-dev libopenblas-dev build-essential
 RUN  apt install -y libjpeg-dev zlib1g-dev dirmngr
 
+# more enviroment
+ARG USER="jetson"
+ENV HOME=/home/${USER}
 
 # setup basic user
 RUN useradd -ms /bin/bash $USER && usermod -aG sudo $USER && echo "$USER ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
