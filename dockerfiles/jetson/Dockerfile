@@ -87,7 +87,11 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN apt update && apt install -y nano ros-melodic-rviz ros-melodic-pcl-ros
 #RUN apt update && apt install -y nano 
 
-
+# with nvidia/cuda drivers
+#ENV NVIDIA_VISIBLE_DEVICES \
+#    ${NVIDIA_VISIBLE_DEVICES:-all}
+#ENV NVIDIA_DRIVER_CAPABILITIES \
+#    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
     
 
 WORKDIR $HOME

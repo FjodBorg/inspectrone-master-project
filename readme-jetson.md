@@ -1,7 +1,7 @@
 #DOCKER install 
 cd inspectron/dockerfiles/jetson #Fjodors repo
 docker build -t jetson .
-sudo docker run -it --rm --net=host --runtime nvidia -e DISPLAY=$DISPLAY -v /tmp/.X11-unix/:/tmp/.X11-unix inspectrone
+sudo docker run  --gpus all -it --privileged --rm --net=host --runtime nvidia -e DISPLAY=$DISPLAY -v /tmp/.X11-unix/:/tmp/.X11-unix jetson 
 
 #Native install
 sudo apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfortran
