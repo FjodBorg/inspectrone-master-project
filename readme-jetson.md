@@ -127,5 +127,6 @@ python3.7 demo.py
 cd $HOME/repos/
 git clone https://github.com/chrischoy/DeepGlobalRegistration.git
 cd DeepGlobalRegistration
-pip install -r requirements.txt
+# important, comment out torch, open3d and MinkowskiEngine in requirements.txt
+python3.7 -m pip install -r requirements.txt
 
