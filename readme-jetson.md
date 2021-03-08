@@ -1,4 +1,11 @@
 #DOCKER install 
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+newgrp docker 
+docker run hello-world
+#su -s ${USER}
+
+
 cd inspectron/dockerfiles/jetson #Fjodors repo
 docker build -t jetson .
 sudo docker run  --gpus all -it --privileged --rm --net=host --runtime nvidia -e DISPLAY=$DISPLAY -v /tmp/.X11-unix/:/tmp/.X11-unix jetson 
@@ -6,18 +13,18 @@ sudo docker run  --gpus all -it --privileged --rm --net=host --runtime nvidia -e
 #Native install
 sudo apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfortran
 sudo apt install -y cmake libeigen3-dev libboost-all-dev libopenblas-dev build-essential
-sudo apt-get install -y libjpeg-dev zlib1g-dev python-catkin-tools
+sudo apt-get install -y libjpeg-dev zlib1g-dev python-catkin-tools git
 
 #source these (possibly with bashrc)
 export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
 export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
 
 # increase swap partition (32gb)
-sudo swapoff -a
-sudo dd if=/dev/zero of=/swapfile bs=1G count=32
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
+#sudo swapoff -a
+#sudo dd if=/dev/zero of=/swapfile bs=1G count=32
+#sudo chmod 600 /swapfile
+#sudo mkswap /swapfile
+#sudo swapon /swapfile
 # add "/swapfile none swap sw 0 0" to /etc/fstab and remove the old swap partition
 
 # setup local ssh
@@ -35,16 +42,19 @@ sudo apt-get install -y llvm-7 clang-7 libclang-7-dev libc++-7-dev libc++abi-7-d
 
 # install newer cmake
 
-cd $HOME/repos/; mkdir cmake-3-18; cd cmake-3-18; 
+cd $HOME/repos/
 wget https://github.com/Kitware/CMake/releases/download/v3.18.6/cmake-3.18.6.tar.gz
 tar -zxvf cmake-3.18.6.tar.gz
-cd cmake-3-18.6; ./bootstrap
-make -j4; sudo make install
+rm cmake-3.18.6.tar.gz
+cd cmake-3.18.6
+./bootstrap; make -j6; sudo make install
 
 
 
 # install open3d for arm (tested with 0.12.0)(is not available on pip3 for arm)
-git clone --recursive https://github.com/intel-isl/Open3D
+wget https://github.com/intel-isl/Open3D/archive/v0.12.0.tar.gz
+tar -zxvf cmake-3.18.6.tar.gz
+#git clone --recursive https://github.com/intel-isl/Open3D
 cd Open3D
 mkdir build; cd build
 cmake .. \
