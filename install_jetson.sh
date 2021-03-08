@@ -186,3 +186,9 @@ sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sens
 cd $HOME/repos/inspectrone/catkin_ws/
 catkin build -DPYTHON_EXECUTABLE=$(which python3.7) # on first build
 
+echo "export PYTHONPATH=$PYTHONPATH:$HOME/repos/FCGF" >> $HOME/.bashrc
+echo "export PYTHONPATH=$PYTHONPATH:$HOME/repos/DeepGlobalRegistration" >> $HOME/.bashrc
+echo "export PYTHONPATH=$PYTHONPATH:$HOME/repos/TEASER-plusplus/examples/teaser_python_fpfh_icp" >> $HOME/.bashrc
+
+
+
