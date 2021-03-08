@@ -66,20 +66,34 @@ cmake .. \
     -DPYTHON_EXECUTABLE=$(which python3.7) 
 make -j$(nproc)
 sudo make install
-sudo make install-pip-package -j$(nproc)
-python3.7 -m pip install $HOME/repos/Open3D/build/lib/python_package/pip_package/open3d-0.12.0+b379dcc9-cp37-cp37m-linux_aarch64.whl # might have a different name on yours
+sudo rm $HOME/repos/Open3D/build/lib/python_package/pip_package -r; sudo make install-pip-package -j$(nproc)
+python3.7 -m pip install $(sudo find $HOME/repos/Open3D/ -name "open3d-0.12.0*.whl")
+
+#test if it works
 python3.7 -c "import open3d; print(open3d)"
 
+
 # install teaser
+cd $HOME/repos
 git clone https://github.com/MIT-SPARK/TEASER-plusplus.git
-cd TEASER-plusplus && mkdir build && cd build
+cd TEASER-plusplus 
+git checkout tags/v2.0
+mkdir build
+cd build
+
 
 # python
+PYTHON_VER=$(python3.7 -c "import platform; print(platform.python_version())")
+PYTHON_BIN=$(which python3.7)
+
 cd $HOME/repos/TEASER-plusplus/build
-cmake  -DTEASERPP_PYTHON_VERSION=3.7.5  -DPYTHON_EXECUTABLE=/usr/bin/python3.7 -DPYTHON_LIBRARY=/usr/lib/aarch64-linux-gnu/libpython3.7m.so .. && make teaserpp_python -j4
+cmake  -DTEASERPP_PYTHON_VERSION=$PYTHON_VER  -DPYTHON_EXECUTABLE=$PYTHON_BIN ..
+make teaserpp_python -j6
+cd python && python3.7 -m pip install .
 
 # c++
-make -j4
+cd $HOME/repos/TEASER-plusplus/build
+make -j6
 sudo make install
 cd .. && cd examples/teaser_cpp_ply && mkdir build && cd build
 cmake .. && make
@@ -88,11 +102,15 @@ cmake .. && make
 export LD_LIBRARY_PATH="/usr/local/lib"
 sudo ldconfig
 
-
 # test cpp
-$HOME/repos/TEASER-plusplus/examples/teaser_cpp_ply/build/./teaser_cpp_ply
+#cd $HOME/repos/TEASER-plusplus/examples/teaser_cpp_ply/build
+#$HOME/repos/TEASER-plusplus/examples/teaser_cpp_ply/build/./teaser_cpp_ply
+
 #test python
-python $HOME/repos/TEASER-plusplus/examples/teaser_python_ply/teaser_python_ply.py
+#cd $HOME/repos/TEASER-plusplus/examples/teaser_python_ply
+#python3.7 $HOME/repos/TEASER-plusplus/examples/teaser_python_ply/teaser_python_ply.py
+
+
 
 #install pytorch 1.7? for arm and python 3.7 (pytorch 1.7+ is broken on ubuntu 18 for arm when installing minkowski engine)
 cd $HOME/repos
