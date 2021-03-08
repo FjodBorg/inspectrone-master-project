@@ -18,6 +18,8 @@ if [ ! -f /usr/local/cuda/bin/nvcc ]; then
 	sudo apt-get -y install cuda
 	echo ""
 	echo "please reboot and proceed with readme-jetson.md"
+	echo "export PATH=/usr/local/cuda/bin:${PATH}" >> ~/.bashrc
+	echo "export LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH}" >> ~/.bashrc
 else
 	echo "Cuda found:"
 	echo ""
