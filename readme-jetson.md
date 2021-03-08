@@ -14,6 +14,7 @@ sudo docker run  --gpus all -it --privileged --rm --net=host --runtime nvidia -e
 sudo apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfortran
 sudo apt install -y cmake libeigen3-dev libboost-all-dev libopenblas-dev build-essential
 sudo apt-get install -y libjpeg-dev zlib1g-dev python-catkin-tools git
+mkdir $HOME/repos/
 
 #source these (possibly with bashrc)
 export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
@@ -26,8 +27,6 @@ export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PAT
 #sudo mkswap /swapfile
 #sudo swapon /swapfile
 # add "/swapfile none swap sw 0 0" to /etc/fstab and remove the old swap partition
-
-# setup local ssh
 
 
 # Open3D dependencies
@@ -49,11 +48,11 @@ rm cmake-3.18.6.tar.gz
 cd cmake-3.18.6
 ./bootstrap; make -j6; sudo make install
 
-
-
 # install open3d for arm (tested with 0.12.0)(is not available on pip3 for arm)
+cd $HOME/repos/
 wget https://github.com/intel-isl/Open3D/archive/v0.12.0.tar.gz
-tar -zxvf cmake-3.18.6.tar.gz
+tar -zxvf v0.12.0.tar.gz
+rm v0.12.0.tar.gz
 #git clone --recursive https://github.com/intel-isl/Open3D
 cd Open3D
 mkdir build; cd build
