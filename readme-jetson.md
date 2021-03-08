@@ -161,10 +161,25 @@ python3.7 -m pip install -r requirements.txt
 cd $HOME/repos/
 git clone https://github.com/chrischoy/DeepGlobalRegistration.git
 cd DeepGlobalRegistration
-# important, comment out torch, open3d and MinkowskiEngine in requirements.txt
+# Comment out torch, open3d and MinkowskiEngine in requirements.txt
+sed -e '/open3d/ s/^#*/#/' -i requirements.txt 
+sed -e '/torch/ s/^#*/#/' -i requirements.txt 
+sed -e '/MinkowskiEngine/ s/^#*/#/' -i requirements.txt 
+
 python3.7 -m pip install -r requirements.txt
 
 # INSTALL ROS
-sudo apt install ros-melodic-pcl-ros python-catkin-tools 
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
+sudo apt update
+sudo apt install -y ros-melodic-desktop
+echo "source /opt/ros/melodic/setup.bash" >> ~/.bashrc
+
+sudo apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
+sudo apt install -y python-rosdep
+sudo rosdep init
+rosdep update
+
+sudo apt install -y ros-melodic-pcl-ros python-catkin-tools 
 catkin build -DPYTHON_EXECUTABLE=$(which python) # on first build
 
