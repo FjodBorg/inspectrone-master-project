@@ -11,15 +11,18 @@ if [ ! -f /usr/local/cuda/bin/nvcc ]; then
 	sudo apt-key add /var/cuda-repo-ubuntu1804-11-2-local/7fa2af80.pub
 	sudo apt-get update
 	sudo apt-get -y install cuda
+	echo ""
+	echo "please reboot and proceed with readme-jetson.md"
 else
 	echo "Cuda found:"
 	echo ""
 	echo $(/usr/local/cuda/bin/nvcc --version)
 	echo ""
 	echo "If cuda'<'10.2, then please uninstall and startover. Please uninstall nvidia and install nouveau before proceeding. Once uninstalled run this script again"
+	echo ""
+	echo "Proceed with readme-jason.md"
 fi
 
-echo ""
-echo "proceed with readme-jason.md"
+
 
 # continue with readme-jetson.md
