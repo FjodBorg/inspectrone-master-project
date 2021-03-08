@@ -131,7 +131,8 @@ cd $HOME/repos/
 python3.7 -m pip install numpy
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
-# IMPORTANT: on fresh install comment out every line that has pip in it or make sure pip links to python3.7 and not python2 or python3.6.9
+git checkout tags/v0.5.0
+sed -e '/pip/ s/^#*/#/' -i setup.py # remove instance of pip (not needed if you pip links to python3.7)
 export CXX=g++; 
 export CC=gcc;
 export CUDA_HOME=/usr/local/cuda; 
@@ -140,17 +141,20 @@ sudo python3.7 setup.py install
 
 
 #install FCGF
-cd $HOME/repos/FCGF
+cd $HOME/repos
 git clone https://github.com/chrischoy/FCGF.git
 cd FCGF
 #remove open3d and minkowski from requirements.txt since it does not exist for arm and is compiled locally
+sed -e '/open3d/ s/^#*/#/' -i requirements.txt 
+sed -e '/MinkowskiEngine/ s/^#*/#/' -i requirements.txt 
+
 python3.7 -m pip install pybind11
 python3.7 -m pip install scipy # takes roughly 1 hour :)
 python3.7 -m pip install pillow
 python3.7 -m pip install sklearn
 python3.7 -m pip install -r requirements.txt
 #verify that it works:
-python3.7 demo.py
+#python3.7 demo.py
 
 
 #install deepglobalregistration
