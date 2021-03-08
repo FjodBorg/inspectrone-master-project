@@ -221,7 +221,7 @@ source /opt/anaconda/bin/activate root
 conda activate py3-fcgf
 
 export ROS_PYTHON_VERSION=3
-catkin build -DPYTHON_EXECUTABLE=$(which python) # on first build
+catkin build -DPYTHON_EXECUTABLE=$(which python3.7) # on first build
 
 source ~/repos/inspectrone/catkin_ws/devel/setup.bash 
 source /opt/anaconda/bin/activate root 
