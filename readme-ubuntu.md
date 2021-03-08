@@ -1,6 +1,11 @@
 #install CUDA (IMPORTANT: Do not have any form for nvidia drivers installed except for nouveau, otherwise it will break your package manager)
 
+# add cuda paths
+export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+
 if [ ! -f /usr/local/cuda/bin/nvcc ]; then
+	cd /tmp/
 	echo "Cuda not found! installing cuda 11.2"
 	sleep 5
 	sudo apt-get install -y linux-headers-$(uname -r)
