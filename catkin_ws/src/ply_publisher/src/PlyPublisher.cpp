@@ -120,8 +120,7 @@ bool PlyPublisher::readFile(const std::string& filePath, const std::string& poin
 
 void PlyPublisher::timerCallback(const ros::TimerEvent& timerEvent)
 {
-  printf("wtf");
-  //if (!publish()) ROS_ERROR("Something went wrong when trying to read and publish the point cloud file.");
+  if (!publish()) ROS_ERROR("Something went wrong when trying to read and publish the point cloud file.");
 }
 
 bool PlyPublisher::publish()

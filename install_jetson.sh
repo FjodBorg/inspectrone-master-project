@@ -177,11 +177,10 @@ echo "source /opt/ros/melodic/setup.bash" >> $HOME/.bashrc
 source $HOME/.bashrc
 
 sudo apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
-sudo apt install -y python-rosdep
 sudo rosdep init
 rosdep update
 
-sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs
+sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs rviz
 
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
