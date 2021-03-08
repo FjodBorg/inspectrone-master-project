@@ -21,7 +21,7 @@ if [ ! -f /usr/local/cuda/bin/nvcc ]; then
 else
 	echo "Cuda found:"
 	echo ""
-	echo $(/usr/local/cuda/bin/nvcc --version)
+	echo $($(which nvcc) --version)
 	echo ""
 	echo "If cuda'<'10.2, then please uninstall and startover. Please uninstall nvidia and install nouveau before proceeding. Once uninstalled run this script again"
 	echo ""
