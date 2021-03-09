@@ -45,3 +45,4 @@ catkin_ws/CATKIN_IGNORE
 **/bags/
 **/smooth_net/
 **/downloads/
+**/.catkin_tools
