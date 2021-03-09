@@ -186,7 +186,7 @@ sudo apt install -y python-rosdep python-rosinstall python-rosinstall-generator 
 sudo rosdep init
 rosdep update
 
-sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs rviz
+sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
 
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
