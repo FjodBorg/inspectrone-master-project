@@ -169,9 +169,9 @@ sed -e '/MinkowskiEngine/ s/^#*/#/' -i requirements.txt
 python3.7 -m pip install -r requirements.txt
 
 # export paths
-echo "export PYTHONPATH=$PYTHONPATH:$HOME/repos/FCGF" >> $HOME/.bashrc
-echo "export PYTHONPATH=$PYTHONPATH:$HOME/repos/DeepGlobalRegistration" >> $HOME/.bashrc
-echo "export PYTHONPATH=$PYTHONPATH:$HOME/repos/TEASER-plusplus/examples/teaser_python_fpfh_icp" >> $HOME/.bashrc
+echo "export PYTHONPATH=\$PYTHONPATH:\$HOME/repos/FCGF" >> $HOME/.bashrc
+echo "export PYTHONPATH=\$PYTHONPATH:\$HOME/repos/DeepGlobalRegistration" >> $HOME/.bashrc
+echo "export PYTHONPATH=\$PYTHONPATH:\$HOME/repos/TEASER-plusplus/examples/teaser_python_fpfh_icp" >> $HOME/.bashrc
 
 
 # INSTALL ROS
