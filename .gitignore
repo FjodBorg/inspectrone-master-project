@@ -46,3 +46,4 @@ catkin_ws/CATKIN_IGNORE
 **/smooth_net/
 **/downloads/
 **/.catkin_tools
+demo_files/__pycache__/helpers.cpython-37.pyc
