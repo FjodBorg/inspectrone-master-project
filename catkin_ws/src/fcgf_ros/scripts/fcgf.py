@@ -9,6 +9,12 @@ import numpy as np
 
 from urllib.request import urlretrieve
 
+# deeplearning
+import model as mdl
+import torch
+import copy
+from util.misc import extract_features
+
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
 HOME_path = os.getenv("HOME")
@@ -20,10 +26,12 @@ downloads_path = catkin_ws_path + "downloads/"
 class Viewer:
     def __init__(self, listener, matcher, parent=None):
         self.listener = listener
-        rospy.loginfo("initialization")
+        self.matcher = matcher
+        rospy.loginfo("initialization Visualization")
 
         self.vis = open3d.visualization.Visualizer()
         self.open3d_pc = None
+        self.open3d_map = self.listener.map
         self.prev_red_n = None  # yes because "red" is written read :)
         self.updater()
 
@@ -49,24 +57,30 @@ class Viewer:
 
         self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
 
+        transformation = self.matcher.find_transform(self.open3d_pc, self.open3d_map)
+        self.open3d_pc.transform(transformation)
+
+        # visualize map
         self.vis.create_window()
-        self.vis.add_geometry(self.listener.map)
-        self.vis.update_geometry(self.listener.map)
-        print("get points")
+        self.vis.add_geometry(self.open3d_map)
+        self.vis.update_geometry(self.open3d_map)
+
+        # add point cloud to visualization
         self.vis.add_geometry(self.open3d_pc)
-        print("add points")
         self.vis.update_geometry(self.open3d_pc)
         self.vis.poll_events()
-
         self.vis.update_renderer()
         while not rospy.is_shutdown():
             if self.prev_red_n != self.listener.n:
                 self.prev_red_n = self.listener.n
                 self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
                 #teest = copy.deepcopy(self.open3d_pc).translate((1.3*self.prev_red_n, 0, 0))
-                rospy.loginfo("rendering pointcloud #{}".format(self.prev_red_n))
+                rospy.loginfo("Calculating transform")
+                #transformation = self.matcher.find_transform(self.open3d_pc, self.open3d_map)
+                #self.open3d_pc.transform(transformation)
+                #self.vis.update_geometry(self.open3d_pc)
+                rospy.loginfo("Rendering transformed pointcloud #{}".format(self.prev_red_n))
                 # self.vis.add_geometry(self.open3d_pc)
-                self.vis.update_geometry(self.open3d_pc)
             self.vis.poll_events()
             self.vis.update_renderer()
 
@@ -74,24 +88,83 @@ class Viewer:
 
 
 class PcMatcher:
-    def __init__(self, listener, parent=None):
-        self.listener = listener
-        rospy.loginfo("initialization")
+    def __init__(self, parent=None):
+        rospy.loginfo("initialization Matching method")
+        self.model, self.checkpoint, self.device = self.load_checkpoint()
+        self.voxel_size = 0.025
+        self.map_pc = open3d.geometry.PointCloud()
+        self.map_feat = open3d.pipelines.registration.Feature()
+        self.pc = open3d.geometry.PointCloud()
+        self.feat = open3d.pipelines.registration.Feature()
 
-        self.vis = open3d.visualization.Visualizer()
-        self.open3d_pc = None
-        self.prev_red_n = None  # yes because "red" is written read :)
-        print("resnet location at: " + downloads_path + "ResUNetBN2C-16feat-3conv.pth")
+    def load_checkpoint(self):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        rospy.loginfo("cuda for torch: " + str(torch.cuda.is_available()))
+        model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
+        rospy.loginfo("resnet location at: " + model_file)
 
-        if not os.path.isfile(downloads_path + "ResUNetBN2C-16feat-3conv.pth"):
-            print("Downloading weights to ", downloads_path + "ResUNetBN2C-16feat-3conv.pth")
+        if not os.path.isfile(model_file):
+            rospy.loginfo("Downloading weights to ", model_file)
             urlretrieve(
                 "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
                 downloads_path + "ResUNetBN2C-16feat-3conv.pth",
             )
 
+        model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
+        checkpoint = torch.load(model_file)
+        model.load_state_dict(checkpoint['state_dict'])
+        model.eval()
+        model = model.to(device)
 
-class PointCloudListner:
+        return model, checkpoint, device
+
+    def get_features(self, point_cloud):
+        xyz_down, feature = extract_features(
+            self.model,
+            xyz=np.array(point_cloud.points),
+            voxel_size=self.voxel_size,
+            device=self.device,
+            skip_check=True)
+        return xyz_down, feature
+
+    def find_transform(self, point_cloud, global_map):
+        if len(self.map_pc.points) == 0:  # this depends if we have the whole global map or not
+            print("im here")
+            map_pc, map_feat = self.get_features(global_map)
+
+            self.map_pc.points = open3d.utility.Vector3dVector(map_pc)
+            self.map_feat.data = (map_feat.detach().cpu().numpy().T)#.astype(np.float64)
+
+        pc, feat = self.get_features(point_cloud)
+
+        self.pc.points = open3d.utility.Vector3dVector(pc)
+        self.feat.data = (feat.detach().cpu().numpy().T)#.astype(np.float64)
+
+        # print(self.pc, "\n", self.map_pc, "\n")
+        # print(self.feat, "\n", self.map_feat, "\n\n")
+        result_ransac = self.execute_global_registration(self.pc, self.map_pc, self.feat, self.map_feat, self.voxel_size)
+
+        return result_ransac.transformation
+
+    def execute_global_registration(self, source_down, target_down, source_fpfh,
+                                    target_fpfh, voxel_size):
+        distance_threshold = voxel_size * 0.4
+        # print(":: RANSAC registration on downsampled point clouds.")
+        # print("   Since the downsampling voxel size is %.3f," % voxel_size)
+        # print("   we use the distance threshold %.3f." % distance_threshold)
+        result = open3d.pipelines.registration.registration_ransac_based_on_feature_matching(
+            source_down, target_down, source_fpfh, target_fpfh, True,
+            distance_threshold,
+            open3d.pipelines.registration.TransformationEstimationPointToPoint(False),
+            4, [
+                open3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
+                    0.9),
+                open3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
+                    distance_threshold)
+            ], open3d.pipelines.registration.RANSACConvergenceCriteria(4000000, 500))
+        return result
+
+class PcListner:
     def __init__(self):
         self.pc = None
         self.n = 0
@@ -117,7 +190,7 @@ class PointCloudListner:
 
 
 if __name__ == "__main__":
-    listener = PointCloudListner()
-    matcher = PcMatcher(listener)
+    listener = PcListner()
+    matcher = PcMatcher()
     updater = Viewer(listener, matcher)
     rospy.spin()
