@@ -188,7 +188,7 @@ rosdep update
 
 # more dependencies
 sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
-python3.7 -m pip install rospkg
+python3.7 -m pip install rospkg pcl
 
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
