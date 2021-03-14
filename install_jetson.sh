@@ -74,6 +74,8 @@ python3.7 -c "import open3d; print(open3d)"
 
 
 # install teaser
+sudo apt install libpcl-dev
+sudo ln -s /usr/include/pcl-1.8/pcl /usr/include/pcl #teaser will look for pcl and not pcl-1.8/pcl
 cd $HOME/repos
 git clone https://github.com/MIT-SPARK/TEASER-plusplus.git
 cd TEASER-plusplus 
@@ -87,7 +89,7 @@ PYTHON_VER=$(python3.7 -c "import platform; print(platform.python_version())")
 PYTHON_BIN=$(which python3.7)
 
 cd $HOME/repos/TEASER-plusplus/build
-cmake  -DTEASERPP_PYTHON_VERSION=$PYTHON_VER  -DPYTHON_EXECUTABLE=$PYTHON_BIN ..
+cmake -DTEASERPP_PYTHON_VERSION=$PYTHON_VER  -DPYTHON_EXECUTABLE=$PYTHON_BIN -DBUILD_TEASER_FPFH=ON ..
 make teaserpp_python -j6
 cd python && python3.7 -m pip install .
 
@@ -95,8 +97,9 @@ cd python && python3.7 -m pip install .
 cd $HOME/repos/TEASER-plusplus/build
 make -j6
 sudo make install
-cd .. && cd examples/teaser_cpp_ply && mkdir build && cd build
-cmake .. && make
+cd $HOME/repos/TEASER-plusplus && cd examples/teaser_cpp_ply && mkdir build;
+cd build
+cmake  -DBUILD_TEASER_FPFH=ON  .. && make
 
 # fix executables
 export LD_LIBRARY_PATH="/usr/local/lib"
@@ -188,7 +191,7 @@ rosdep update
 
 # more dependencies
 sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
-python3.7 -m pip install rospkg pcl
+python3.7 -m pip install rospkg
 
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
