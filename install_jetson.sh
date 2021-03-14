@@ -182,21 +182,51 @@ sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main
 sudo apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 sudo apt update
 sudo apt install -y ros-melodic-desktop
-echo "source /opt/ros/melodic/setup.bash" >> $HOME/.bashrc
+#echo "export PYTHONPATH='/usr/lib/python3.7/dist-packages:$PYTHONPATH'" >> $HOME/.bashrc
 source $HOME/.bashrc
 
+#sudo apt purge ros*
+#sudo apt purge *catkin*
 sudo apt install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
+#sudo apt install -y python3 python3-dev python3-pip build-essential
+python3.7 -m pip uninstall em
+python3.7 -m pip install rospkg catkin_pkg empy
+
+
+#sudo -H python3.7 -m pip install rosdep rospkg rosinstall_generator rosinstall wstool vcstools catkin_pkg
+#sudo -H python3.7 -m pip install https://github.com/catkin/catkin_tools/archive/0.5.0.zip
+
+
 sudo rosdep init
 rosdep update
 
+echo "source /opt/ros/melodic/setup.bash" >> $HOME/.bashrc
+source /opt/ros/melodic/setup.bash
+
 # more dependencies
-sudo apt install -y ros-melodic-pcl-ros python-catkin-tools ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
-sudo apt install -y python3-catkin-pkg-modules python3-rospkg-modules python3-empy
-python3.7 -m pip install rospkg pcl
+sudo apt install -y ros-melodic-pcl-ros ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
+
+
+#sudo apt install -y python-catkin-tools 
+#sudo apt install -y python3-catkin-pkg-modules python3-rospkg-modules python3-empy
+#python3.7 -m pip install rospkg 
+
+# compiling tf2 for python3
+cd $HOME/repos/inspectrone/catkin_ws/
+catkin clean --yes
+catkin build fcgf_ros
+source devel/setup.bash
+wstool init
+wstool set -y src/geometry2 --git https://github.com/ros/geometry2 -v 0.6.5
+wstool up
+rosdep install --from-paths src --ignore-src -y -r
 
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
-catkin build -DPYTHON_EXECUTABLE=$(which python3.7) # on first build
+catkin build -DCMAKE_BUILD_TYPE=Release \
+            #-DPYTHON_INCLUDE_DIR=/usr/include/python3.7m \
+            #-DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.7m.so
+            -DPYTHON_EXECUTABLE=/usr/bin/python3.7
 
 
 
