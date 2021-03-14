@@ -22,6 +22,7 @@ HOME_path = os.getenv("HOME")
 catkin_ws_path = HOME_path + "/repos/inspectrone/catkin_ws/"
 downloads_path = catkin_ws_path + "downloads/"
 print(downloads_path + "ResUNetBN2C-16feat-3conv.pth")
+os.environ["OMP_NUM_THREADS"] = "12"
 
 if not os.path.isfile(downloads_path + "ResUNetBN2C-16feat-3conv.pth"):
     print("Downloading weights to ", downloads_path + "ResUNetBN2C-16feat-3conv.pth")
@@ -50,7 +51,7 @@ def find_correspondences(feats0, feats1, mutual_filter=True):
     nns10 = find_knn_gpu(feats1, feats0, nn_max_n=250, knn=1, return_distance=False)
     # corres10_idx1 = torch.arange(len(nns10)).long().squeeze()
     # corres10_idx0 = nns10.long().squeeze()
-    corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
+    # corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
     corres10_idx0 = (nns10.long().squeeze()).detach().cpu().numpy()
     # corres10_idx1 = corres10_idx1.detach().cpu().numpy()
     # corres10_idx0 = corres10_idx0.detach().cpu().numpy()
