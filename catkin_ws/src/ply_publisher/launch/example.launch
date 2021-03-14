@@ -1,10 +1,15 @@
 <launch>
-	
+	<!-- <arg name="topic" default="ballast_tank_ply"/> -->
+	<!-- <arg name="file_name" default="ballast_tank_ply"/>	 -->
+	<arg name="topic" default="/points_throttle"/>
+	<arg name="filename" default="sensor_tank1.ply"/>	
+
  	<node pkg="ply_publisher" type="ply_publisher" name="ply_publisher" output="screen" launch-prefix="">
- 		 <param name="file_path" value="$(find ply_publisher)/cfg/ballast_tank.ply" />
- 		 <param name="topic" value="/ballast_tank_ply" />
+ 		 <param name="file_path" value="$(find ply_publisher)/cfg/$(arg filename)" />
+ 		 <param name="topic" value="pc" />
  		 <param name="frame" value="/map" />
  		 <param name="rate" value="1.0" />
+		 <remap from="ply_publisher/pc" to="$(arg topic)"/>
     </node>
     
     <node pkg="tf" type="static_transform_publisher" name="ground_truth_map_transform_publisher" args="0.0 0.0 0.0 0.0 0.0 0.0 /world /tank 50" />
