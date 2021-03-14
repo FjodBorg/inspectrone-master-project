@@ -18,6 +18,8 @@ from util.misc import extract_features
 
 # teaser
 import teaserpp_python
+from core.knn import find_knn_gpu
+from extra.helpers import *
 
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
@@ -25,7 +27,7 @@ HOME_path = os.getenv("HOME")
 ply_filename = "ballast_tank.ply"
 catkin_ws_path = HOME_path + "/repos/inspectrone/catkin_ws/"
 downloads_path = catkin_ws_path + "downloads/"
-voxel_size = 0.025
+voxel_size = 0.05  # 0.025
 
 class PerformanceMetric:
     def __init__(self, parent=None):
@@ -153,7 +155,7 @@ class PcMatcher:
             skip_check=True)
         return xyz_down, feature
 
-    def find_transform(self, point_cloud, global_map):
+    def find_transform_ransac(self, point_cloud, global_map):
         if len(self.map_pc.points) == 0:  # this depends if we have the whole global map or not
             metrics.start_time("loading tank")
             map_pc, map_feat = self.get_features(global_map)
@@ -177,6 +179,101 @@ class PcMatcher:
         metrics.print_time(["loading tank", "loading ply", "ransac"])
 
         return result_ransac.transformation
+
+
+
+    def find_transform(self, point_cloud, global_map):
+        if len(self.map_pc.points) == 0:  # this depends if we have the whole global map or not
+            metrics.start_time("loading tank")
+            map_pc, self.map_feat = self.get_features(global_map)
+
+            self.map_pc.points = open3d.utility.Vector3dVector(map_pc)
+            #self.map_feat.data = (map_feat.detach().cpu().numpy().T)#.astype(np.float64)
+            metrics.stop_time("loading tank")
+
+        metrics.start_time("loading ply")
+        pc, self.feat = self.get_features(point_cloud)
+
+        self.pc.points = open3d.utility.Vector3dVector(pc)
+        #self.feat.data = (feat.detach().cpu().numpy().T)#.astype(np.float64)
+        metrics.stop_time("loading ply")
+
+
+
+
+
+
+        metrics.start_time("teaser")
+        corrs_A, corrs_B = self.find_correspondences(self.map_feat, self.feat, mutual_filter=True)
+        A_xyz = self.pcd2xyz(self.map_pc)  # np array of size 3 by N
+        B_xyz = self.pcd2xyz(self.pc)  # np array of size 3 by M
+        A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
+        B_corr = B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
+
+        #print(f"FCGF generates {num_corrs} putative correspondences.")
+
+        # robust global registration using TEASER++
+        NOISE_BOUND = 0.01  # config.voxel_size
+        teaser_solver = get_teaser_solver(NOISE_BOUND)
+        teaser_solver.solve(A_corr, B_corr)
+        solution = teaser_solver.getSolution()
+        R_teaser = solution.rotation
+        t_teaser = solution.translation
+        T_teaser = Rt2T(R_teaser, t_teaser)
+
+        
+        map_pcd_T_teaser = copy.deepcopy(self.map_pc).transform(T_teaser)
+        metrics.stop_time("teaser")
+        
+        # finding lines for correlation
+        num_corrs = A_corr.shape[1]
+        points = np.concatenate((A_corr.T, B_corr.T), axis=0)
+
+        lines = []
+        for i in range(num_corrs):
+            lines.append([i, i + num_corrs])
+        colors = [[0, 1, 0] for i in range(len(lines))]  # lines are shown in green
+        line_set = open3d.geometry.LineSet(
+            points=open3d.utility.Vector3dVector(points),
+            lines=open3d.utility.Vector2iVector(lines),
+        )
+        line_set.colors = open3d.utility.Vector3dVector(colors)
+        open3d.visualization.draw_geometries([self.map_pc, self.pc, line_set])
+        # Visualize the registration results
+        open3d.visualization.draw_geometries([map_pcd_T_teaser, self.pc])
+        
+
+
+
+        metrics.print_time(["loading tank", "loading ply", "teaser"])
+
+        return T_teaser
+
+    def find_correspondences(self, feats0, feats1, mutual_filter=True):
+        nns01 = find_knn_gpu(feats0, feats1, nn_max_n=250, knn=1, return_distance=False)
+        # corres01_idx0 = (torch.arange(len(nns01))
+        # corres01_idx1 = (nns01.long().squeeze())
+        corres01_idx0 = (torch.arange(len(nns01)).long().squeeze()).detach().cpu().numpy()
+        corres01_idx1 = (nns01.long().squeeze()).detach().cpu().numpy()
+        # corres01_idx0 = corres01_idx0.detach().cpu().numpy()
+        # corres01_idx1 = corres01_idx1.detach().cpu().numpy()
+
+        if not mutual_filter:
+            return corres01_idx0, corres01_idx1
+
+        nns10 = find_knn_gpu(feats1, feats0, nn_max_n=250, knn=1, return_distance=False)
+        # corres10_idx1 = torch.arange(len(nns10)).long().squeeze()
+        # corres10_idx0 = nns10.long().squeeze()
+        corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
+        corres10_idx0 = (nns10.long().squeeze()).detach().cpu().numpy()
+        # corres10_idx1 = corres10_idx1.detach().cpu().numpy()
+        # corres10_idx0 = corres10_idx0.detach().cpu().numpy()
+
+        mutual_filter = corres10_idx0[corres01_idx1] == corres01_idx0
+        corres_idx0 = corres01_idx0[mutual_filter]
+        corres_idx1 = corres01_idx1[mutual_filter]
+
+        return corres_idx0, corres_idx1
 
     def execute_global_registration(self, source_down, target_down, source_fpfh,
                                     target_fpfh, voxel_size):
@@ -203,6 +300,9 @@ class PcMatcher:
         )
         # convert to open3d point cloud
         return open3d.utility.Vector3dVector(pc_xyz)
+
+    def pcd2xyz(self, pcd):
+        return np.asarray(pcd.points).T
 
 class PcListner:
     def __init__(self):

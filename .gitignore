@@ -47,3 +47,8 @@ catkin_ws/CATKIN_IGNORE
 **/downloads/
 **/.catkin_tools
 demo_files/__pycache__/helpers.cpython-37.pyc
+.vscode/settings.json
+.gitignore
+catkin_ws/.vscode/c_cpp_properties.json
+.vscode/tasks.json
+catkin_ws/.vscode/settings.json

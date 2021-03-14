@@ -16,8 +16,6 @@ import torch
 import copy
 from util.misc import extract_features
 
-# teaser
-import teaserpp_python
 
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
