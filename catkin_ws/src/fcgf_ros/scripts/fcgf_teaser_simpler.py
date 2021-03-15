@@ -30,21 +30,215 @@ import sensor_msgs.msg
 import sensor_msgs.point_cloud2 as pc2
 #from geometry_msgs.msg import PoseStamped
 
+#custom modules
 
 
+# make these into arguments for the launch file
+os.environ["OMP_NUM_THREADS"] = "12"
 HOME_path = os.getenv("HOME")
+ply_filename = "ballast_tank.ply"
 catkin_ws_path = HOME_path + "/repos/inspectrone/catkin_ws/"
 downloads_path = catkin_ws_path + "downloads/"
-print(downloads_path + "ResUNetBN2C-16feat-3conv.pth")
-os.environ["OMP_NUM_THREADS"] = "12"
 voxel_size = 0.05  # 0.025
 
-if not os.path.isfile(downloads_path + "ResUNetBN2C-16feat-3conv.pth"):
-    print("Downloading weights to ", downloads_path + "ResUNetBN2C-16feat-3conv.pth")
-    urlretrieve(
-        "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
-        downloads_path + "ResUNetBN2C-16feat-3conv.pth",
+
+class PerformanceMetrics:
+    def __init__(self, parent=None):
+        self.timings = dict()
+
+    def start_time(self, name):
+        rospy.loginfo(name)
+        cur_time = time.time()
+        self.timings[name] = - cur_time  # negative means it hasen't got the second timing yet
+
+    def stop_time(self, name):
+        cur_time = time.time()
+        elapsed_time = self.timings[name]
+
+        self.timings[name] = cur_time + elapsed_time  # eleapsed time is negative
+
+    def print_time(self, names):
+
+        rospy.loginfo("printing metrics for: " + str(names))
+        for name in names:
+            print("{:20s} took: {:2.5f} sec".format(name, self.timings[name]))
+
+    def print_all_timings(self):
+        names = [name for name in self.timings]
+        self.print_time(names)
+
+
+class Main:
+    def __init__(self, listener, parent=None):
+        self.listener = listener
+        rospy.loginfo("initialization Visualization")
+
+        self.vis = open3d.visualization.Visualizer()
+        self.open3d_pc = open3d.geometry.PointCloud()
+        self.open3d_map = self.listener.map
+        self.prev_red_n = None  # yes because "red" is written read :)
+        self.updater()
+
+    def ros_to_open3d(self, pc_ros):
+        # convert to xyz point cloud
+        pc_xyz = pc2.read_points(
+            pc_ros, skip_nans=True, field_names=("x", "y", "z")
+        )
+        # convert to open3d point cloud
+        return open3d.utility.Vector3dVector(pc_xyz)
+
+    def updater(self):
+
+        rospy.loginfo("start")
+        while self.listener.pc is None:
+            rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
+            rospy.sleep(0.2)
+
+        self.prev_red_n = self.listener.n
+
+        rospy.loginfo("rendering pointcloud #{}".format(self.prev_red_n))
+        
+        self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
+        demo(self.open3d_pc)
+
+        while not rospy.is_shutdown():
+            if self.prev_red_n != self.listener.n:
+                self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
+                demo(self.open3d_pc)
+
+
+class PcListner:
+    def __init__(self):
+        self.pc = None
+        self.n = 0
+        self.map = self.find_ply(catkin_ws_path, ply_filename)
+        self.init_listener()
+
+    def init_listener(self):
+        rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()
+        # rospy.Subscriber("/ballast_tank_ply", PointCloud2, self.callback)
+        rospy.Subscriber("/points_throttle", sensor_msgs.msg.PointCloud2, self.callback)
+
+    def callback(self, points):
+        self.pc = points
+        self.n = self.n + 1
+
+    def find_ply(self, catkin_ws_path, ply_filename):
+        ply_file = catkin_ws_path+'src/ply_publisher/cfg/'+ply_filename
+        ply_map = open3d.io.read_point_cloud(ply_file)
+        ply_map.colors = open3d.utility.Vector3dVector((np.asarray(ply_map.colors))/2)
+        return ply_map
+        #print("command: "+catkin_ws_path+"**/*.ply")
+        #print(glob.glob())
+
+
+def demo(pcd):
+
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("cuda active: ", torch.cuda.is_available())
+
+    #print(config.model)
+    model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
+    
+    if not os.path.isfile(model_file):
+        if not os.path.exists(downloads_path):
+            os.makedirs(downloads_path)
+        rospy.loginfo("Downloading weights to " + model_file)
+        urlretrieve(
+            "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
+            downloads_path + "ResUNetBN2C-16feat-3conv.pth",
+        )
+    metrics.start_time("loading resnet")
+    model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
+    checkpoint = torch.load(model_file)
+
+
+    #checkpoint = torch.load(downloads_path + "ResUNetBN2C-16feat-3conv.pth")
+    model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
+    model.load_state_dict(checkpoint["state_dict"])
+    model.eval()
+
+    model = model.to(device)
+    metrics.stop_time("loading resnet")
+    
+    metrics.start_time("loading tank")
+    pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
+    metrics.stop_time("loading tank")
+
+    metrics.start_time("processing tank")
+    xyz_down_map, feature_map = extract_features(
+        model,
+        xyz=np.array(pcd_map.points),
+        voxel_size=voxel_size,
+        device=device,
+        skip_check=True,
     )
+
+    map_pcd = open3d.geometry.PointCloud()
+    map_pcd.points = open3d.utility.Vector3dVector(xyz_down_map)
+    map_pcd.paint_uniform_color([1, 0.706, 0])
+    
+    metrics.stop_time("processing tank")
+
+    metrics.start_time("processing scan")
+    #pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
+    xyz_down, feature = extract_features(
+        model,
+        xyz=np.array(pcd.points),
+        voxel_size=voxel_size,
+        device=device,
+        skip_check=True,
+    )
+    sensor_pcd = open3d.geometry.PointCloud()
+    sensor_pcd.points = open3d.utility.Vector3dVector(xyz_down)
+    sensor_pcd.paint_uniform_color([0, 0, 0])
+    metrics.stop_time("processing scan")
+
+
+    metrics.start_time("finding correspondences")
+    corrs_A, corrs_B = find_correspondences(feature_map, feature, mutual_filter=True)
+    A_xyz = pcd2xyz(map_pcd)  # np array of size 3 by N
+    B_xyz = pcd2xyz(sensor_pcd)  # np array of size 3 by M
+    A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
+    B_corr = B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
+    metrics.stop_time("finding correspondences")
+
+    metrics.start_time("visualizing correspondences")
+    num_corrs = A_corr.shape[1]
+    #print("FCGF generates {} putative correspondences.".format(num_corrs))
+    
+    # visualize the point clouds together with feature correspondences
+    points = np.concatenate((A_corr.T, B_corr.T), axis=0)
+    lines = []
+    for i in range(num_corrs):
+        lines.append([i, i + num_corrs])
+    colors = [[0, 1, 0] for i in range(len(lines))]  # lines are shown in green
+    line_set = open3d.geometry.LineSet(
+        points=open3d.utility.Vector3dVector(points),
+        lines=open3d.utility.Vector2iVector(lines),
+    )
+    line_set.colors = open3d.utility.Vector3dVector(colors)
+    metrics.stop_time("visualizing correspondences")
+
+
+    metrics.start_time("calculating transform")
+    # robust global registration using TEASER++
+    NOISE_BOUND = 0.05  # config.voxel_size
+    teaser_solver = get_teaser_solver(NOISE_BOUND)
+    teaser_solver.solve(A_corr, B_corr)
+    solution = teaser_solver.getSolution()
+    R_teaser = solution.rotation
+    t_teaser = solution.translation
+    T_teaser = Rt2T(R_teaser, t_teaser)
+    metrics.stop_time("calculating transform")
+
+    # Visualize the registration results
+    metrics.print_all_timings()
+
+    map_pcd_T_teaser = copy.deepcopy(map_pcd).transform(T_teaser)
+    open3d.visualization.draw([map_pcd, sensor_pcd, line_set])
+    open3d.visualization.draw([map_pcd_T_teaser, sensor_pcd])
 
 
 def pcd2xyz(pcd):
@@ -78,111 +272,11 @@ def find_correspondences(feats0, feats1, mutual_filter=True):
     return corres_idx0, corres_idx1
 
 
-def demo(config):
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("cuda active: ", torch.cuda.is_available())
-
-    #print(config.model)
-    model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
-    
-    if not os.path.isfile(model_file):
-        if not os.path.exists(downloads_path):
-            os.makedirs(downloads_path)
-        rospy.loginfo("Downloading weights to " + model_file)
-        urlretrieve(
-            "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
-            downloads_path + "ResUNetBN2C-16feat-3conv.pth",
-        )
-
-    model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
-    checkpoint = torch.load(model_file)
-
-
-    #checkpoint = torch.load(downloads_path + "ResUNetBN2C-16feat-3conv.pth")
-    model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
-    model.load_state_dict(checkpoint["state_dict"])
-    model.eval()
-
-    model = model.to(device)
-
-    pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
-    pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
-
-    xyz_down, feature = extract_features(
-        model,
-        xyz=np.array(pcd.points),
-        voxel_size=voxel_size,
-        device=device,
-        skip_check=True,
-    )
-
-    xyz_down_map, feature_map = extract_features(
-        model,
-        xyz=np.array(pcd_map.points),
-        voxel_size=voxel_size,
-        device=device,
-        skip_check=True,
-    )
-
-    map_pcd = open3d.geometry.PointCloud()
-    map_pcd.points = open3d.utility.Vector3dVector(xyz_down_map)
-    map_pcd.paint_uniform_color([1, 0.706, 0])
-    sensor_pcd = open3d.geometry.PointCloud()
-    sensor_pcd.points = open3d.utility.Vector3dVector(xyz_down)
-    sensor_pcd.paint_uniform_color([0, 0, 0])
-
-    ref = open3d.pipelines.registration.Feature()
-    ref.data = feature_map.detach().cpu().numpy().T  # .astype(np.float64)
-    test = open3d.pipelines.registration.Feature()
-    test.data = feature.detach().cpu().numpy().T  # .astype(np.float64)
-
-    corrs_A, corrs_B = find_correspondences(feature_map, feature, mutual_filter=True)
-    A_xyz = pcd2xyz(map_pcd)  # np array of size 3 by N
-    B_xyz = pcd2xyz(sensor_pcd)  # np array of size 3 by M
-    A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
-    B_corr = B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
-
-    num_corrs = A_corr.shape[1]
-    print("FCGF generates {} putative correspondences.".format(num_corrs))
-
-    # visualize the point clouds together with feature correspondences
-    points = np.concatenate((A_corr.T, B_corr.T), axis=0)
-    lines = []
-    for i in range(num_corrs):
-        lines.append([i, i + num_corrs])
-    colors = [[0, 1, 0] for i in range(len(lines))]  # lines are shown in green
-    line_set = open3d.geometry.LineSet(
-        points=open3d.utility.Vector3dVector(points),
-        lines=open3d.utility.Vector2iVector(lines),
-    )
-    line_set.colors = open3d.utility.Vector3dVector(colors)
-    open3d.visualization.draw([map_pcd, sensor_pcd, line_set])
-
-    # robust global registration using TEASER++
-    NOISE_BOUND = 0.05  # config.voxel_size
-    teaser_solver = get_teaser_solver(NOISE_BOUND)
-    teaser_solver.solve(A_corr, B_corr)
-    solution = teaser_solver.getSolution()
-    R_teaser = solution.rotation
-    t_teaser = solution.translation
-    T_teaser = Rt2T(R_teaser, t_teaser)
-
-    # Visualize the registration results
-    map_pcd_T_teaser = copy.deepcopy(map_pcd).transform(T_teaser)
-    open3d.visualization.draw([map_pcd_T_teaser, sensor_pcd])
-
-
-
-class Config:
-    def __init__(self):
-        self.model = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
-        self.voxel_size = 0.05
-        
-
 if __name__ == "__main__":
 
-    #listener = PcListner()
-    #updater = Main()
-    demo(None)
-    #rospy.spin()
+    global metrics
+    metrics = PerformanceMetrics()
+
+    listener = PcListner()
+    updater = Main(listener)
+    rospy.spin()
