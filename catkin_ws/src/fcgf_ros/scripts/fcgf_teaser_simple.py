@@ -111,8 +111,9 @@ def demo(pcd):
     #print(config.model)
     model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
     
-
     if not os.path.isfile(model_file):
+        if not os.path.exists(downloads_path):
+            os.makedirs(downloads_path)
         rospy.loginfo("Downloading weights to " + model_file)
         urlretrieve(
             "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
