@@ -16,13 +16,15 @@ from core.knn import find_knn_gpu
 from extra.helpers import get_teaser_solver, Rt2T
 
 
-class MatcherBase():
+class MatcherStatics():
     def __init__(self, config):
         self.config = config
         self.voxel_size = config.voxel_size
         self.model, self.device = self._load_model(config)
         self.pcd_map = open3d.geometry.PointCloud()
         self.pcd_scan = open3d.geometry.PointCloud()
+
+        self.pcd_map = self._load_static_ply(config)
 
     def _load_model(self, config):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -53,11 +55,11 @@ class MatcherBase():
         pcd_map = open3d.io.read_point_cloud(config.static_ply)
         return pcd_map
 
-    def get_map(self):
-        return self.pcd_map
-
 
 class MatcherHelper():
+    def __init__(self, listener):
+        self.listener = listener
+
     def pcd2xyz(self, pcd):
         return np.asarray(pcd.points).T
 
@@ -69,16 +71,18 @@ class MatcherHelper():
         # convert to open3d point cloud
         return open3d.utility.Vector3dVector(pc_xyz)
 
+    def _load_topic_ply_points(self):
+        pcd_scan = self.ros_to_open3d(self.listener.pc)
+        return pcd_scan
 
-class Matcher(MatcherBase, MatcherHelper):
-    def __init__(self, config):
-        MatcherBase.__init__(self, config)  # init parent attributes
-        MatcherHelper.__init__(self)  # init parent attributes
+    def get_map(self):
+        return self.pcd_map
 
-        self.pcd_map = self._load_static_ply(config)
-        #self.pcd = self.get_scan(config)
+    def get_scan(self):
+        self.pcd_scan.points = self._load_topic_ply_points()
+        return self.pcd_scan
 
-    def get_features(self, point_cloud):
+    def get_xyz_features(self, point_cloud):
         xyz_down, feature = extract_features(
             self.model,
             xyz=np.array(point_cloud.points),
@@ -86,6 +90,28 @@ class Matcher(MatcherBase, MatcherHelper):
             device=self.device,
             skip_check=True)
         return xyz_down, feature
+
+
+class Matcher(MatcherStatics, MatcherHelper):
+    def __init__(self, config, listener):
+        MatcherStatics.__init__(self, config)  # init parent attributes
+        MatcherHelper.__init__(self, listener)  # init parent attributes
+        self.pcd_map_down = open3d.geometry.PointCloud()
+        self.pcd_scan_down = open3d.geometry.PointCloud()
+
+    def get_open3d_features(self, point_cloud):
+        '''Same as get_xyz_features, just with pcd in open3d format'''
+        xyz_down, feature = self.get_xyz_features(point_cloud)
+        if point_cloud == self.pcd_map:  # if same reference as map 
+            pcd_down = self.pcd_map_down
+            pcd_color = [1, 0.706, 0]
+        else:
+            pcd_down = self.pcd_scan_down
+            pcd_color = [0, 0, 0]
+        
+        pcd_down.points = open3d.utility.Vector3dVector(xyz_down)
+        pcd_down.paint_uniform_color(pcd_color)
+        return pcd_down, feature
 
     def find_correspondences(self, feats0, feats1, mutual_filter=True):
         nns01 = find_knn_gpu(feats0, feats1, nn_max_n=250, knn=1, return_distance=False)
