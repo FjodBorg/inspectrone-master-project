@@ -12,34 +12,39 @@ from util.misc import extract_features
 # teaser
 from core.knn import find_knn_gpu
 
+downloads_path = ""
+voxel_size = 0
+
 
 class Matcher():
-    def __init__(self, voxel_size=0.05):
-        self.model, self.checkpoint, self.device = self.load_checkpoint()
-        self.voxel_size = voxel_size
+    def __init__(self, config):
+        self.config = config
+        self.model, self.device = self.load_model(config)
 
-    def load_checkpoint(self):
+    def load_model(self, config):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        rospy.loginfo("cuda for torch: " + str(torch.cuda.is_available()))
-        model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
-        rospy.loginfo("resnet location at: " + model_file)
+        rospy.loginfo("Using Cuda: " + str(torch.cuda.is_available()))
+        #  model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
+        rospy.loginfo("resnet location at: " + config.model)
 
-        if not os.path.isfile(model_file):
-            if not os.path.exists(downloads_path):
+        if not os.path.isfile(config.model):
+            if not os.path.exists(config.path.do):
                 os.makedirs(downloads_path)
-            rospy.loginfo("Downloading weights to ", model_file)
+            
+            rospy.loginfo("Downloading weights to ", config.model)
             urlretrieve(
                 "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
                 downloads_path + "ResUNetBN2C-16feat-3conv.pth",
             )
 
+        checkpoint = torch.load(config.model)
         model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
-        checkpoint = torch.load(model_file)
         model.load_state_dict(checkpoint['state_dict'])
         model.eval()
+
         model = model.to(device)
 
-        return model, checkpoint, device
+        return model, device
 
     def get_features(self, point_cloud):
         xyz_down, feature = extract_features(

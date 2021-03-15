@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.7
 import os
-import glob
 import numpy as np #NUMPY MUST COME BEFORE open3d
 import open3d
 import time
@@ -17,7 +16,7 @@ from util.misc import extract_features
 # teaser
 import teaserpp_python
 from core.knn import find_knn_gpu
-from extra.helpers import *
+from extra.helpers import get_teaser_solver, Rt2T
 
 
 #ros related
@@ -31,8 +30,7 @@ import sensor_msgs.point_cloud2 as pc2
 #from geometry_msgs.msg import PoseStamped
 
 #custom modules
-from extra import extensions
-from extra import listeners
+from extra import extensions, listeners, matching_helpers, essentials
 
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
@@ -86,8 +84,6 @@ class Main:
 
 
 def demo(pcd):
-
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("cuda active: ", torch.cuda.is_available())
 
@@ -148,9 +144,8 @@ def demo(pcd):
     sensor_pcd.paint_uniform_color([0, 0, 0])
     metrics.stop_time("processing scan")
 
-
     metrics.start_time("finding correspondences")
-    corrs_A, corrs_B = find_correspondences(feature_map, feature, mutual_filter=True)
+    corrs_A, corrs_B = matcher.find_correspondences(feature_map, feature, mutual_filter=True)
     A_xyz = pcd2xyz(map_pcd)  # np array of size 3 by N
     B_xyz = pcd2xyz(sensor_pcd)  # np array of size 3 by M
     A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
@@ -198,38 +193,13 @@ def pcd2xyz(pcd):
     return np.asarray(pcd.points).T
 
 
-def find_correspondences(feats0, feats1, mutual_filter=True):
-    nns01 = find_knn_gpu(feats0, feats1, nn_max_n=250, knn=1, return_distance=False)
-    # corres01_idx0 = (torch.arange(len(nns01))
-    # corres01_idx1 = (nns01.long().squeeze())
-    corres01_idx0 = (torch.arange(len(nns01)).long().squeeze()).detach().cpu().numpy()
-    corres01_idx1 = (nns01.long().squeeze()).detach().cpu().numpy()
-    # corres01_idx0 = corres01_idx0.detach().cpu().numpy()
-    # corres01_idx1 = corres01_idx1.detach().cpu().numpy()
-
-    if not mutual_filter:
-        return corres01_idx0, corres01_idx1
-
-    nns10 = find_knn_gpu(feats1, feats0, nn_max_n=250, knn=1, return_distance=False)
-    # corres10_idx1 = torch.arange(len(nns10)).long().squeeze()
-    # corres10_idx0 = nns10.long().squeeze()
-    # corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
-    corres10_idx0 = (nns10.long().squeeze()).detach().cpu().numpy()
-    # corres10_idx1 = corres10_idx1.detach().cpu().numpy()
-    # corres10_idx0 = corres10_idx0.detach().cpu().numpy()
-
-    mutual_filter = corres10_idx0[corres01_idx1] == corres01_idx0
-    corres_idx0 = corres01_idx0[mutual_filter]
-    corres_idx1 = corres01_idx1[mutual_filter]
-
-    return corres_idx0, corres_idx1
-
-
 if __name__ == "__main__":
 
-    global metrics
+    global metrics, matcher
+    config = essentials.Config()
     metrics = extensions.PerformanceMetrics()
-    listener = listeners.PointCloudListener(catkin_ws_path, ply_filename)
+    listener = listeners.PointCloudListener(config)
+    matcher = matching_helpers.Matcher(config)
 
     updater = Main(listener)
     rospy.spin()

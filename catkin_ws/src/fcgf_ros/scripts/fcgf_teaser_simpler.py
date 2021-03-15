@@ -1,6 +1,5 @@
 #!/usr/bin/env python3.7
 import os
-import glob
 import numpy as np #NUMPY MUST COME BEFORE open3d
 import open3d
 import time
