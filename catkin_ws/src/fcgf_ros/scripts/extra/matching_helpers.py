@@ -11,6 +11,7 @@ from util.misc import extract_features
 
 # teaser
 from core.knn import find_knn_gpu
+from extra.helpers import get_teaser_solver, Rt2T
 
 downloads_path = ""
 voxel_size = 0
@@ -58,7 +59,6 @@ class Matcher():
 
     #def load_ply(self, config)
 
-
     def get_features(self, point_cloud):
         xyz_down, feature = extract_features(
             self.model,
@@ -93,3 +93,40 @@ class Matcher():
         corres_idx1 = corres01_idx1[mutual_filter]
 
         return corres_idx0, corres_idx1
+    
+    def pcd2xyz(self, pcd):
+        return np.asarray(pcd.points).T
+
+    def convert_correspondences(self, map_pcd, sensor_pcd, corrs_A, corrs_B):
+        np_A_xyz = self.pcd2xyz(map_pcd)  # np array of size 3 by N
+        np_B_xyz = self.pcd2xyz(sensor_pcd)  # np array of size 3 by M
+        np_corrs_A = np_A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
+        np_corrs_B = np_B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
+        return np_corrs_A, np_corrs_B
+
+    def draw_correspondences(self, A_corr, B_corr):
+        num_corrs = A_corr.shape[1]
+        #print("FCGF generates {} putative correspondences.".format(num_corrs))
+        
+        # visualize the point clouds together with feature correspondences
+        points = np.concatenate((A_corr.T, B_corr.T), axis=0)
+        lines = []
+        for i in range(num_corrs):
+            lines.append([i, i + num_corrs])
+        colors = [[0, 1, 0] for i in range(len(lines))]  # lines are shown in green
+        line_set = open3d.geometry.LineSet(
+            points=open3d.utility.Vector3dVector(points),
+            lines=open3d.utility.Vector2iVector(lines),
+        )
+        line_set.colors = open3d.utility.Vector3dVector(colors)
+        return line_set
+
+    def find_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
+        # robust global registration using TEASER++
+        teaser_solver = get_teaser_solver(NOISE_BOUND)
+        teaser_solver.solve(np_corrs_A, np_corrs_B)
+        solution = teaser_solver.getSolution()
+        R_teaser = solution.rotation
+        t_teaser = solution.translation
+        T_teaser = Rt2T(R_teaser, t_teaser)
+        return T_teaser

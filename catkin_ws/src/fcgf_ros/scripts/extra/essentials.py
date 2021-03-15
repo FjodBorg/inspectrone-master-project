@@ -4,7 +4,7 @@ import rospy
 
 
 class Config:
-    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="ballast_tank.ply", topic_ply="/points_throttle"):
+    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="pcl_ballast_tank.ply", topic_ply="/points_throttle"):
         """A simple config function"""
         '''
         
@@ -34,7 +34,7 @@ class Config:
             self.repos = self.home + repos_dir
             self.catkin_ws = self.repos + "catkin_ws/"
             self.downloads = self.catkin_ws + "downloads/"
-            self.plys = self.catkin_ws + "downloads/src/ply_publisher/cfg/"
+            self.plys = self.catkin_ws + "src/ply_publisher/cfg/"
             self._verify_path(self.repos)
             self._verify_path(self.catkin_ws)
             self._verify_path(self.downloads)

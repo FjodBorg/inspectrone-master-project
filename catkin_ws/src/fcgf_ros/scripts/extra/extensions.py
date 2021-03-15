@@ -3,7 +3,7 @@ import time
 import rospy
 
 
-class PerformanceMetrics:
+class PerformanceMetrics():
     def __init__(self, parent=None):
         self.timings = dict()
 
@@ -22,7 +22,7 @@ class PerformanceMetrics:
 
         rospy.loginfo("printing metrics for: " + str(names))
         for name in names:
-            print("{:20s} took: {:2.5f} sec".format(name, self.timings[name]))
+            print("{:30s} took: {:2.5f} sec".format(name, self.timings[name]))
 
     def print_all_timings(self):
         names = [name for name in self.timings]
