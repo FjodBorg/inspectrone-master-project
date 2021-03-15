@@ -39,6 +39,31 @@ downloads_path = catkin_ws_path + "downloads/"
 voxel_size = 0.05  # 0.025
 
 
+class PerformanceMetric:
+    def __init__(self, parent=None):
+        self.timings = dict()
+
+    def start_time(self, name):
+        rospy.loginfo(name)
+        cur_time = time.time()
+        self.timings[name] = - cur_time  # negative means it hasen't got the second timing yet
+
+    def stop_time(self, name):
+        cur_time = time.time()
+        elapsed_time = self.timings[name]
+
+        self.timings[name] = cur_time + elapsed_time  # eleapsed time is negative
+
+    def print_time(self, names):
+
+        rospy.loginfo("printing metrics for: " + str(names))
+        for name in names:
+            print("{:20s} took: {:2.5f} sec".format(name, self.timings[name]))
+
+    def print_all_timings(self):
+        names = [name for name in self.timings]
+        self.print_time(names)
+
 
 class Main:
     def __init__(self, listener, parent=None):
@@ -121,7 +146,7 @@ def demo(pcd):
             "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
             downloads_path + "ResUNetBN2C-16feat-3conv.pth",
         )
-
+    metrics.start_time("loading resnet")
     model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
     checkpoint = torch.load(model_file)
 
@@ -132,18 +157,13 @@ def demo(pcd):
     model.eval()
 
     model = model.to(device)
-
-    #pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
+    metrics.stop_time("loading resnet")
+    
+    metrics.start_time("loading tank")
     pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
+    metrics.stop_time("loading tank")
 
-    xyz_down, feature = extract_features(
-        model,
-        xyz=np.array(pcd.points),
-        voxel_size=voxel_size,
-        device=device,
-        skip_check=True,
-    )
-
+    metrics.start_time("processing tank")
     xyz_down_map, feature_map = extract_features(
         model,
         xyz=np.array(pcd_map.points),
@@ -155,24 +175,36 @@ def demo(pcd):
     map_pcd = open3d.geometry.PointCloud()
     map_pcd.points = open3d.utility.Vector3dVector(xyz_down_map)
     map_pcd.paint_uniform_color([1, 0.706, 0])
+    
+    metrics.stop_time("processing tank")
+
+    metrics.start_time("processing scan")
+    #pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
+    xyz_down, feature = extract_features(
+        model,
+        xyz=np.array(pcd.points),
+        voxel_size=voxel_size,
+        device=device,
+        skip_check=True,
+    )
     sensor_pcd = open3d.geometry.PointCloud()
     sensor_pcd.points = open3d.utility.Vector3dVector(xyz_down)
     sensor_pcd.paint_uniform_color([0, 0, 0])
+    metrics.stop_time("processing scan")
 
-    ref = open3d.pipelines.registration.Feature()
-    ref.data = feature_map.detach().cpu().numpy().T  # .astype(np.float64)
-    test = open3d.pipelines.registration.Feature()
-    test.data = feature.detach().cpu().numpy().T  # .astype(np.float64)
 
+    metrics.start_time("finding correspondences")
     corrs_A, corrs_B = find_correspondences(feature_map, feature, mutual_filter=True)
     A_xyz = pcd2xyz(map_pcd)  # np array of size 3 by N
     B_xyz = pcd2xyz(sensor_pcd)  # np array of size 3 by M
     A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
     B_corr = B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
+    metrics.stop_time("finding correspondences")
 
+    metrics.start_time("visualizing correspondences")
     num_corrs = A_corr.shape[1]
-    print("FCGF generates {} putative correspondences.".format(num_corrs))
-
+    #print("FCGF generates {} putative correspondences.".format(num_corrs))
+    
     # visualize the point clouds together with feature correspondences
     points = np.concatenate((A_corr.T, B_corr.T), axis=0)
     lines = []
@@ -184,8 +216,10 @@ def demo(pcd):
         lines=open3d.utility.Vector2iVector(lines),
     )
     line_set.colors = open3d.utility.Vector3dVector(colors)
-    open3d.visualization.draw([map_pcd, sensor_pcd, line_set])
+    metrics.stop_time("visualizing correspondences")
 
+
+    metrics.start_time("calculating transform")
     # robust global registration using TEASER++
     NOISE_BOUND = 0.05  # config.voxel_size
     teaser_solver = get_teaser_solver(NOISE_BOUND)
@@ -194,9 +228,13 @@ def demo(pcd):
     R_teaser = solution.rotation
     t_teaser = solution.translation
     T_teaser = Rt2T(R_teaser, t_teaser)
+    metrics.stop_time("calculating transform")
 
     # Visualize the registration results
+    metrics.print_all_timings()
+
     map_pcd_T_teaser = copy.deepcopy(map_pcd).transform(T_teaser)
+    open3d.visualization.draw([map_pcd, sensor_pcd, line_set])
     open3d.visualization.draw([map_pcd_T_teaser, sensor_pcd])
 
 
@@ -233,7 +271,9 @@ def find_correspondences(feats0, feats1, mutual_filter=True):
 
 if __name__ == "__main__":
 
+    global metrics
+    metrics = PerformanceMetric()
+
     listener = PcListner()
     updater = Main(listener)
     rospy.spin()
-
