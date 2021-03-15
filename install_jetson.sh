@@ -217,6 +217,7 @@ catkin clean --yes
 catkin build fcgf_ros
 source devel/setup.bash
 wstool init
+wstool set -y src/geometry --git https://github.com/ros/geometry -v 1.12.1
 wstool set -y src/geometry2 --git https://github.com/ros/geometry2 -v 0.6.5
 wstool up
 rosdep install --from-paths src --ignore-src -y -r
@@ -224,9 +225,9 @@ rosdep install --from-paths src --ignore-src -y -r
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
 catkin build -DCMAKE_BUILD_TYPE=Release \
+            -DPYTHON_EXECUTABLE=/usr/bin/python3.7
             #-DPYTHON_INCLUDE_DIR=/usr/include/python3.7m \
             #-DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.7m.so
-            -DPYTHON_EXECUTABLE=/usr/bin/python3.7
 
 
 
