@@ -12,6 +12,7 @@ import model as mdl
 import torch
 import copy
 from util.misc import extract_features
+from util.visualization import get_colored_point_cloud_feature # needed on jetson, otherwise it cant render images
 
 # teaser
 import teaserpp_python
