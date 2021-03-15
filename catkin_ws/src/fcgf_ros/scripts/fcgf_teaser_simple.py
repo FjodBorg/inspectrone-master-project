@@ -103,6 +103,13 @@ class PcListner:
 
 
 def demo(pcd):
+    if not os.path.isfile(model_file):
+        rospy.loginfo("Downloading weights to ", model_file)
+        urlretrieve(
+            "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
+            downloads_path + "ResUNetBN2C-16feat-3conv.pth",
+        )
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("cuda active: ", torch.cuda.is_available())
 
@@ -172,7 +179,7 @@ def demo(pcd):
     open3d.visualization.draw_geometries([map_pcd, sensor_pcd, line_set])
 
     # robust global registration using TEASER++
-    NOISE_BOUND = 0.01  # config.voxel_size
+    NOISE_BOUND = 0.05  # config.voxel_size
     teaser_solver = get_teaser_solver(NOISE_BOUND)
     teaser_solver.solve(A_corr, B_corr)
     solution = teaser_solver.getSolution()
