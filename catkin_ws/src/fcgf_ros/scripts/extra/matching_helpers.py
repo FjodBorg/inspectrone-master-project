@@ -18,7 +18,11 @@ from extra.helpers import get_teaser_solver, Rt2T
 
 class MatcherBase():
     def __init__(self, config):
+        self.config = config
+        self.voxel_size = config.voxel_size
         self.model, self.device = self._load_model(config)
+        self.pcd_map = open3d.geometry.PointCloud()
+        self.pcd_scan = open3d.geometry.PointCloud()
 
     def _load_model(self, config):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -52,15 +56,27 @@ class MatcherBase():
     def get_map(self):
         return self.pcd_map
 
-class Matcher(MatcherBase):
+
+class MatcherHelper():
+    def pcd2xyz(self, pcd):
+        return np.asarray(pcd.points).T
+
+    def ros_to_open3d(self, pc_ros):
+        # convert to xyz point cloud
+        pc_xyz = pc2.read_points(
+            pc_ros, skip_nans=True, field_names=("x", "y", "z")
+        )
+        # convert to open3d point cloud
+        return open3d.utility.Vector3dVector(pc_xyz)
+
+
+class Matcher(MatcherBase, MatcherHelper):
     def __init__(self, config):
-        self.config = config
-        self.voxel_size = config.voxel_size
-        MatcherBase.__init__(self, config)
+        MatcherBase.__init__(self, config)  # init parent attributes
+        MatcherHelper.__init__(self)  # init parent attributes
 
         self.pcd_map = self._load_static_ply(config)
-
-    #def load_ply(self, config)
+        #self.pcd = self.get_scan(config)
 
     def get_features(self, point_cloud):
         xyz_down, feature = extract_features(
@@ -96,17 +112,6 @@ class Matcher(MatcherBase):
         corres_idx1 = corres01_idx1[mutual_filter]
 
         return corres_idx0, corres_idx1
-    
-    def pcd2xyz(self, pcd):
-        return np.asarray(pcd.points).T
-
-    def ros_to_open3d(self, pc_ros):
-        # convert to xyz point cloud
-        pc_xyz = pc2.read_points(
-            pc_ros, skip_nans=True, field_names=("x", "y", "z")
-        )
-        # convert to open3d point cloud
-        return open3d.utility.Vector3dVector(pc_xyz)
 
     def convert_correspondences(self, map_pcd, sensor_pcd, corrs_A, corrs_B):
         np_A_xyz = self.pcd2xyz(map_pcd)  # np array of size 3 by N

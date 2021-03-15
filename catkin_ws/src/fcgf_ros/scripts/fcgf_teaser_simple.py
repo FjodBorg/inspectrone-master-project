@@ -1,6 +1,6 @@
 #!/usr/bin/env python3.7
 import os
-import numpy as np #NUMPY MUST COME BEFORE open3d
+import numpy as np  # NUMPY MUST COME BEFORE open3d
 import open3d
 
 import copy
@@ -13,8 +13,8 @@ from extra import extensions, listeners, matching_helpers, essentials
 
 
 def demo(listener):
-    pcd = open3d.geometry.PointCloud()
-    pcd.points = matcher.ros_to_open3d(listener.pc)
+    pcd_scan = matcher.pcd_scan
+    pcd_scan.points = matcher.ros_to_open3d(listener.pc)
     metrics.start_time("loading tank")
     # TODO find out why ballast_tank.ply is bad and ply_ballast_tank.ply is good
     #  pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
@@ -27,22 +27,29 @@ def demo(listener):
     map_pcd = open3d.geometry.PointCloud()
     map_pcd.points = open3d.utility.Vector3dVector(xyz_down_map)
     map_pcd.paint_uniform_color([1, 0.706, 0])
-    
+
     metrics.stop_time("processing tank")
 
     metrics.start_time("processing scan")
-    #pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
-    xyz_down, feature = matcher.get_features(pcd)
+    # pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
+    xyz_down, feature = matcher.get_features(pcd_scan)
     sensor_pcd = open3d.geometry.PointCloud()
     sensor_pcd.points = open3d.utility.Vector3dVector(xyz_down)
     sensor_pcd.paint_uniform_color([0, 0, 0])
     metrics.stop_time("processing scan")
 
     metrics.start_time("finding correspondences")
-    corrs_A, corrs_B = matcher.find_correspondences(feature_map, feature, mutual_filter=True)
-    np_corrs_A, np_corrs_B = matcher.convert_correspondences(map_pcd, sensor_pcd, corrs_A, corrs_B) 
+    corrs_A, corrs_B = matcher.find_correspondences(
+        feature_map, feature, mutual_filter=True
+    )
     metrics.stop_time("finding correspondences")
-    
+
+    metrics.start_time("converting correspondences")
+    np_corrs_A, np_corrs_B = matcher.convert_correspondences(
+        map_pcd, sensor_pcd, corrs_A, corrs_B
+    )
+    metrics.stop_time("converting correspondences")
+
     metrics.start_time("drawing correspondences")
     line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
     metrics.stop_time("drawing correspondences")
@@ -62,13 +69,17 @@ def demo(listener):
 if __name__ == "__main__":
 
     global metrics, matcher
-    config = essentials.Config()
+    config = essentials.Config(
+        repos_dir="repos/inspectrone/",
+        voxel_size=0.05,
+        model_name="ResUNetBN2C-16feat-3conv.pth",
+        static_ply_name="pcl_ballast_tank.ply",
+        topic_ply="/points_throttle",
+    )
+
     metrics = extensions.PerformanceMetrics()
     listener = listeners.PointCloudListener(config)
     matcher = matching_helpers.Matcher(config)
-
-    
-    prev_red_n = None  # yes because "red" is written read :)
 
     #  updater = Main(listener)
     rospy.loginfo("start")

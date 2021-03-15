@@ -106,11 +106,13 @@ def demo(config):
     test = o3d.pipelines.registration.Feature()
     test.data = feature.detach().cpu().numpy().T  # .astype(np.float64)
 
+    start = time.time()
     corrs_A, corrs_B = find_correspondences(feature_map, feature, mutual_filter=True)
     A_xyz = pcd2xyz(map_pcd)  # np array of size 3 by N
     B_xyz = pcd2xyz(sensor_pcd)  # np array of size 3 by M
     A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
     B_corr = B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
+    end = time.time()
 
     num_corrs = A_corr.shape[1]
     print("FCGF generates {} putative correspondences.".format(num_corrs))
