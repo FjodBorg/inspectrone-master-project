@@ -197,6 +197,7 @@ python3.7 -m pip install rospkg catkin_pkg empy
 #sudo -H python3.7 -m pip install https://github.com/catkin/catkin_tools/archive/0.5.0.zip
 
 
+#sudo rm /etc/ros/rosdep/sources.list.d/20-default.list
 sudo rosdep init
 rosdep update
 
