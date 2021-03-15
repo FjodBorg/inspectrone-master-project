@@ -30,6 +30,10 @@ import sensor_msgs.msg
 import sensor_msgs.point_cloud2 as pc2
 #from geometry_msgs.msg import PoseStamped
 
+#custom modules
+from extra import extensions
+from extra import listeners
+
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
 HOME_path = os.getenv("HOME")
@@ -39,30 +43,7 @@ downloads_path = catkin_ws_path + "downloads/"
 voxel_size = 0.05  # 0.025
 
 
-class PerformanceMetric:
-    def __init__(self, parent=None):
-        self.timings = dict()
 
-    def start_time(self, name):
-        rospy.loginfo(name)
-        cur_time = time.time()
-        self.timings[name] = - cur_time  # negative means it hasen't got the second timing yet
-
-    def stop_time(self, name):
-        cur_time = time.time()
-        elapsed_time = self.timings[name]
-
-        self.timings[name] = cur_time + elapsed_time  # eleapsed time is negative
-
-    def print_time(self, names):
-
-        rospy.loginfo("printing metrics for: " + str(names))
-        for name in names:
-            print("{:20s} took: {:2.5f} sec".format(name, self.timings[name]))
-
-    def print_all_timings(self):
-        names = [name for name in self.timings]
-        self.print_time(names)
 
 
 class Main:
@@ -71,7 +52,7 @@ class Main:
         rospy.loginfo("initialization Visualization")
 
         self.vis = open3d.visualization.Visualizer()
-        self.open3d_pc = None
+        self.open3d_pc = open3d.geometry.PointCloud()
         self.open3d_map = self.listener.map
         self.prev_red_n = None  # yes because "red" is written read :)
         self.updater()
@@ -94,39 +75,14 @@ class Main:
         self.prev_red_n = self.listener.n
 
         rospy.loginfo("rendering pointcloud #{}".format(self.prev_red_n))
-        self.open3d_pc = open3d.geometry.PointCloud()
-
+        
         self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
         demo(self.open3d_pc)
 
         while not rospy.is_shutdown():
             if self.prev_red_n != self.listener.n:
+                self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
                 demo(self.open3d_pc)
-
-
-class PcListner:
-    def __init__(self):
-        self.pc = None
-        self.n = 0
-        self.map = self.find_ply(catkin_ws_path, ply_filename)
-        self.init_listener()
-
-    def init_listener(self):
-        rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()
-        # rospy.Subscriber("/ballast_tank_ply", PointCloud2, self.callback)
-        rospy.Subscriber("/points_throttle", sensor_msgs.msg.PointCloud2, self.callback)
-
-    def callback(self, points):
-        self.pc = points
-        self.n = self.n + 1
-
-    def find_ply(self, catkin_ws_path, ply_filename):
-        ply_file = catkin_ws_path+'src/ply_publisher/cfg/'+ply_filename
-        ply_map = open3d.io.read_point_cloud(ply_file)
-        ply_map.colors = open3d.utility.Vector3dVector((np.asarray(ply_map.colors))/2)
-        return ply_map
-        #print("command: "+catkin_ws_path+"**/*.ply")
-        #print(glob.glob())
 
 
 def demo(pcd):
@@ -272,8 +228,8 @@ def find_correspondences(feats0, feats1, mutual_filter=True):
 if __name__ == "__main__":
 
     global metrics
-    metrics = PerformanceMetric()
+    metrics = extensions.PerformanceMetrics()
+    listener = listeners.PointCloudListener(catkin_ws_path, ply_filename)
 
-    listener = PcListner()
     updater = Main(listener)
     rospy.spin()
