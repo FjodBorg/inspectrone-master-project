@@ -1,3 +1,4 @@
+#!/bin/bash
 #DOCKER install 
 #sudo groupadd docker
 #sudo usermod -aG docker ${USER}
@@ -14,12 +15,22 @@
 sudo apt update
 sudo apt install -y python3.7 python3.7-dev openssl libssl-dev  ninja-build gfortran \
 cmake libeigen3-dev libboost-all-dev libopenblas-dev build-essential \
-libjpeg-dev zlib1g-dev git
+libjpeg-dev zlib1g-dev git mesa-utils
 mkdir $HOME/repos/
 
 #source these (possibly with bashrc)
-export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}
-export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+echo "export PATH=/usr/local/cuda/bin\${PATH:+:\${PATH}}" >> $HOME/.bashrc
+echo "export LD_LIBRARY_PATH=/usr/local/cuda/lib64\${LD_LIBRARY_PATH:+:\${LD_LIBRARY_PATH}}"  >> $HOME/.bashrc
+if [[ $(uname --m) == aarch64 ]];
+then
+	echo "arm64"
+	#"export LD_LIBRARY_PATH=/usr/lib/aarch64-linux-gnu/:\${LD_LIBRARY_PATH}" >> $HOME/.bashrc
+else
+	echo "export for libGL shouldn't be needed for ubuntu on amd64"
+	#"export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH" >> $HOME/.bashrc
+fi
+
+
 
 # increase swap partition (32gb)
 #sudo swapoff -a
@@ -215,7 +226,7 @@ sudo apt install -y ros-melodic-pcl-ros ros-melodic-tf2-sensor-msgs rviz ros-mel
 # compiling tf2 for python3
 cd $HOME/repos/inspectrone/catkin_ws/
 catkin clean --yes
-catkin build fcgf_ros
+catkin build fcgf_ros -DPYTHON_EXECUTABLE=/usr/bin/python3.7
 source devel/setup.bash
 wstool init
 wstool set -y src/geometry --git https://github.com/ros/geometry -v 1.12.1
