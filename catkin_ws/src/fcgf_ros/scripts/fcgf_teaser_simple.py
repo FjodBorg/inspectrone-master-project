@@ -103,6 +103,15 @@ class PcListner:
 
 
 def demo(pcd):
+
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("cuda active: ", torch.cuda.is_available())
+
+    #print(config.model)
+    model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
+    
+    
     if not os.path.isfile(model_file):
         rospy.loginfo("Downloading weights to ", model_file)
         urlretrieve(
@@ -110,14 +119,10 @@ def demo(pcd):
             downloads_path + "ResUNetBN2C-16feat-3conv.pth",
         )
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("cuda active: ", torch.cuda.is_available())
-
-    #print(config.model)
-    model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
     model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
     checkpoint = torch.load(model_file)
-        
+
+
     #checkpoint = torch.load(downloads_path + "ResUNetBN2C-16feat-3conv.pth")
     model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
     model.load_state_dict(checkpoint["state_dict"])
