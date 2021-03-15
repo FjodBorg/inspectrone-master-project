@@ -1,23 +1,24 @@
 #!/usr/bin/env python3.7
 import os
 import glob
+import numpy as np #NUMPY MUST COME BEFORE open3d
 import open3d
-import numpy as np
 import time
 
 from urllib.request import urlretrieve
+from util.visualization import get_colored_point_cloud_feature
 
 # deeplearning
 import model as mdl
 import torch
 import copy
 from util.misc import extract_features
-from util.visualization import get_colored_point_cloud_feature # needed on jetson, otherwise it cant render images
 
 # teaser
 import teaserpp_python
 from core.knn import find_knn_gpu
 from extra.helpers import *
+
 
 #ros related
 import rospy

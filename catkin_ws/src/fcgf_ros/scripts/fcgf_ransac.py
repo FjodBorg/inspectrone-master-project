@@ -4,8 +4,8 @@ import os
 import glob
 from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
-import open3d
 import numpy as np
+import open3d
 import time
 
 from urllib.request import urlretrieve

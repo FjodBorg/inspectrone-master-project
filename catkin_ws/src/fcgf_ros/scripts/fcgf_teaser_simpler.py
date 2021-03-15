@@ -1,6 +1,4 @@
 #!/usr/bin/env python3.7
-
-#which one is broken?
 import os
 import glob
 import numpy as np #NUMPY MUST COME BEFORE open3d
