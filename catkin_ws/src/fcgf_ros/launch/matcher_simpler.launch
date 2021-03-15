@@ -1,0 +1,13 @@
+<launch>
+    <node pkg="fcgf_ros" type="fcgf_teaser_simpler.py" name="fcgf" output="screen">
+    </node>
+
+	<node pkg="topic_tools" type="throttle" name="pointcloud_throttler" args="messages /mynteye/points/downsampled_xyz 1.0 /points_throttle" />
+
+    <!-- <node pkg="ply_publisher" type="ply_publisher" name="ply_publisher" output="screen">
+         <param name="file_path" value="$(find ply_publisher)/cfg/ballast_tank.ply" />
+         <param name="topic" value="/ballast_tank_ply" />
+         <param name="frame" value="/map" />
+         <param name="rate" value="1.0" />
+    </node> -->
+</launch>
