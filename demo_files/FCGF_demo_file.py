@@ -67,7 +67,16 @@ def demo(config):
 		voxel_size=config.voxel_size,
 		device=device,
 		skip_check=True)
-		
+
+	pcd = o3d.io.read_point_cloud('demo_clouds/cloud_bin_0.ply')
+	start_extraction_1 = time.time()
+	xyz_down, feature = extract_features(
+		model,
+		xyz=np.array(pcd.points),
+		voxel_size=config.voxel_size,
+		device=device,
+		skip_check=True)
+
 	start_extraction_2 = time.time()
 	xyz_down_map, feature_map = extract_features(
 		model,
@@ -83,7 +92,7 @@ def demo(config):
 	#  vis_pcd = get_colored_point_cloud_feature(vis_pcd,
 	#                                            feature.detach().cpu().numpy(),
 	#                                            config.voxel_size)
-	#  o3d.visualization.draw_geometries([vis_pcd])
+	#  o3d.visualization.draw([vis_pcd])
 	
 	ref = o3d.pipelines.registration.Feature()
 	#ref.data = (feature_map.detach().cpu().numpy().T)#.astype(np.float64)
@@ -124,7 +133,7 @@ def draw_registration_result(source, target, transformation):
 	source_temp.paint_uniform_color([1, 0.706, 0])
 	target_temp.paint_uniform_color([0, 0.651, 0.929])
 	source_temp.transform(transformation)
-	o3d.visualization.draw_geometries([source_temp, target_temp])
+	o3d.visualization.draw([source_temp, target_temp])
 
 
 if __name__ == '__main__':

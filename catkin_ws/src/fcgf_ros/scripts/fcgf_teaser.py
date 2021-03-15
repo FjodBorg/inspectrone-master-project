@@ -1,9 +1,6 @@
 #!/usr/bin/env python3.7
-import rospy
 import os
 import glob
-from sensor_msgs.msg import PointCloud2
-import sensor_msgs.point_cloud2 as pc2
 import open3d
 import numpy as np
 import time
@@ -21,6 +18,16 @@ import teaserpp_python
 from core.knn import find_knn_gpu
 from extra.helpers import *
 
+#ros related
+import rospy
+#import tf_conversions
+import tf
+import tf2_ros
+import geometry_msgs.msg
+import sensor_msgs.msg
+import sensor_msgs.point_cloud2 as pc2
+#from geometry_msgs.msg import PoseStamped
+
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
 HOME_path = os.getenv("HOME")
@@ -28,6 +35,7 @@ ply_filename = "ballast_tank.ply"
 catkin_ws_path = HOME_path + "/repos/inspectrone/catkin_ws/"
 downloads_path = catkin_ws_path + "downloads/"
 voxel_size = 0.05  # 0.025
+
 
 class PerformanceMetric:
     def __init__(self, parent=None):
@@ -116,7 +124,7 @@ class Main:
 
 
 class PcMatcher:
-    def __init__(self, parent=None):
+    def __init__(self, broadcaster, parent=None):
         rospy.loginfo("initialization Matching method")
         self.model, self.checkpoint, self.device = self.load_checkpoint()
         self.voxel_size = voxel_size
@@ -124,6 +132,7 @@ class PcMatcher:
         self.map_feat = open3d.pipelines.registration.Feature()
         self.pc = open3d.geometry.PointCloud()
         self.feat = open3d.pipelines.registration.Feature()
+        self.broadcaster = broadcaster
 
     def load_checkpoint(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -188,6 +197,7 @@ class PcMatcher:
             map_pc, self.map_feat = self.get_features(global_map)
 
             self.map_pc.points = open3d.utility.Vector3dVector(map_pc)
+            self.map_pc.paint_uniform_color([1, 0.706, 0])
             #self.map_feat.data = (map_feat.detach().cpu().numpy().T)#.astype(np.float64)
             metrics.stop_time("loading tank")
 
@@ -195,6 +205,7 @@ class PcMatcher:
         pc, self.feat = self.get_features(point_cloud)
 
         self.pc.points = open3d.utility.Vector3dVector(pc)
+        self.pc.paint_uniform_color([0, 0, 0])
         #self.feat.data = (feat.detach().cpu().numpy().T)#.astype(np.float64)
         metrics.stop_time("loading ply")
 
@@ -204,12 +215,28 @@ class PcMatcher:
 
 
         metrics.start_time("teaser")
+        
         corrs_A, corrs_B = self.find_correspondences(self.map_feat, self.feat, mutual_filter=True)
         A_xyz = self.pcd2xyz(self.map_pc)  # np array of size 3 by N
         B_xyz = self.pcd2xyz(self.pc)  # np array of size 3 by M
         A_corr = A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
         B_corr = B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
 
+        # finding lines for correlation
+        num_corrs = A_corr.shape[1]
+        points = np.concatenate((A_corr.T, B_corr.T), axis=0)
+
+        lines = []
+        for i in range(num_corrs):
+            lines.append([i, i + num_corrs])
+        colors = [[0, 1, 0] for i in range(len(lines))]  # lines are shown in green
+        line_set = open3d.geometry.LineSet(
+            points=open3d.utility.Vector3dVector(points),
+            lines=open3d.utility.Vector2iVector(lines),
+        )
+        line_set.colors = open3d.utility.Vector3dVector(colors)
+        open3d.visualization.draw([self.map_pc, self.pc, line_set])
+        
         #print(f"FCGF generates {num_corrs} putative correspondences.")
 
         # robust global registration using TEASER++
@@ -225,28 +252,15 @@ class PcMatcher:
         map_pcd_T_teaser = copy.deepcopy(self.map_pc).transform(T_teaser)
         metrics.stop_time("teaser")
         
-        # finding lines for correlation
-        num_corrs = A_corr.shape[1]
-        points = np.concatenate((A_corr.T, B_corr.T), axis=0)
-
-        lines = []
-        for i in range(num_corrs):
-            lines.append([i, i + num_corrs])
-        colors = [[0, 1, 0] for i in range(len(lines))]  # lines are shown in green
-        line_set = open3d.geometry.LineSet(
-            points=open3d.utility.Vector3dVector(points),
-            lines=open3d.utility.Vector2iVector(lines),
-        )
-        line_set.colors = open3d.utility.Vector3dVector(colors)
-        open3d.visualization.draw_geometries([self.map_pc, self.pc, line_set])
         # Visualize the registration results
-        open3d.visualization.draw_geometries([map_pcd_T_teaser, self.pc])
+        open3d.visualization.draw([map_pcd_T_teaser, self.pc])
         
 
 
 
         metrics.print_time(["loading tank", "loading ply", "teaser"])
 
+        self.broadcaster.T = T_teaser
         return T_teaser
 
     def find_correspondences(self, feats0, feats1, mutual_filter=True):
@@ -264,7 +278,7 @@ class PcMatcher:
         nns10 = find_knn_gpu(feats1, feats0, nn_max_n=250, knn=1, return_distance=False)
         # corres10_idx1 = torch.arange(len(nns10)).long().squeeze()
         # corres10_idx0 = nns10.long().squeeze()
-        corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
+        #corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
         corres10_idx0 = (nns10.long().squeeze()).detach().cpu().numpy()
         # corres10_idx1 = corres10_idx1.detach().cpu().numpy()
         # corres10_idx0 = corres10_idx0.detach().cpu().numpy()
@@ -314,7 +328,7 @@ class PcListner:
     def init_listener(self):
         rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()
         # rospy.Subscriber("/ballast_tank_ply", PointCloud2, self.callback)
-        rospy.Subscriber("/points_throttle", PointCloud2, self.callback)
+        rospy.Subscriber("/points_throttle", sensor_msgs.msg.PointCloud2, self.callback)
 
     def callback(self, points):
         self.pc = points
@@ -329,11 +343,63 @@ class PcListner:
         #print(glob.glob())
 
 
+class PoseBroadcaster:
+    def __init__(self):
+        self.T = None
+        self.p = geometry_msgs.msg.PoseStamped()
+        self.t = geometry_msgs.msg.TransformStamped()
+        self.br = tf2_ros.TransformBroadcaster()
+        self.pub = rospy.Publisher('teaser_pose', geometry_msgs.msg.PoseStamped, queue_size=10)
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tfListener = tf2_ros.TransformListener(self.tf_buffer)
+
+    def publish_pose(self):
+        time_now = rospy.Time.now()
+        self.t.header.stamp = time_now  # data.header.stamp
+        self.t.header.frame_id = "map"
+        self.t.child_frame_id = "imu_link"  # data.header.frame_id
+        self.t.transform.translation.x = self.T[0, 3]
+        self.t.transform.translation.y = self.T[1, 3]
+        self.t.transform.translation.z = self.T[2, 3]
+
+        R = self.T[0:3, 0:3]
+        q = tf_conversions.transformations.quaternion_from_matrix(R)
+    
+        self.t.transform.rotation.x = q[0]
+        self.t.transform.rotation.y = q[1]
+        self.t.transform.rotation.z = q[2]
+        self.t.transform.rotation.w = q[3]
+        
+        #while True:
+        self.br.sendTransform(self.t)
+
+        rospy.sleep(rospy.Duration(0.01)) # Wait a bit before trying for the lookup
+
+        try:
+            trans = self.tfBuffer.lookup_transform('map', 'imu_link', time_now)
+        except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+            print("tf Exception..")
+            return 0
+
+        self.p.header.stamp = time_now
+        self.p.header.frame_id = 'map'
+        self.p.pose.position.x = trans.transform.translation.x
+        self.p.pose.position.y = trans.transform.translation.y
+        self.p.pose.position.z = trans.transform.translation.z
+        # Make sure the quaternion is valid and normalized
+        self.p.pose.orientation.x = trans.transform.rotation.x
+        self.p.pose.orientation.y = trans.transform.rotation.y
+        self.p.pose.orientation.z = trans.transform.rotation.z
+        self.p.pose.orientation.w = trans.transform.rotation.w
+        self.pub.publish(self.p)
+
+
 if __name__ == "__main__":
     global metrics
     metrics = PerformanceMetric()
 
     listener = PcListner()
-    matcher = PcMatcher()
+    broadcaster = PoseBroadcaster()
+    matcher = PcMatcher(broadcaster)
     updater = Main(listener, matcher)
     rospy.spin()

@@ -126,7 +126,7 @@ def demo(config):
         lines=o3d.utility.Vector2iVector(lines),
     )
     line_set.colors = o3d.utility.Vector3dVector(colors)
-    o3d.visualization.draw_geometries([map_pcd, sensor_pcd, line_set])
+    o3d.visualization.draw([map_pcd, sensor_pcd, line_set])
 
     # robust global registration using TEASER++
     NOISE_BOUND = 0.01  # config.voxel_size
@@ -139,7 +139,7 @@ def demo(config):
 
     # Visualize the registration results
     map_pcd_T_teaser = copy.deepcopy(map_pcd).transform(T_teaser)
-    o3d.visualization.draw_geometries([map_pcd_T_teaser, sensor_pcd])
+    o3d.visualization.draw([map_pcd_T_teaser, sensor_pcd])
 
 
 if __name__ == "__main__":

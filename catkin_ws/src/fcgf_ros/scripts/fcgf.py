@@ -6,6 +6,7 @@ from sensor_msgs.msg import PointCloud2
 import sensor_msgs.point_cloud2 as pc2
 import open3d
 import numpy as np
+import time
 
 from urllib.request import urlretrieve
 
@@ -15,15 +16,39 @@ import torch
 import copy
 from util.misc import extract_features
 
+# teaser
+import teaserpp_python
+
 # make these into arguments for the launch file
 os.environ["OMP_NUM_THREADS"] = "12"
 HOME_path = os.getenv("HOME")
 ply_filename = "ballast_tank.ply"
 catkin_ws_path = HOME_path + "/repos/inspectrone/catkin_ws/"
 downloads_path = catkin_ws_path + "downloads/"
+voxel_size = 0.025
+
+class PerformanceMetric:
+    def __init__(self, parent=None):
+        self.timings = dict()
+
+    def start_time(self, name):
+        cur_time = time.time()
+        self.timings[name] = - cur_time  # negative means it hasen't got the second timing yet
+
+    def stop_time(self, name):
+        cur_time = time.time()
+        elapsed_time = self.timings[name]
+
+        self.timings[name] = cur_time + elapsed_time  # eleapsed time is negative
+
+    def print_time(self, names):
+
+        rospy.loginfo("printing metrics for: " + str(names))
+        for name in names:
+            print("{:20s} took: {:2.5f} sec".format(name, self.timings[name]))
 
 
-class Viewer:
+class Main:
     def __init__(self, listener, matcher, parent=None):
         self.listener = listener
         self.matcher = matcher
@@ -55,7 +80,7 @@ class Viewer:
         rospy.loginfo("rendering pointcloud #{}".format(self.prev_red_n))
         self.open3d_pc = open3d.geometry.PointCloud()
 
-        self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
+        self.open3d_pc.points = self.matcher.ros_to_open3d(self.listener.pc)
 
         transformation = self.matcher.find_transform(self.open3d_pc, self.open3d_map)
         self.open3d_pc.transform(transformation)
@@ -73,12 +98,13 @@ class Viewer:
         while not rospy.is_shutdown():
             if self.prev_red_n != self.listener.n:
                 self.prev_red_n = self.listener.n
-                self.open3d_pc.points = self.ros_to_open3d(self.listener.pc)
+                self.open3d_pc.points = self.matcher.ros_to_open3d(self.listener.pc)
                 #teest = copy.deepcopy(self.open3d_pc).translate((1.3*self.prev_red_n, 0, 0))
                 rospy.loginfo("Calculating transform")
-                #transformation = self.matcher.find_transform(self.open3d_pc, self.open3d_map)
-                #self.open3d_pc.transform(transformation)
-                #self.vis.update_geometry(self.open3d_pc)
+                
+                transformation = self.matcher.find_transform(self.open3d_pc, self.open3d_map)
+                self.open3d_pc.transform(transformation)
+                self.vis.update_geometry(self.open3d_pc)
                 rospy.loginfo("Rendering transformed pointcloud #{}".format(self.prev_red_n))
                 # self.vis.add_geometry(self.open3d_pc)
             self.vis.poll_events()
@@ -91,7 +117,7 @@ class PcMatcher:
     def __init__(self, parent=None):
         rospy.loginfo("initialization Matching method")
         self.model, self.checkpoint, self.device = self.load_checkpoint()
-        self.voxel_size = 0.025
+        self.voxel_size = voxel_size
         self.map_pc = open3d.geometry.PointCloud()
         self.map_feat = open3d.pipelines.registration.Feature()
         self.pc = open3d.geometry.PointCloud()
@@ -129,20 +155,26 @@ class PcMatcher:
 
     def find_transform(self, point_cloud, global_map):
         if len(self.map_pc.points) == 0:  # this depends if we have the whole global map or not
-            print("im here")
+            metrics.start_time("loading tank")
             map_pc, map_feat = self.get_features(global_map)
 
             self.map_pc.points = open3d.utility.Vector3dVector(map_pc)
             self.map_feat.data = (map_feat.detach().cpu().numpy().T)#.astype(np.float64)
+            metrics.stop_time("loading tank")
 
+        metrics.start_time("loading ply")
         pc, feat = self.get_features(point_cloud)
 
         self.pc.points = open3d.utility.Vector3dVector(pc)
         self.feat.data = (feat.detach().cpu().numpy().T)#.astype(np.float64)
-
+        metrics.stop_time("loading ply")
         # print(self.pc, "\n", self.map_pc, "\n")
         # print(self.feat, "\n", self.map_feat, "\n\n")
+        metrics.start_time("ransac")
         result_ransac = self.execute_global_registration(self.pc, self.map_pc, self.feat, self.map_feat, self.voxel_size)
+        metrics.stop_time("ransac")
+
+        metrics.print_time(["loading tank", "loading ply", "ransac"])
 
         return result_ransac.transformation
 
@@ -163,6 +195,14 @@ class PcMatcher:
                     distance_threshold)
             ], open3d.pipelines.registration.RANSACConvergenceCriteria(4000000, 500))
         return result
+
+    def ros_to_open3d(self, pc_ros):
+        # convert to xyz point cloud
+        pc_xyz = pc2.read_points(
+            pc_ros, skip_nans=True, field_names=("x", "y", "z")
+        )
+        # convert to open3d point cloud
+        return open3d.utility.Vector3dVector(pc_xyz)
 
 class PcListner:
     def __init__(self):
@@ -190,7 +230,10 @@ class PcListner:
 
 
 if __name__ == "__main__":
+    global metrics
+    metrics = PerformanceMetric()
+
     listener = PcListner()
     matcher = PcMatcher()
-    updater = Viewer(listener, matcher)
+    updater = Main(listener, matcher)
     rospy.spin()
