@@ -2,42 +2,19 @@
 import os
 import numpy as np #NUMPY MUST COME BEFORE open3d
 import open3d
-import time
 
-from urllib.request import urlretrieve
-from util.visualization import get_colored_point_cloud_feature
-
-# deeplearning
-import model as mdl
-import torch
 import copy
-from util.misc import extract_features
 
-# teaser
-import teaserpp_python
-from core.knn import find_knn_gpu
-
-
-#ros related
+# ros related
 import rospy
-#import tf_conversions
-import tf
-import tf2_ros
-import geometry_msgs.msg
-import sensor_msgs.msg
-import sensor_msgs.point_cloud2 as pc2
-#from geometry_msgs.msg import PoseStamped
 
-#custom modules
+# custom modules
 from extra import extensions, listeners, matching_helpers, essentials
 
-# make these into arguments for the launch file
-HOME_path = os.getenv("HOME")
-catkin_ws_path = HOME_path + "/repos/inspectrone/catkin_ws/"
-downloads_path = catkin_ws_path + "downloads/"
 
-
-def demo(pcd):
+def demo(listener):
+    pcd = open3d.geometry.PointCloud()
+    pcd.points = matcher.ros_to_open3d(listener.pc)
     metrics.start_time("loading tank")
     # TODO find out why ballast_tank.ply is bad and ply_ballast_tank.ply is good
     #  pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
@@ -82,18 +59,6 @@ def demo(pcd):
     open3d.visualization.draw([map_pcd_T_teaser, sensor_pcd])
 
 
-
-
-
-def ros_to_open3d(pc_ros):
-    # convert to xyz point cloud
-    pc_xyz = pc2.read_points(
-        pc_ros, skip_nans=True, field_names=("x", "y", "z")
-    )
-    # convert to open3d point cloud
-    return open3d.utility.Vector3dVector(pc_xyz)
-
-
 if __name__ == "__main__":
 
     global metrics, matcher
@@ -102,7 +67,7 @@ if __name__ == "__main__":
     listener = listeners.PointCloudListener(config)
     matcher = matching_helpers.Matcher(config)
 
-    open3d_pc = open3d.geometry.PointCloud()
+    
     prev_red_n = None  # yes because "red" is written read :)
 
     #  updater = Main(listener)
@@ -114,13 +79,11 @@ if __name__ == "__main__":
     prev_red_n = listener.n
 
     rospy.loginfo("rendering pointcloud #{}".format(prev_red_n))
-    
-    open3d_pc.points = ros_to_open3d(listener.pc)
-    demo(open3d_pc)
+
+    demo(listener)
 
     while not rospy.is_shutdown():
         if prev_red_n != listener.n:
-            open3d_pc.points = ros_to_open3d(listener.pc)
-            demo(open3d_pc)
+            demo(listener)
 
     rospy.spin()

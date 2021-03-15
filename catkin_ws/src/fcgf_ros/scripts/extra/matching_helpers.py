@@ -3,26 +3,21 @@ import os
 import numpy as np
 import open3d
 import rospy
+import sensor_msgs.point_cloud2 as pc2
 
 # pytorch
 import model as mdl
 import torch
 from util.misc import extract_features
+from urllib.request import urlretrieve
 
 # teaser
 from core.knn import find_knn_gpu
 from extra.helpers import get_teaser_solver, Rt2T
 
-downloads_path = ""
-voxel_size = 0
 
-
-class Matcher():
+class MatcherBase():
     def __init__(self, config):
-        self.config = config
-        self.voxel_size = config.voxel_size
-        
-        self.pcd_map = self._load_static_ply(config)
         self.model, self.device = self._load_model(config)
 
     def _load_model(self, config):
@@ -32,13 +27,13 @@ class Matcher():
         rospy.loginfo("resnet location at: " + config.model)
 
         if not os.path.isfile(config.model):
-            if not os.path.exists(config.path.do):
-                os.makedirs(downloads_path)
+            if not os.path.exists(config.paths.downloads):
+                os.makedirs(config.path.downloads)
             
-            rospy.loginfo("Downloading weights to ", config.model)
+            rospy.loginfo("Downloading weights to " + config.model)
             urlretrieve(
                 "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
-                downloads_path + "ResUNetBN2C-16feat-3conv.pth",
+                config.paths.downloads + "ResUNetBN2C-16feat-3conv.pth",
             )
 
         checkpoint = torch.load(config.model)
@@ -56,6 +51,14 @@ class Matcher():
 
     def get_map(self):
         return self.pcd_map
+
+class Matcher(MatcherBase):
+    def __init__(self, config):
+        self.config = config
+        self.voxel_size = config.voxel_size
+        MatcherBase.__init__(self, config)
+
+        self.pcd_map = self._load_static_ply(config)
 
     #def load_ply(self, config)
 
@@ -96,6 +99,14 @@ class Matcher():
     
     def pcd2xyz(self, pcd):
         return np.asarray(pcd.points).T
+
+    def ros_to_open3d(self, pc_ros):
+        # convert to xyz point cloud
+        pc_xyz = pc2.read_points(
+            pc_ros, skip_nans=True, field_names=("x", "y", "z")
+        )
+        # convert to open3d point cloud
+        return open3d.utility.Vector3dVector(pc_xyz)
 
     def convert_correspondences(self, map_pcd, sensor_pcd, corrs_A, corrs_B):
         np_A_xyz = self.pcd2xyz(map_pcd)  # np array of size 3 by N
