@@ -1,34 +1,14 @@
 #!/usr/bin/env python3.7
-import os
-import numpy as np
-import argparse
-import copy
-import open3d
-import open3d as o3d
-import time
-
-from urllib.request import urlretrieve
-from util.visualization import get_colored_point_cloud_feature
-from util.misc import extract_features
-from core.knn import find_knn_gpu
-
-from extra.helpers import *
-
-from model.resunet import ResUNetBN2C
-import model as mdl
-
-import torch
-import teaserpp_python
-
 
 #which one is broken?
 import os
 import glob
+import numpy as np #NUMPY MUST COME BEFORE open3d
 import open3d
-import numpy as np
 import time
 
 from urllib.request import urlretrieve
+from util.visualization import get_colored_point_cloud_feature
 
 # deeplearning
 import model as mdl
@@ -51,6 +31,7 @@ import geometry_msgs.msg
 import sensor_msgs.msg
 import sensor_msgs.point_cloud2 as pc2
 #from geometry_msgs.msg import PoseStamped
+
 
 
 HOME_path = os.getenv("HOME")
