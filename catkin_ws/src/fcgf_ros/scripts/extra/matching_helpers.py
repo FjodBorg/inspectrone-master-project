@@ -19,9 +19,12 @@ voxel_size = 0
 class Matcher():
     def __init__(self, config):
         self.config = config
-        self.model, self.device = self.load_model(config)
+        self.voxel_size = config.voxel_size
+        
+        self.pcd_map = self._load_static_ply(config)
+        self.model, self.device = self._load_model(config)
 
-    def load_model(self, config):
+    def _load_model(self, config):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         rospy.loginfo("Using Cuda: " + str(torch.cuda.is_available()))
         #  model_file = downloads_path + "ResUNetBN2C-16feat-3conv.pth"
@@ -45,6 +48,16 @@ class Matcher():
         model = model.to(device)
 
         return model, device
+
+    def _load_static_ply(self, config):
+        pcd_map = open3d.io.read_point_cloud(config.static_ply)
+        return pcd_map
+
+    def get_map(self):
+        return self.pcd_map
+
+    #def load_ply(self, config)
+
 
     def get_features(self, point_cloud):
         xyz_down, feature = extract_features(

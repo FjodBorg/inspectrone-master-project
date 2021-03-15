@@ -4,7 +4,7 @@ import rospy
 
 
 class Config:
-    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="ballast_tank.ply"):
+    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="ballast_tank.ply", topic_ply="/points_throttle"):
         """A simple config function"""
         '''
         
@@ -18,25 +18,28 @@ class Config:
             name of the model inside <inspectrone>/catkin_ws/downloads
         static_ply_name : str
             name of the .ply file inside <inspectrone>/catkin_ws/src/ply_publisher/cfg/
+        topic_ply : str
+            name of the .ply file inside <inspectrone>/catkin_ws/src/ply_publisher/cfg/
         '''
-        self.path = self.Paths(repos_dir)
+        self.paths = self._Paths(repos_dir)
         self.voxel_size = voxel_size
-        self.model = self.path.downloads + model_name
-        self.static_ply = self.path.plys + static_ply_name
+        self.model = self.paths.downloads + model_name
+        self.static_ply = self.paths.plys + static_ply_name
+        self.topic_ply = topic_ply
         os.environ["OMP_NUM_THREADS"] = "12"
 
-    class Paths:
+    class _Paths:
         def __init__(self, repos_dir):
             self.home = os.getenv("HOME")+"/"
             self.repos = self.home + repos_dir
             self.catkin_ws = self.repos + "catkin_ws/"
             self.downloads = self.catkin_ws + "downloads/"
             self.plys = self.catkin_ws + "downloads/src/ply_publisher/cfg/"
-            self.verify_path(self.repos)
-            self.verify_path(self.catkin_ws)
-            self.verify_path(self.downloads)
+            self._verify_path(self.repos)
+            self._verify_path(self.catkin_ws)
+            self._verify_path(self.downloads)
 
-        def verify_path(self, path):
+        def _verify_path(self, path):
             if not os.path.exists(path):
                 shutdown_reason = "Terminating node:  Path " + path + " does not exist. Look into config file to specify directories"
                 colored_reason = "\n\n\x1b[1;37;41m" + shutdown_reason + "\x1b[0m\n\n"

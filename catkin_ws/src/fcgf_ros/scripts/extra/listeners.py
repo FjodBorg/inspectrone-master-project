@@ -6,11 +6,12 @@ import open3d
 
 
 class PointCloudListener:
+    # TODO make dem all depend on config
     def __init__(self, config):
         self.pc = None
         self.n = 0
         self.init_listener()
-        self.map = self.find_ply(config.path.catkin_ws, config.static_ply)
+        self.map = self.find_ply(config.paths.catkin_ws, config.static_ply)
 
     def init_listener(self):
         rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()

@@ -116,13 +116,7 @@ def demo(pcd):
     metrics.stop_time("loading tank")
 
     metrics.start_time("processing tank")
-    xyz_down_map, feature_map = extract_features(
-        model,
-        xyz=np.array(pcd_map.points),
-        voxel_size=voxel_size,
-        device=device,
-        skip_check=True,
-    )
+    xyz_down_map, feature_map = matcher.get_features(pcd_map)
 
     map_pcd = open3d.geometry.PointCloud()
     map_pcd.points = open3d.utility.Vector3dVector(xyz_down_map)
@@ -132,13 +126,7 @@ def demo(pcd):
 
     metrics.start_time("processing scan")
     #pcd = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"sensor_tank1.ply")
-    xyz_down, feature = extract_features(
-        model,
-        xyz=np.array(pcd.points),
-        voxel_size=voxel_size,
-        device=device,
-        skip_check=True,
-    )
+    xyz_down, feature = matcher.get_features(pcd)
     sensor_pcd = open3d.geometry.PointCloud()
     sensor_pcd.points = open3d.utility.Vector3dVector(xyz_down)
     sensor_pcd.paint_uniform_color([0, 0, 0])
