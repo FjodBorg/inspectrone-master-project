@@ -178,3 +178,45 @@ class Matcher(MatcherStatics, MatcherHelper):
         t_teaser = solution.translation
         T_teaser = Rt2T(R_teaser, t_teaser)
         return T_teaser
+
+
+class MatcherRansac(Matcher):
+    def __init__(self, config, listener):
+        Matcher.__init__(self, config, listener)
+        self.pcd_map_features_cpu = None
+        self.pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
+        self.voxel_size = config.voxel_size
+
+    def find_transform(self, source_down, target_down, source_fpfh, target_fpfh):
+        if self.pcd_map_features_cpu is None:
+            self.pcd_map_features_cpu = open3d.pipelines.registration.Feature()
+            self.pcd_map_features_cpu.data = (target_fpfh.detach().cpu().numpy().T)#.astype(np.float64)
+
+        self.pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
+        self.pcd_scan_features_cpu.data = (source_fpfh.detach().cpu().numpy().T)#.astype(np.float64)
+        # print(self.pc, "\n", self.map_pc, "\n")
+        # print(self.feat, "\n", self.map_feat, "\n\n")
+        result_ransac = self.execute_global_registration(source_down, target_down, self.pcd_scan_features_cpu, self.pcd_map_features_cpu)
+
+        return result_ransac.transformation
+
+    def execute_global_registration(self, source_down, target_down, source_fpfh,
+                                target_fpfh):
+        distance_threshold = self.voxel_size * 0.4
+        # print(":: RANSAC registration on downsampled point clouds.")
+        # print("   Since the downsampling voxel size is %.3f," % voxel_size)
+        # print("   we use the distance threshold %.3f." % distance_threshold)
+        print(type(source_down),type(target_down),type(source_fpfh),type(target_fpfh))
+        result = open3d.pipelines.registration.registration_ransac_based_on_feature_matching(
+            source_down, target_down, source_fpfh, target_fpfh, True,
+            distance_threshold,
+            open3d.pipelines.registration.TransformationEstimationPointToPoint(False),
+            4, [
+                open3d.pipelines.registration.CorrespondenceCheckerBasedOnEdgeLength(
+                    0.9),
+                open3d.pipelines.registration.CorrespondenceCheckerBasedOnDistance(
+                    distance_threshold)
+            ], open3d.pipelines.registration.RANSACConvergenceCriteria(4000000, 500))
+        
+        return result
+    

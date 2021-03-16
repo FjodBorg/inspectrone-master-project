@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="fcgf_ros" type="fcgf_teaser_simple.py" name="fcgf" output="screen">
+    <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen">
     </node>
 
 	<node pkg="topic_tools" type="throttle" name="pointcloud_throttler" args="messages /mynteye/points/downsampled_xyz 1.0 /points_throttle" />

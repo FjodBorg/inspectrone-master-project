@@ -4,7 +4,7 @@ import rospy
 
 
 class Config:
-    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="pcl_ballast_tank.ply", topic_ply="/points_throttle"):
+    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="pcl_ballast_tank.ply", topic_ply="/points_throttle", USE_RANSAC=False):
         """A simple config function"""
         '''
         
@@ -26,6 +26,7 @@ class Config:
         self.model = self.paths.downloads + model_name
         self.static_ply = self.paths.plys + static_ply_name
         self.topic_ply = topic_ply
+        self.USE_RANSAC = USE_RANSAC
         os.environ["OMP_NUM_THREADS"] = "12"
 
     class _Paths:
