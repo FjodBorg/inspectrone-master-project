@@ -49,20 +49,18 @@ def demo():
         T_teaser = matcher.find_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
         metrics.stop_time("calculating transform")
 
-        metrics.print_all_timings()
-        # Visualize the registration results
-        map_pcd_down_T_teaser = copy.deepcopy(pcd_map_down).transform(T_teaser)
-        #open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
-        open3d.visualization.draw([map_pcd_down_T_teaser, pcd_scan_down])
-
     else:
         metrics.start_time("calculating transform")
         T_teaser = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
         metrics.stop_time("calculating transform")
-        
-        metrics.print_all_timings()
-        # Visualize the registration results
-        map_pcd_down_T_teaser = copy.deepcopy(pcd_map_down).transform(T_teaser)
+
+    metrics.start_time("apply transform")
+    map_pcd_down_T_teaser = copy.deepcopy(pcd_map_down).transform(T_teaser)
+    metrics.stop_time("apply transform")       
+
+    metrics.print_all_timings()
+    # Visualize the registration results
+    if (config.visualize is True):
         #open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
         open3d.visualization.draw([map_pcd_down_T_teaser, pcd_scan_down])
 
@@ -75,7 +73,9 @@ if __name__ == "__main__":
         model_name="ResUNetBN2C-16feat-3conv.pth",
         static_ply_name="pcl_ballast_tank.ply",
         topic_ply="/points_throttle",
-        USE_RANSAC=False
+        USE_RANSAC=False,
+        visualize=False
+        
     )
 
     metrics = extensions.PerformanceMetrics()
