@@ -27,11 +27,12 @@ def demo():
     pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)
     metrics.stop_time("processing scan")
 
-    if config.USE_RANSAC is False:
+    if config.teaser is True:
         metrics.start_time("finding correspondences")
         corrs_A, corrs_B = matcher.find_correspondences(
             map_features, scan_features, mutual_filter=True
         )
+        rospy.loginfo("correspondences: " + str(len(corrs_A)) + " " + str(len(corrs_B)))
         metrics.stop_time("finding correspondences")
 
         metrics.start_time("converting correspondences")
@@ -56,12 +57,12 @@ def demo():
 
     metrics.start_time("apply transform")
     map_pcd_down_T_teaser = copy.deepcopy(pcd_map_down).transform(T_teaser)
-    metrics.stop_time("apply transform")       
+    metrics.stop_time("apply transform")
 
     metrics.print_all_timings()
     # Visualize the registration results
     if (config.visualize is True):
-        #open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+        # open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
         open3d.visualization.draw([map_pcd_down_T_teaser, pcd_scan_down])
 
 if __name__ == "__main__":
@@ -71,19 +72,21 @@ if __name__ == "__main__":
         repos_dir="repos/inspectrone/",
         voxel_size=0.05,
         model_name="ResUNetBN2C-16feat-3conv.pth",
-        static_ply_name="pcl_ballast_tank.ply",
+        static_ply_name="pcl_ballast_tank.ply",  # pcl is incomplete
         topic_ply="/points_throttle",
-        USE_RANSAC=False,
-        visualize=False
-        
+        teaser=True,  # TODO try with ICP
+        visualize=True
     )
 
     metrics = extensions.PerformanceMetrics()
     listener = listeners.PointCloudListener(config)
-    if config.USE_RANSAC is True:
-        matcher = matching_helpers.MatcherRansac(config, listener)
-    else:
+    # if config.visualize is True:
+    #     matcher = matching_helpers.MatcherVisualizer(config, listener)
+    # else:
+    if config.teaser is True:
         matcher = matching_helpers.Matcher(config, listener)
+    else:
+        matcher = matching_helpers.MatcherRansac(config, listener)
 
     #  updater = Main(listener)
     rospy.loginfo("start")

@@ -15,6 +15,8 @@ from urllib.request import urlretrieve
 from core.knn import find_knn_gpu
 from extra.helpers import get_teaser_solver, Rt2T
 
+# custom
+from extra import extensions
 
 class MatcherStatics():
     def __init__(self, config):
@@ -36,6 +38,7 @@ class MatcherStatics():
             if not os.path.exists(config.paths.downloads):
                 os.makedirs(config.path.downloads)
             
+            #  TODO 32 features, download the one rune gave you. Its easier (3conv size)
             rospy.loginfo("Downloading weights to " + config.model)
             urlretrieve(
                 "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
@@ -120,7 +123,8 @@ class Matcher(MatcherStatics, MatcherHelper):
         return pcd_down, features
 
     def find_correspondences(self, feats0, feats1, mutual_filter=True):
-        nns01 = find_knn_gpu(feats0, feats1, nn_max_n=250, knn=1, return_distance=False)
+        nn_max_n = 25  # 250 # TODO if gpu memory is problem
+        nns01 = find_knn_gpu(feats0, feats1, nn_max_n=nn_max_n, knn=1, return_distance=False)
         # corres01_idx0 = (torch.arange(len(nns01))
         # corres01_idx1 = (nns01.long().squeeze())
         corres01_idx0 = (torch.arange(len(nns01)).long().squeeze()).detach().cpu().numpy()
@@ -131,7 +135,7 @@ class Matcher(MatcherStatics, MatcherHelper):
         if not mutual_filter:
             return corres01_idx0, corres01_idx1
 
-        nns10 = find_knn_gpu(feats1, feats0, nn_max_n=250, knn=1, return_distance=False)
+        nns10 = find_knn_gpu(feats1, feats0, nn_max_n=nn_max_n, knn=1, return_distance=False)
         # corres10_idx1 = torch.arange(len(nns10)).long().squeeze()
         # corres10_idx0 = nns10.long().squeeze()
         # corres10_idx1 = (torch.arange(len(nns10)).long().squeeze()).detach().cpu().numpy()
@@ -171,6 +175,8 @@ class Matcher(MatcherStatics, MatcherHelper):
 
     def find_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
         # robust global registration using TEASER++
+        # Noise_bound is roughly voxel_size
+        # sometimes if downsample is extreme noisebound should probably be smaller
         teaser_solver = get_teaser_solver(NOISE_BOUND)
         teaser_solver.solve(np_corrs_A, np_corrs_B)
         solution = teaser_solver.getSolution()
@@ -206,7 +212,7 @@ class MatcherRansac(Matcher):
         # print(":: RANSAC registration on downsampled point clouds.")
         # print("   Since the downsampling voxel size is %.3f," % voxel_size)
         # print("   we use the distance threshold %.3f." % distance_threshold)
-        print(type(source_down),type(target_down),type(source_fpfh),type(target_fpfh))
+        # print(type(source_down),type(target_down),type(source_fpfh),type(target_fpfh))
         result = open3d.pipelines.registration.registration_ransac_based_on_feature_matching(
             source_down, target_down, source_fpfh, target_fpfh, True,
             distance_threshold,
@@ -220,3 +226,27 @@ class MatcherRansac(Matcher):
         
         return result
     
+
+class MatcherVisualizer:
+    def __init__(self, config, listener):
+        if config.teaser is True:
+            self.matcher = Matcher(config, listener)
+        else:
+            self.matcher = MatcherRansac(config, listener)
+
+        self.metrics = extensions.PerformanceMetrics()
+        self.pcd_map_features_cpu = None
+        self.pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
+        self.voxel_size = config.voxel_size
+
+    def find_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
+        # robust global registration using TEASER++
+        # Noise_bound is roughly voxel_size
+        # sometimes if downsample is extreme noisebound should probably be smaller
+        teaser_solver = get_teaser_solver(NOISE_BOUND)
+        teaser_solver.solve(np_corrs_A, np_corrs_B)
+        solution = teaser_solver.getSolution()
+        R_teaser = solution.rotation
+        t_teaser = solution.translation
+        T_teaser = Rt2T(R_teaser, t_teaser)
+        return T_teaser
