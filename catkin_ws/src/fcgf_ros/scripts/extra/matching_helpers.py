@@ -12,21 +12,23 @@ from util.misc import extract_features
 from urllib.request import urlretrieve
 
 # teaser
+import teaserpp_python
 from core.knn import find_knn_gpu
-from extra.helpers import get_teaser_solver, Rt2T
+#from extra.helpers import get_teaser_solver, Rt2T
 
 # custom
 from extra import extensions
 
-class MatcherStatics():
-    def __init__(self, config):
-        self.config = config
-        self.voxel_size = config.voxel_size
-        self.model, self.device = self._load_model(config)
-        self.pcd_map = open3d.geometry.PointCloud()
-        self.pcd_scan = open3d.geometry.PointCloud()
 
-        self.pcd_map = self._load_static_ply(config)
+class MatcherBase():
+    def __init__(self, config):
+        self._config = config
+        self._voxel_size = config.voxel_size
+        self._model, self.device = self._load_model(config)
+        self._pcd_map = open3d.geometry.PointCloud()
+        self._pcd_scan = open3d.geometry.PointCloud()
+
+        self._pcd_map = self._load_static_ply(config)
 
     def _load_model(self, config):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -58,10 +60,20 @@ class MatcherStatics():
         pcd_map = open3d.io.read_point_cloud(config.static_ply)
         return pcd_map
 
+    def _load_topic_ply_points(self):
+        pcd_scan = self.ros_to_open3d(self._listener.pc)
+        return pcd_scan
 
-class MatcherHelper():
-    def __init__(self, listener):
-        self.listener = listener
+
+class MatcherHelper(MatcherBase):
+    def __init__(self, config, listener):
+        super().__init__(config)  # init parent attributes
+
+        # init extra attributes for downsampling and features
+        self._listener = listener 
+        self._pcd_map_down = open3d.geometry.PointCloud()
+        self._pcd_scan_down = open3d.geometry.PointCloud()
+        self._pcd_map_features = None
 
     def pcd2xyz(self, pcd):
         return np.asarray(pcd.points).T
@@ -74,53 +86,80 @@ class MatcherHelper():
         # convert to open3d point cloud
         return open3d.utility.Vector3dVector(pc_xyz)
 
-    def _load_topic_ply_points(self):
-        pcd_scan = self.ros_to_open3d(self.listener.pc)
-        return pcd_scan
-
     def get_map(self):
-        return self.pcd_map
+        return self._pcd_map
 
     def get_scan(self):
-        self.pcd_scan.points = self._load_topic_ply_points()
-        return self.pcd_scan
+        self._pcd_scan.points = self._load_topic_ply_points()
+        return self._pcd_scan
 
     def get_xyz_features(self, point_cloud):
         xyz_down, feature = extract_features(
-            self.model,
+            self._model,
             xyz=np.array(point_cloud.points),
-            voxel_size=self.voxel_size,
+            voxel_size=self._voxel_size,
             device=self.device,
             skip_check=True)
         return xyz_down, feature
 
-
-class Matcher(MatcherStatics, MatcherHelper):
-    def __init__(self, config, listener):
-        MatcherStatics.__init__(self, config)  # init parent attributes
-        MatcherHelper.__init__(self, listener)  # init parent attributes
-        self.pcd_map_down = open3d.geometry.PointCloud()
-        self.pcd_scan_down = open3d.geometry.PointCloud()
-        self.pcd_map_features = None
-
     def get_open3d_features(self, point_cloud):
         '''Same as get_xyz_features, just with pcd in open3d format'''
-        if point_cloud == self.pcd_map:  # if same reference as map
-            pcd_down = self.pcd_map_down  # get reference to map
-            if self.pcd_map_features is None:
+        if point_cloud == self._pcd_map:  # if same reference as map
+            pcd_down = self._pcd_map_down  # get reference to map
+            if self._pcd_map_features is None:
                 # if no features has been calcualted yet
-                xyz_down, self.pcd_map_features = self.get_xyz_features(point_cloud)
+                xyz_down, self._pcd_map_features = self.get_xyz_features(point_cloud)
                 pcd_down.points = open3d.utility.Vector3dVector(xyz_down)
                 pcd_down.paint_uniform_color([1, 0.706, 0])
                 
             # use features that was calculated
-            features = self.pcd_map_features
+            features = self._pcd_map_features
         else:
-            pcd_down = self.pcd_scan_down  # get reference to scan
+            pcd_down = self._pcd_scan_down  # get reference to scan
             xyz_down, features = self.get_xyz_features(point_cloud)
             pcd_down.points = open3d.utility.Vector3dVector(xyz_down)
             pcd_down.paint_uniform_color([0, 0, 0])
         return pcd_down, features
+
+    def apply_transform(self, source, T):
+        return source.transform(T)
+
+    def eval(self):
+        print("add_metrics is set to:", self._config.add_metrics)
+        pass
+        #self.metrics.print_all_timings()
+
+    def reset_eval(self):
+        print("add_metrics is set to:", self._config.add_metrics)
+        pass
+        #self.metrics.reset()
+
+    # TODO raise errors if functions aren't defined
+
+
+class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
+    def Rt2T(self, R,t):
+        T = np.identity(4)
+        T[:3,:3] = R
+        T[:3,3] = t
+        return T
+
+    def get_teaser_solver(self, noise_bound):
+        solver_params = teaserpp_python.RobustRegistrationSolver.Params()
+        solver_params.cbar2 = 1.0
+        solver_params.noise_bound = noise_bound
+        solver_params.estimate_scaling = False
+        solver_params.inlier_selection_mode = \
+            teaserpp_python.RobustRegistrationSolver.INLIER_SELECTION_MODE.PMC_EXACT
+        solver_params.rotation_tim_graph = \
+            teaserpp_python.RobustRegistrationSolver.INLIER_GRAPH_FORMULATION.CHAIN
+        solver_params.rotation_estimation_algorithm = \
+            teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
+        solver_params.rotation_gnc_factor = 1.4
+        solver_params.rotation_max_iterations = 10000
+        solver_params.rotation_cost_threshold = 1e-16
+        solver = teaserpp_python.RobustRegistrationSolver(solver_params)
+        return solver
 
     def find_correspondences(self, feats0, feats1, mutual_filter=True):
         nn_max_n = 25  # 250 # TODO if gpu memory is problem
@@ -173,42 +212,53 @@ class Matcher(MatcherStatics, MatcherHelper):
         line_set.colors = open3d.utility.Vector3dVector(colors)
         return line_set
 
-    def find_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
+    def calc_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
         # robust global registration using TEASER++
         # Noise_bound is roughly voxel_size
         # sometimes if downsample is extreme noisebound should probably be smaller
-        teaser_solver = get_teaser_solver(NOISE_BOUND)
+        teaser_solver = self.get_teaser_solver(NOISE_BOUND)
         teaser_solver.solve(np_corrs_A, np_corrs_B)
         solution = teaser_solver.getSolution()
         R_teaser = solution.rotation
         t_teaser = solution.translation
-        T_teaser = Rt2T(R_teaser, t_teaser)
+        T_teaser = self.Rt2T(R_teaser, t_teaser)
         return T_teaser
 
+    def find_transform_generic(self, source_down, target_down, source_fpfh, target_fpfh):
+        corrs_A, corrs_B = self.find_correspondences(
+            source_fpfh, target_fpfh, mutual_filter=True
+        )
+        np_corrs_A, np_corrs_B = self.convert_correspondences(
+            source_down, target_down, corrs_A, corrs_B
+        )
+        #line_set = self.draw_correspondences(np_corrs_A, np_corrs_B)
+        return self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
 
-class MatcherRansac(Matcher):
+class MatcherRansac(MatcherHelper):
     def __init__(self, config, listener):
-        Matcher.__init__(self, config, listener)
-        self.pcd_map_features_cpu = None
-        self.pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
-        self.voxel_size = config.voxel_size
+        MatcherHelper.__init__(self, config, listener)  # init parent attributes
+
+        # init extra attributes for ransac
+        self._pcd_map_features_cpu = None  
+        self._pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
+        self._voxel_size = config.voxel_size
 
     def find_transform(self, source_down, target_down, source_fpfh, target_fpfh):
-        if self.pcd_map_features_cpu is None:
-            self.pcd_map_features_cpu = open3d.pipelines.registration.Feature()
-            self.pcd_map_features_cpu.data = (target_fpfh.detach().cpu().numpy().T)#.astype(np.float64)
+        if self._pcd_map_features_cpu is None:
+            self._pcd_map_features_cpu = open3d.pipelines.registration.Feature()
+            self._pcd_map_features_cpu.data = (target_fpfh.detach().cpu().numpy().T)#.astype(np.float64)
 
-        self.pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
-        self.pcd_scan_features_cpu.data = (source_fpfh.detach().cpu().numpy().T)#.astype(np.float64)
+        self._pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
+        self._pcd_scan_features_cpu.data = (source_fpfh.detach().cpu().numpy().T)#.astype(np.float64)
         # print(self.pc, "\n", self.map_pc, "\n")
         # print(self.feat, "\n", self.map_feat, "\n\n")
-        result_ransac = self.execute_global_registration(source_down, target_down, self.pcd_scan_features_cpu, self.pcd_map_features_cpu)
+        result_ransac = self.execute_global_registration(source_down, target_down, self._pcd_scan_features_cpu, self._pcd_map_features_cpu)
 
         return result_ransac.transformation
 
     def execute_global_registration(self, source_down, target_down, source_fpfh,
                                 target_fpfh):
-        distance_threshold = self.voxel_size * 0.4
+        distance_threshold = self._voxel_size * 0.4
         # print(":: RANSAC registration on downsampled point clouds.")
         # print("   Since the downsampling voxel size is %.3f," % voxel_size)
         # print("   we use the distance threshold %.3f." % distance_threshold)
@@ -225,28 +275,68 @@ class MatcherRansac(Matcher):
             ], open3d.pipelines.registration.RANSACConvergenceCriteria(4000000, 500))
         
         return result
-    
 
-class MatcherVisualizer:
-    def __init__(self, config, listener):
-        if config.teaser is True:
-            self.matcher = Matcher(config, listener)
-        else:
-            self.matcher = MatcherRansac(config, listener)
+    def find_transform_generic(self, *args):
+        return self.find_transform(*args)
 
+# append print statements to already defined functions from parent
+class _MatcherAddMetrics(MatcherTeaser, MatcherRansac):
+    def __init__(self, _parent, config, listener):
+        # create a child instance with _parent as parent
+        self.matcher = _parent.__class__
+        self.matcher.__init__(self, config, listener)
         self.metrics = extensions.PerformanceMetrics()
-        self.pcd_map_features_cpu = None
-        self.pcd_scan_features_cpu = open3d.pipelines.registration.Feature()
-        self.voxel_size = config.voxel_size
 
-    def find_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
-        # robust global registration using TEASER++
-        # Noise_bound is roughly voxel_size
-        # sometimes if downsample is extreme noisebound should probably be smaller
-        teaser_solver = get_teaser_solver(NOISE_BOUND)
-        teaser_solver.solve(np_corrs_A, np_corrs_B)
-        solution = teaser_solver.getSolution()
-        R_teaser = solution.rotation
-        t_teaser = solution.translation
-        T_teaser = Rt2T(R_teaser, t_teaser)
-        return T_teaser
+    def find_transform_generic(self, *args, **kwargs):  # define new find_transform
+        self.metrics.start_time("finding transform")
+        # since find_transform_generic calls parent funtions it needs to be super() and not self
+        T = self.matcher.find_transform_generic(super(), *args, **kwargs)  # call parent function
+        self.metrics.stop_time("finding transform")
+        return T
+
+    def convert_correspondences(self, *args):
+        self.metrics.start_time("converting correspondences")
+        corrs = self.matcher.convert_correspondences(self, *args)
+        self.metrics.stop_time("converting correspondences")
+        return corrs
+
+    def find_correspondences(self, *args, **kwargs):
+        self.metrics.start_time("finding correspondences")
+        corrs = self.matcher.find_correspondences(self, *args, **kwargs)
+        #rospy.loginfo("correspondences: " + str(len(corrs_A)) + " " + str(len(corrs_B)))
+        self.metrics.stop_time("finding correspondences")
+        return corrs
+
+    def get_open3d_features(self, *args):
+        self.metrics.start_time("processing ply")
+        extrac = self.matcher.get_open3d_features(self, *args)
+        self.metrics.stop_time("processing ply")
+        return extrac
+
+    def apply_transform(self, *args):
+        self.metrics.start_time("apply transform")
+        transformed = self.matcher.apply_transform(self, *args)
+        self.metrics.stop_time("apply transform")
+        return transformed
+
+    def eval(self):
+        self.metrics.print_all_timings()
+
+    def reset_eval(self):
+        self.metrics.reset()
+
+# Link to the correct Matcher class
+class Matcher():
+    def __new__(self, config, listener):
+        
+        # select current registration type:
+        if config.teaser is True:
+            matcher = MatcherTeaser(config, listener)
+        else:
+            matcher = MatcherRansac(config, listener)
+
+        if config.add_metrics is True:
+            matcher = _MatcherAddMetrics(matcher, config, listener) # Make child of current matcher
+            
+        return matcher
+

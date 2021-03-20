@@ -4,7 +4,7 @@ import rospy
 
 
 class Config:
-    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="pcl_ballast_tank.ply", topic_ply="/points_throttle", USE_RANSAC=False, visualize=True, teaser=True):
+    def __init__(self, repos_dir="repos/inspectrone/", voxel_size=0.05, model_name="ResUNetBN2C-16feat-3conv.pth", static_ply_name="pcl_ballast_tank.ply", topic_ply="/points_throttle", add_metrics=True, teaser=True):
         """A simple config function"""
         '''
         
@@ -26,8 +26,7 @@ class Config:
         self.model = self.paths.downloads + model_name
         self.static_ply = self.paths.plys + static_ply_name
         self.topic_ply = topic_ply
-        self.visualize = visualize
-        self.USE_RANSAC = USE_RANSAC
+        self.add_metrics = add_metrics
         self.teaser = teaser
         os.environ["OMP_NUM_THREADS"] = "12"
 

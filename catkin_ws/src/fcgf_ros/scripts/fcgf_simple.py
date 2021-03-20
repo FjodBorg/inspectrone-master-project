@@ -19,51 +19,40 @@ def demo():
     # TODO find out why ballast_tank.ply is bad and ply_ballast_tank.ply is good
     #  pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
 
-    metrics.start_time("processing tank")
+    matcher.reset_eval()
     pcd_map_down, map_features = matcher.get_open3d_features(pcd_map)
-    metrics.stop_time("processing tank")
 
-    metrics.start_time("processing scan")
-    pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)
-    metrics.stop_time("processing scan")
+    pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)    
 
-    if config.teaser is True:
-        metrics.start_time("finding correspondences")
-        corrs_A, corrs_B = matcher.find_correspondences(
-            map_features, scan_features, mutual_filter=True
-        )
-        rospy.loginfo("correspondences: " + str(len(corrs_A)) + " " + str(len(corrs_B)))
-        metrics.stop_time("finding correspondences")
+    # if config.teaser is True:
+    #     corrs_A, corrs_B = matcher.find_correspondences(
+    #         map_features, scan_features, mutual_filter=True
+    #     )
 
-        metrics.start_time("converting correspondences")
-        np_corrs_A, np_corrs_B = matcher.convert_correspondences(
-            pcd_map_down, pcd_scan_down, corrs_A, corrs_B
-        )
-        metrics.stop_time("converting correspondences")
+    #     np_corrs_A, np_corrs_B = matcher.convert_correspondences(
+    #         pcd_map_down, pcd_scan_down, corrs_A, corrs_B
+    #     )
 
-        # metrics.start_time("drawing correspondences")
-        # line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
-        # metrics.stop_time("drawing correspondences")
+    #     # metrics.start_time("drawing correspondences")
+    #     # line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+    #     # metrics.stop_time("drawing correspondences")
 
-        #TODO swap around the map and scan transform order
-        metrics.start_time("calculating transform")
-        T_teaser = matcher.find_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
-        metrics.stop_time("calculating transform")
+    #     #TODO swap around the map and scan transform order
+    #     T = matcher.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
 
-    else:
-        metrics.start_time("calculating transform")
-        T_teaser = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
-        metrics.stop_time("calculating transform")
+    # else:
+    #     T = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
+    
+    T = matcher.find_transform_generic(pcd_map_down, pcd_scan_down, map_features, scan_features)
 
-    metrics.start_time("apply transform")
-    map_pcd_down_T_teaser = copy.deepcopy(pcd_map_down).transform(T_teaser)
-    metrics.stop_time("apply transform")
+    map_pcd_down_T = matcher.apply_transform(copy.deepcopy(pcd_map_down), T)
 
-    metrics.print_all_timings()
+    matcher.eval()
+    #metrics.print_all_timings()
     # Visualize the registration results
-    if (config.visualize is True):
+    if (config.add_metrics is True):
         # open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
-        open3d.visualization.draw([map_pcd_down_T_teaser, pcd_scan_down])
+        open3d.visualization.draw([map_pcd_down_T, pcd_scan_down])
 
 if __name__ == "__main__":
 
@@ -75,7 +64,7 @@ if __name__ == "__main__":
         static_ply_name="pcl_ballast_tank.ply",  # pcl is incomplete
         topic_ply="/points_throttle",
         teaser=True,  # TODO try with ICP
-        visualize=True
+        add_metrics=True
     )
 
     metrics = extensions.PerformanceMetrics()
@@ -83,10 +72,12 @@ if __name__ == "__main__":
     # if config.visualize is True:
     #     matcher = matching_helpers.MatcherVisualizer(config, listener)
     # else:
-    if config.teaser is True:
-        matcher = matching_helpers.Matcher(config, listener)
-    else:
-        matcher = matching_helpers.MatcherRansac(config, listener)
+    # if config.teaser is True:
+    #     matcher = matching_helpers.MatcherTeaser(config, listener)
+    # else:
+    #     matcher = matching_helpers.MatcherRansac(config, listener)
+
+    matcher = matching_helpers.Matcher(config, listener)
 
     #  updater = Main(listener)
     rospy.loginfo("start")
