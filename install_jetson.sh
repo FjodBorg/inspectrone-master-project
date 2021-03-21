@@ -243,4 +243,34 @@ catkin build -DCMAKE_BUILD_TYPE=Release \
 
 
 
-
+# install faiss
+sudo apt install -y swig
+cd $HOME/repos
+git clone https://github.com/facebookresearch/faiss
+cd faiss/faiss
+#git checkout tags/v1.7.0 # broken with cuda 11.2?
+git checkout tags/v1.6.5 # works for cuda 11.2 on ubuntu 18
+wget https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e327b9058d57a54d4469ef6baad.diff --output-document=gpu_fix.patch
+patch -p1 < gpu_fix.patch --force
+cd $HOME/repos/faiss
+mkdir build
+PYTHON_WRONG=$(which python)
+[ -f $PYTHON_WRONG ] && sudo mv $PYTHON_WRONG "${PYTHON_WRONG}.back"
+PYTHON_BIN=$(which python3.7)
+cmake -B build . -DFAISS_ENABLE_GPU=ON \
+                -DFAISS_ENABLE_PYTHON=ON \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCUDAToolkit_ROOT=/usr/local/cuda \
+                -DCMAKE_CUDA_ARCHITECTURES="75;72" \
+                -DPython_EXECUTABLE=$PYTHON_BIN \
+                -DBUILD_TESTING=ON
+                #-DBLA_VENDOR=Intel10_64_dyn 
+make -C build -j faiss
+make -C build -j swigfaiss
+cd build/faiss/python
+sudo python3.7 setup.py build
+sudo python3.7 setup.py install
+cd $HOME/repos/faiss
+sudo make -C build install
+sudo mv "${PYTHON_WRONG}.back" $PYTHON_WRONG
+#make -C build test # test if it works

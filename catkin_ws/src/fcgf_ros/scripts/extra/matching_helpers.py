@@ -19,6 +19,8 @@ from core.knn import find_knn_gpu
 # custom
 from extra import extensions
 
+# Faiss
+import faiss 
 
 class MatcherBase():
     def __init__(self, config):
@@ -234,9 +236,10 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         #line_set = self.draw_correspondences(np_corrs_A, np_corrs_B)
         return self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
 
+
 class MatcherRansac(MatcherHelper):
     def __init__(self, config, listener):
-        MatcherHelper.__init__(self, config, listener)  # init parent attributes
+        super().__init__(config, listener)  # init parent attributes
 
         # init extra attributes for ransac
         self._pcd_map_features_cpu = None  
@@ -279,18 +282,88 @@ class MatcherRansac(MatcherHelper):
     def find_transform_generic(self, *args):
         return self.find_transform(*args)
 
+# TODO skip additional initial intilizations possible wtih redifinition of __new__ with __init__
 # append print statements to already defined functions from parent
-class _MatcherAddMetrics(MatcherTeaser, MatcherRansac):
+class _MatcherUseFaiss(MatcherTeaser): 
+    # def __new__(cls, config, listener):
+    #     return object.__new__(cls)
+
+    # def __init__(self, config, listener):
+    #     super().__init__(config, listener)
+
+    def __init__(self, config, listener):
+        super().__init__(config, listener)
+
+        faiss_dimensions = 16 #TODO make this config variable?
+        self.res = faiss.StandardGpuResources()  # use a single GPU
+        ## Using a flat index
+        self.index_flat0 = faiss.IndexFlatL2(faiss_dimensions)  # build a flat (CPU) index
+        self.index_flat1 = faiss.IndexFlatL2(faiss_dimensions)  # build a flat (CPU) index
+        # make it a flat GPU index
+        #gpu_index_flat0 = faiss.index_cpu_to_gpu(res, 0, index_flat0)
+        #gpu_index_flat1 = faiss.index_cpu_to_gpu(res, 0, index_flat1)
+
+    def find_correspondences(self, feats0_torch, feats1_torch, mutual_filter=True):
+        #Detatch from GPU to CPU: 
+        # TODO: Optimise faiss for use with Torch...
+        feat1 = feats0_torch.detach().cpu().numpy()
+        feat0 = feats1_torch.detach().cpu().numpy()
+        k = 1                          # we want to see k (here 1) nearest neighbors
+
+        print(feat0.shape)
+        print(feat1.shape)
+        gpu_index_flat0 = faiss.index_cpu_to_gpu(self.res, 0, self.index_flat0)
+        gpu_index_flat1 = faiss.index_cpu_to_gpu(self.res, 0, self.index_flat1)
+        gpu_index_flat0.add(feat0)         # add vectors to the index
+        gpu_index_flat1.add(feat1)         # add vectors to the index
+
+        D, I = gpu_index_flat0.search(feat1, k)  # actual search
+        nns01 = np.squeeze(I).T
+
+        D, I = gpu_index_flat1.search(feat0, k)  # actual search
+        nns10 = np.squeeze(I).T
+
+        corres01_idx0 = np.arange(len(nns01))
+        corres01_idx1 = nns01
+
+        if not mutual_filter:
+            return corres01_idx0, corres01_idx1
+
+        corres10_idx1 = np.arange(len(nns10))
+        corres10_idx0 = nns10
+
+        mutual_filter = (corres10_idx0[corres01_idx1] == corres01_idx0)
+        corres_idx0 = corres01_idx0[mutual_filter]
+        corres_idx1 = corres01_idx1[mutual_filter]
+
+        return corres_idx0, corres_idx1
+
+# append print statements to already defined functions from parent
+class _MatcherAddMetrics(_MatcherUseFaiss, MatcherTeaser, MatcherRansac):
     def __init__(self, _parent, config, listener):
-        # create a child instance with _parent as parent
+        # store chosen parent class
         self.matcher = _parent.__class__
+        
         self.matcher.__init__(self, config, listener)
+
+        #print(_parent._parent_class, "\n\n\n")
+        # else:
+        #     self.matcher.__init__(self, config, listener)
         self.metrics = extensions.PerformanceMetrics()
+
+        # def __new__(cls, _parent, config, listener):
+        #     self.matcher = _parent.__class__
+        #     self.metrics = extensions.PerformanceMetrics()
+        #     return object.__new__(cls)
+
+        # def __init__(self, _parent, config, listener):
+        #     self.matcher.__init__(self, config, listener)
 
     def find_transform_generic(self, *args, **kwargs):  # define new find_transform
         self.metrics.start_time("finding transform")
         # since find_transform_generic calls parent funtions it needs to be super() and not self
         T = self.matcher.find_transform_generic(super(), *args, **kwargs)  # call parent function
+        #T = self.matcher.find_transform_generic(self, *args, **kwargs)  # call parent function
         self.metrics.stop_time("finding transform")
         return T
 
@@ -325,18 +398,24 @@ class _MatcherAddMetrics(MatcherTeaser, MatcherRansac):
     def reset_eval(self):
         self.metrics.reset()
 
+
+
+
 # Link to the correct Matcher class
 class Matcher():
     def __new__(self, config, listener):
         
         # select current registration type:
         if config.teaser is True:
-            matcher = MatcherTeaser(config, listener)
+            if config.faiss is True:
+                matcher = _MatcherUseFaiss(config, listener)
+            else:
+                matcher = MatcherTeaser(config, listener)
         else:
             matcher = MatcherRansac(config, listener)
 
         if config.add_metrics is True:
             matcher = _MatcherAddMetrics(matcher, config, listener) # Make child of current matcher
-            
+
         return matcher
 

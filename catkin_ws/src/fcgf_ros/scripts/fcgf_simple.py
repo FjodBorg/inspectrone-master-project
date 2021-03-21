@@ -64,7 +64,8 @@ if __name__ == "__main__":
         static_ply_name="pcl_ballast_tank.ply",  # pcl is incomplete
         topic_ply="/points_throttle",
         teaser=True,  # TODO try with ICP
-        add_metrics=True
+        faiss=True,
+        add_metrics=True, # might decrease performance by a fraction
     )
 
     metrics = extensions.PerformanceMetrics()
