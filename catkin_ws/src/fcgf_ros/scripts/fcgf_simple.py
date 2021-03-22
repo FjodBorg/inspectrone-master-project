@@ -2,6 +2,7 @@
 import os
 import numpy as np  # NUMPY MUST COME BEFORE open3d
 import open3d
+import time
 
 import copy
 
@@ -13,13 +14,14 @@ from extra import extensions, ros_helper, matching_helpers, essentials
 
 
 def demo():
+    matcher.reset_eval()
+
     pcd_map = matcher.get_map()
     pcd_scan = matcher.get_scan()  # matcher.pcd_scan
     #pcd_scan.points = matcher.ros_to_open3d(listener.pc)
     # TODO find out why ballast_tank.ply is bad and ply_ballast_tank.ply is good
     #  pcd_map = open3d.io.read_point_cloud(catkin_ws_path+'src/ply_publisher/cfg/'+"pcl_ballast_tank.ply")
 
-    matcher.reset_eval()
     pcd_map_down, map_features = matcher.get_open3d_features(pcd_map)
 
     pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)    
@@ -42,12 +44,15 @@ def demo():
 
     # else:
     #     T = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
-    
+
+    matcher.publish_pcd(pcd_map_down, pcd_scan_down)
+
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
+
     matcher.publish_pose(T)
-    matcher.publish_pcd(pcd_map_down)
 
     matcher.eval()
+
     #metrics.print_all_timings()
     # Visualize the registration results
     # if (config.add_metrics is True):
@@ -61,20 +66,23 @@ if __name__ == "__main__":
     config = essentials.Config()
     # Set attributes, might contain attributes not defined in Config
     setattr(config, "repos_dir", "repos/inspectrone/")
-    setattr(config, "voxel_size", 0.05)
+    setattr(config, "voxel_size", 0.04)
     setattr(config, "model_name", "ResUNetBN2C-16feat-3conv.pth")
     setattr(config, "static_ply_name", "pcl_ballast_tank.ply")
-    setattr(config, "topic_ply", "/points_throttle")
+    setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
+    setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
     setattr(config, "teaser", True)
     setattr(config, "faiss", True)
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
 
     metrics = extensions.PerformanceMetrics()
-    pcd_listener = ros_helper.PCListener(config.topic_ply)
-    pcd_broadcaster = ros_helper.PCBroadcaster(config.topic_ballast_ply)
-    pose_broadcaster = ros_helper.PoseBroadcaster(config.topic_pose)
+    pcd_listener = ros_helper.PCListener(config.topic_in_ply)
+    pcd_broadcaster = ros_helper.PCBroadcaster(config.topic_ballast_ply, config.topic_scan_ply)
+    # pcd_scan_broadcaster = ros_helper.PCBroadcaster(config.topic_ply)
+    pose_broadcaster = ros_helper.PoseBroadcaster(config.topic_pose, frame_id="scan")
+    #pose_broadcaster = ros_helper.PoseBroadcaster(config.topic_pose, frame_id="camera_base")
     ros_col = ros_helper.Collect(pcd_listener, pcd_broadcaster, pose_broadcaster)
     #ros_col = ros_helper.Collect(pcd_listener, pcd_broadcaster, pose_broadcaster)
 
@@ -94,6 +102,7 @@ if __name__ == "__main__":
 
     while not rospy.is_shutdown():
         if prev_red_n != pcd_listener.n:
+            prev_red_n = pcd_listener.n
             demo()
 
     rospy.spin()

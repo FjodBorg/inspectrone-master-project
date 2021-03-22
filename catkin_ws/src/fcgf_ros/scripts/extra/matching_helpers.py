@@ -139,8 +139,8 @@ class MatcherHelper(MatcherBase):
         pass
         #self.metrics.reset()
 
-    def publish_pcd(self, pcd):
-        self._pcd_broadcaster.publish_pcd(pcd)
+    def publish_pcd(self, *args):
+        self._pcd_broadcaster.publish_pcd(*args)
 
     def publish_pose(self, T):
         self._pose_broadcaster.publish_transform(T)
@@ -372,46 +372,70 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
         # def __init__(self, _parent, config, ros_col):
         #     self.matcher.__init__(self, config, ros_col)
 
-    def find_transform_generic(self, *args, **kwargs):  # define new find_transform
-        self.metrics.start_time("finding transform")
+    def find_transform_generic(self, *args, timer_name="finding transform", **kwargs):  # define new find_transform
+        self.metrics.start_time(timer_name)
         # since find_transform_generic calls parent funtions it needs to be super() and not self
         T = self.matcher.find_transform_generic(super(), *args, **kwargs)  # call parent function
         #T = self.matcher.find_transform_generic(self, *args, **kwargs)  # call parent function
-        self.metrics.stop_time("finding transform")
+        self.metrics.stop_time(timer_name)
         return T
 
-    def convert_correspondences(self, *args):
-        self.metrics.start_time("converting correspondences")
+    def convert_correspondences(self, *args, timer_name="converting correspondences"):
+        self.metrics.start_time(timer_name)
         corrs = self.matcher.convert_correspondences(self, *args)
-        self.metrics.stop_time("converting correspondences")
+        self.metrics.stop_time(timer_name)
         return corrs
 
-    def find_correspondences(self, *args, **kwargs):
-        self.metrics.start_time("finding correspondences")
+    def find_correspondences(self, *args, timer_name="finding correspondences", **kwargs):
+        self.metrics.start_time(timer_name)
         corrs = self.matcher.find_correspondences(self, *args, **kwargs)
         #rospy.loginfo("correspondences: " + str(len(corrs_A)) + " " + str(len(corrs_B)))
-        self.metrics.stop_time("finding correspondences")
+        self.metrics.stop_time(timer_name)
         return corrs
 
-    def get_open3d_features(self, *args):
-        self.metrics.start_time("processing ply")
+    def get_open3d_features(self, *args, timer_name="processing ply"):
+        self.metrics.start_time(timer_name)
         extrac = self.matcher.get_open3d_features(self, *args)
-        self.metrics.stop_time("processing ply")
+        self.metrics.stop_time(timer_name)
         return extrac
 
-    def apply_transform(self, *args):
-        self.metrics.start_time("apply transform")
+    def apply_transform(self, *args, timer_name="apply transform"):
+        self.metrics.start_time(timer_name)
         transformed = self.matcher.apply_transform(self, *args)
-        self.metrics.stop_time("apply transform")
+        self.metrics.stop_time(timer_name)
         return transformed
 
     def eval(self):
+        self.metrics.stop_time("total time")
         self.metrics.print_all_timings()
 
     def reset_eval(self):
         self.metrics.reset()
+        self.metrics.start_time("total time")
 
+    def get_map(self, timer_name="getting map"):
+        self.metrics.start_time(timer_name)
+        pcd = self.matcher.get_map(self)
+        self.metrics.stop_time(timer_name)
+        return pcd
 
+    def get_scan(self, timer_name="getting scan"):
+        self.metrics.start_time(timer_name)
+        pcd = self.matcher.get_scan(self)
+        self.metrics.stop_time(timer_name)
+        return pcd
+
+    def publish_pcd(self, *args, timer_name="publishing pcd's"):
+        self.metrics.start_time(timer_name)
+        pcd = self.matcher.publish_pcd(self, *args)
+        self.metrics.stop_time(timer_name)
+        return pcd
+
+    def publish_pose(self, *args, timer_name="publishing pose"):
+        self.metrics.start_time(timer_name)
+        pcd = self.matcher.publish_pose(self, *args)
+        self.metrics.stop_time(timer_name)
+        return pcd
 
 
 # Link to the correct Matcher class

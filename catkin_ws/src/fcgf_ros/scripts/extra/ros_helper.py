@@ -12,15 +12,15 @@ import sensor_msgs.point_cloud2 as pc2
 
 class PCListener:
     # TODO make dem all depend on config
-    def __init__(self, topic_ply):
+    def __init__(self, topic_in_ply):
         self.pc = None
         self.n = 0
-        self.init_listener(topic_ply)
+        self.init_listener(topic_in_ply)
 
-    def init_listener(self, topic_ply):
+    def init_listener(self, topic_in_ply):
         rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()
         # rospy.Subscriber("/ballast_tank_ply", PointCloud2, self.callback)
-        rospy.Subscriber(topic_ply, sensor_msgs.msg.PointCloud2, self.callback)
+        rospy.Subscriber(topic_in_ply, sensor_msgs.msg.PointCloud2, self.callback)
 
     def callback(self, points):
         self.pc = points
@@ -28,12 +28,15 @@ class PCListener:
 
 
 class PCBroadcaster:
-    def __init__(self, topic_ballast_ply):
-        self.pub = rospy.Publisher(topic_ballast_ply, sensor_msgs.msg.PointCloud2, queue_size=1, latch=True)
+    def __init__(self, topic_ballast_ply, topic_scan_ply):
+        self.pub_map = rospy.Publisher(topic_ballast_ply, sensor_msgs.msg.PointCloud2, queue_size=1, latch=True)
+        self.pub_scan = rospy.Publisher(topic_scan_ply, sensor_msgs.msg.PointCloud2, queue_size=1, latch=True)
 
-    def publish_pcd(self, pcd):
-        ros_pcd = self.open3d_to_ros(pcd)
-        self.pub.publish(ros_pcd)
+    def publish_pcd(self, pcd_map, pcd_scan):
+        ros_pcd_scan = self.open3d_to_ros(pcd_scan, frame_id="scan")
+        ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
+        self.pub_scan.publish(ros_pcd_scan)
+        self.pub_map.publish(ros_pcd_map)
 
     # Convert the datatype of point cloud from Open3D to ROS PointCloud2 (XYZRGB only)
     def open3d_to_ros(self, open3d_cloud, frame_id="map"):
@@ -48,42 +51,38 @@ class PCBroadcaster:
 
   
 class PoseBroadcaster:
-    def __init__(self, topic_pose):
+    def __init__(self, topic_pose, frame_id="scan"):
         self.p = geometry_msgs.msg.PoseStamped()
         self.t = geometry_msgs.msg.TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
         self.pub = rospy.Publisher(topic_pose, geometry_msgs.msg.PoseStamped, queue_size=10)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+        self.frame_id = frame_id
 
     def publish_transform(self, T):
         time_now = rospy.Time.now()
         self.t.header.stamp = time_now  # data.header.stamp
         self.t.header.frame_id = "map"
-        self.t.child_frame_id = "scan"  # data.header.frame_id
+        self.t.child_frame_id = self.frame_id  # data.header.frame_id
         self.t.transform.translation.x = T[0, 3]
         self.t.transform.translation.y = T[1, 3]
         self.t.transform.translation.z = T[2, 3]
         
-        # source.transform(T)
-        # R = T[0:3, 0:3]
-        
         q = tf.transformations.quaternion_from_matrix(T)
-        #q = tf.transformations.quaternion_from_matrix(R)
-        #q = tf_conversions.transformations.quaternion_from_matrix(R)
-    
+
         self.t.transform.rotation.x = q[0]
         self.t.transform.rotation.y = q[1]
         self.t.transform.rotation.z = q[2]
         self.t.transform.rotation.w = q[3]
         
-        #while True:
         self.br.sendTransform(self.t)
 
-        rospy.sleep(rospy.Duration(0.01)) # Wait a bit before trying for the lookup
+        rospy.sleep(rospy.Duration(0.1)) # Wait a bit before trying for the lookup
 
+        #self.tf_buffer.waitForTransform("map", self.t.child_frame_id, rospy.Time(), rospy.Duration(4.0))
         try:
-            trans = self.tf_buffer.lookup_transform('map', 'scan', time_now)
+            trans = self.tf_buffer.lookup_transform('map', self.t.child_frame_id, time_now)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             print("tf Exception..")
             return 0
