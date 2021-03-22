@@ -142,7 +142,8 @@ class MatcherHelper(MatcherBase):
     def publish_pcd(self, pcd):
         self._pcd_broadcaster.publish_pcd(pcd)
 
-    def publish_result(self, T):
+    def publish_pose(self, T):
+        self._pose_broadcaster.publish_transform(T)
         pass
         #self._pose_broadcaster.publish_transform(T)
         #self._pose_broadcaster.publish_pose()

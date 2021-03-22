@@ -44,7 +44,7 @@ def demo():
     #     T = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
     
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
-    #matcher.publish_pose(T)
+    matcher.publish_pose(T)
     matcher.publish_pcd(pcd_map_down)
 
     matcher.eval()

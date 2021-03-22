@@ -54,13 +54,13 @@ class PoseBroadcaster:
         self.br = tf2_ros.TransformBroadcaster()
         self.pub = rospy.Publisher(topic_pose, geometry_msgs.msg.PoseStamped, queue_size=10)
         self.tf_buffer = tf2_ros.Buffer()
-        self.tfListener = tf2_ros.TransformListener(self.tf_buffer)
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
 
     def publish_transform(self, T):
         time_now = rospy.Time.now()
         self.t.header.stamp = time_now  # data.header.stamp
-        self.t.header.frame_id = "scan"
-        self.t.child_frame_id = "map"  # data.header.frame_id
+        self.t.header.frame_id = "map"
+        self.t.child_frame_id = "scan"  # data.header.frame_id
         self.t.transform.translation.x = T[0, 3]
         self.t.transform.translation.y = T[1, 3]
         self.t.transform.translation.z = T[2, 3]
@@ -83,7 +83,7 @@ class PoseBroadcaster:
         rospy.sleep(rospy.Duration(0.01)) # Wait a bit before trying for the lookup
 
         try:
-            trans = self.tfBuffer.lookup_transform('map', 'imu_link', time_now)
+            trans = self.tf_buffer.lookup_transform('map', 'scan', time_now)
         except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
             print("tf Exception..")
             return 0
