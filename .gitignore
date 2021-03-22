@@ -48,7 +48,13 @@ catkin_ws/CATKIN_IGNORE
 **/.catkin_tools
 **/__pycache__/
 .vscode/settings.json
-.gitignore
 catkin_ws/.vscode/c_cpp_properties.json
 .vscode/tasks.json
 catkin_ws/.vscode/settings.json
+**/*.ply
+**/.rosinstall*
+**/frames.gv 
+**/frames.pdf
+catkin_ws/.vscode/tasks.json
+catkin_ws/.vscode/tasks2.json
+catkin_ws/src/fcgf_ros/scripts/fcgf copy.py
