@@ -20,17 +20,20 @@ from core.knn import find_knn_gpu
 from extra import extensions
 
 # Faiss
-import faiss 
+import faiss
 
 class MatcherBase():
-    def __init__(self, config):
+    def __init__(self, config, ros_col):
         self._config = config
         self._voxel_size = config.voxel_size
         self._model, self.device = self._load_model(config)
         self._pcd_map = open3d.geometry.PointCloud()
         self._pcd_scan = open3d.geometry.PointCloud()
-
         self._pcd_map = self._load_static_ply(config)
+        
+        self._pcd_listener = ros_col.pcd_listener
+        self._pose_broadcaster = ros_col.pose_broadcaster
+        self._pcd_broadcaster = ros_col.pcd_broadcaster
 
     def _load_model(self, config):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -63,16 +66,16 @@ class MatcherBase():
         return pcd_map
 
     def _load_topic_ply_points(self):
-        pcd_scan = self.ros_to_open3d(self._listener.pc)
+        pcd_scan = self.ros_to_open3d(self._pcd_listener.pc)
         return pcd_scan
 
 
 class MatcherHelper(MatcherBase):
-    def __init__(self, config, listener):
-        super().__init__(config)  # init parent attributes
+    def __init__(self, config, ros_col):
+        super().__init__(config, ros_col)  # init parent attributes
 
         # init extra attributes for downsampling and features
-        self._listener = listener 
+        
         self._pcd_map_down = open3d.geometry.PointCloud()
         self._pcd_scan_down = open3d.geometry.PointCloud()
         self._pcd_map_features = None
@@ -136,9 +139,18 @@ class MatcherHelper(MatcherBase):
         pass
         #self.metrics.reset()
 
+    def publish_pcd(self, pcd):
+        self._pcd_broadcaster.publish_pcd(pcd)
+
+    def publish_result(self, T):
+        pass
+        #self._pose_broadcaster.publish_transform(T)
+        #self._pose_broadcaster.publish_pose()
+
     # TODO raise errors if functions aren't defined
 
 
+# defines functions for TEASER
 class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
     def Rt2T(self, R,t):
         T = np.identity(4)
@@ -236,10 +248,10 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         #line_set = self.draw_correspondences(np_corrs_A, np_corrs_B)
         return self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
 
-
+# defines functions for Ransac
 class MatcherRansac(MatcherHelper):
-    def __init__(self, config, listener):
-        super().__init__(config, listener)  # init parent attributes
+    def __init__(self, config, ros_col):
+        super().__init__(config, ros_col)  # init parent attributes
 
         # init extra attributes for ransac
         self._pcd_map_features_cpu = None  
@@ -283,16 +295,16 @@ class MatcherRansac(MatcherHelper):
         return self.find_transform(*args)
 
 # TODO skip additional initial intilizations possible wtih redifinition of __new__ with __init__
-# append print statements to already defined functions from parent
-class _MatcherUseFaiss(MatcherTeaser): 
-    # def __new__(cls, config, listener):
+# override slow Correspondence matching with faiss
+class MatcherWithFaiss(MatcherTeaser): 
+    # def __new__(cls, config, ros_col):
     #     return object.__new__(cls)
 
-    # def __init__(self, config, listener):
-    #     super().__init__(config, listener)
+    # def __init__(self, config, ros_col):
+    #     super().__init__(config, ros_col)
 
-    def __init__(self, config, listener):
-        super().__init__(config, listener)
+    def __init__(self, config, ros_col):
+        super().__init__(config, ros_col)
 
         faiss_dimensions = 16 #TODO make this config variable?
         self.res = faiss.StandardGpuResources()  # use a single GPU
@@ -339,25 +351,25 @@ class _MatcherUseFaiss(MatcherTeaser):
         return corres_idx0, corres_idx1
 
 # append print statements to already defined functions from parent
-class _MatcherAddMetrics(_MatcherUseFaiss, MatcherTeaser, MatcherRansac):
-    def __init__(self, _parent, config, listener):
+class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
+    def __init__(self, _parent, config, ros_col):
         # store chosen parent class
         self.matcher = _parent.__class__
         
-        self.matcher.__init__(self, config, listener)
+        self.matcher.__init__(self, config, ros_col)
 
         #print(_parent._parent_class, "\n\n\n")
         # else:
-        #     self.matcher.__init__(self, config, listener)
+        #     self.matcher.__init__(self, config, ros_col)
         self.metrics = extensions.PerformanceMetrics()
 
-        # def __new__(cls, _parent, config, listener):
+        # def __new__(cls, _parent, config, ros_col):
         #     self.matcher = _parent.__class__
         #     self.metrics = extensions.PerformanceMetrics()
         #     return object.__new__(cls)
 
-        # def __init__(self, _parent, config, listener):
-        #     self.matcher.__init__(self, config, listener)
+        # def __init__(self, _parent, config, ros_col):
+        #     self.matcher.__init__(self, config, ros_col)
 
     def find_transform_generic(self, *args, **kwargs):  # define new find_transform
         self.metrics.start_time("finding transform")
@@ -403,19 +415,19 @@ class _MatcherAddMetrics(_MatcherUseFaiss, MatcherTeaser, MatcherRansac):
 
 # Link to the correct Matcher class
 class Matcher():
-    def __new__(self, config, listener):
+    def __new__(self, config, ros_col):
         
         # select current registration type:
         if config.teaser is True:
             if config.faiss is True:
-                matcher = _MatcherUseFaiss(config, listener)
+                matcher = MatcherWithFaiss(config, ros_col)
             else:
-                matcher = MatcherTeaser(config, listener)
+                matcher = MatcherTeaser(config, ros_col)
         else:
-            matcher = MatcherRansac(config, listener)
+            matcher = MatcherRansac(config, ros_col)
 
         if config.add_metrics is True:
-            matcher = _MatcherAddMetrics(matcher, config, listener) # Make child of current matcher
+            matcher = _MatcherAddMetrics(matcher, config, ros_col) # Make child of current matcher
 
         return matcher
 

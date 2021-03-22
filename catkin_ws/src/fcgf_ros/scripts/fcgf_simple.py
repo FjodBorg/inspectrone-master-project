@@ -9,7 +9,7 @@ import copy
 import rospy
 
 # custom modules
-from extra import extensions, listeners, matching_helpers, essentials
+from extra import extensions, ros_helper, matching_helpers, essentials
 
 
 def demo():
@@ -43,57 +43,57 @@ def demo():
     # else:
     #     T = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
     
-    T = matcher.find_transform_generic(pcd_map_down, pcd_scan_down, map_features, scan_features)
-
-    map_pcd_down_T = matcher.apply_transform(copy.deepcopy(pcd_map_down), T)
+    T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
+    #matcher.publish_pose(T)
+    matcher.publish_pcd(pcd_map_down)
 
     matcher.eval()
     #metrics.print_all_timings()
     # Visualize the registration results
-    if (config.add_metrics is True):
-        # open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
-        open3d.visualization.draw([map_pcd_down_T, pcd_scan_down])
+    # if (config.add_metrics is True):
+    #     # open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+    #     pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
+    #     open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
 
 if __name__ == "__main__":
 
     global metrics, matcher, config
-    config = essentials.Config(
-        repos_dir="repos/inspectrone/",
-        voxel_size=0.05,
-        model_name="ResUNetBN2C-16feat-3conv.pth",
-        static_ply_name="pcl_ballast_tank.ply",  # pcl is incomplete
-        topic_ply="/points_throttle",
-        teaser=True,  # TODO try with ICP
-        faiss=True,
-        add_metrics=True, # might decrease performance by a fraction
-    )
+    config = essentials.Config()
+    # Set attributes, might contain attributes not defined in Config
+    setattr(config, "repos_dir", "repos/inspectrone/")
+    setattr(config, "voxel_size", 0.05)
+    setattr(config, "model_name", "ResUNetBN2C-16feat-3conv.pth")
+    setattr(config, "static_ply_name", "pcl_ballast_tank.ply")
+    setattr(config, "topic_ply", "/points_throttle")
+    setattr(config, "topic_ballast_ply", "/ballest_tank")
+    setattr(config, "topic_pose", "/matcher_pose")
+    setattr(config, "teaser", True)
+    setattr(config, "faiss", True)
+    setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
 
     metrics = extensions.PerformanceMetrics()
-    listener = listeners.PointCloudListener(config)
-    # if config.visualize is True:
-    #     matcher = matching_helpers.MatcherVisualizer(config, listener)
-    # else:
-    # if config.teaser is True:
-    #     matcher = matching_helpers.MatcherTeaser(config, listener)
-    # else:
-    #     matcher = matching_helpers.MatcherRansac(config, listener)
+    pcd_listener = ros_helper.PCListener(config.topic_ply)
+    pcd_broadcaster = ros_helper.PCBroadcaster(config.topic_ballast_ply)
+    pose_broadcaster = ros_helper.PoseBroadcaster(config.topic_pose)
+    ros_col = ros_helper.Collect(pcd_listener, pcd_broadcaster, pose_broadcaster)
+    #ros_col = ros_helper.Collect(pcd_listener, pcd_broadcaster, pose_broadcaster)
 
-    matcher = matching_helpers.Matcher(config, listener)
+    matcher = matching_helpers.Matcher(config, ros_col)
 
     #  updater = Main(listener)
     rospy.loginfo("start")
-    while listener.pc is None:
+    while pcd_listener.pc is None:
         rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
         rospy.sleep(0.2)
 
-    prev_red_n = listener.n
+    prev_red_n = pcd_listener.n
 
     rospy.loginfo("rendering pointcloud #{}".format(prev_red_n))
 
     demo()
 
     while not rospy.is_shutdown():
-        if prev_red_n != listener.n:
+        if prev_red_n != pcd_listener.n:
             demo()
 
     rospy.spin()

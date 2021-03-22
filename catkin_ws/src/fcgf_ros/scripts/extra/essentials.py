@@ -29,7 +29,12 @@ class Config:
         self.add_metrics = add_metrics
         self.teaser = teaser
         self.faiss = faiss
-        os.environ["OMP_NUM_THREADS"] = "12"
+
+        os.system("export OMP_NUM_THREADS=12")
+        #os.environ["OMP_NUM_THREADS"] = "12"
+        #print(os.environ["OMP_NUM_THREADS"])
+        #os.system("echo $OMP_NUM_THREADS")
+        #exit()
 
     class _Paths:
         def __init__(self, repos_dir):

@@ -1,5 +1,5 @@
 <launch>
-    <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen">
+    <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen" launch-prefix="">
     </node>
 
 	<node pkg="topic_tools" type="throttle" name="pointcloud_throttler" args="messages /mynteye/points/downsampled_xyz 1.0 /points_throttle" />
@@ -10,4 +10,6 @@
          <param name="frame" value="/map" />
          <param name="rate" value="1.0" />
     </node> -->
+    
+    <node type="rviz" name="rviz" pkg="rviz" args="-d $(find fcgf_ros)/config.rviz" />
 </launch>

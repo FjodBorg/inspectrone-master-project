@@ -7,7 +7,7 @@
  	<node pkg="ply_publisher" type="ply_publisher" name="ply_publisher" output="screen" launch-prefix="">
  		 <param name="file_path" value="$(find ply_publisher)/cfg/$(arg filename)" />
  		 <param name="topic" value="pc" />
- 		 <param name="frame" value="/map" />
+ 		 <param name="frame" value="/scan" />
  		 <param name="rate" value="1.0" />
 		 <remap from="ply_publisher/pc" to="$(arg topic)"/>
     </node>
