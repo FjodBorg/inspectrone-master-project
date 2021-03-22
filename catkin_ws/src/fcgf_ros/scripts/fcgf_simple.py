@@ -45,11 +45,11 @@ def demo():
     # else:
     #     T = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
 
-    matcher.publish_pcd(pcd_map_down, pcd_scan_down)
 
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
+    stamp = matcher.publish_pcd(pcd_map_down, pcd_scan_down)
+    matcher.publish_pose(T, stamp)  # TODO add correct stamp 
 
-    matcher.publish_pose(T)
 
     matcher.eval()
 
@@ -63,12 +63,16 @@ def demo():
 if __name__ == "__main__":
 
     global metrics, matcher, config
-    config = essentials.Config()
+    feature_size = 32
+    config = essentials.Config(
+        model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
+        repos_dir="repos/inspectrone/",
+        static_ply_name="pcl_ballast_tank.ply",
+        )
     # Set attributes, might contain attributes not defined in Config
-    setattr(config, "repos_dir", "repos/inspectrone/")
+    setattr(config, "feature_size", feature_size)
     setattr(config, "voxel_size", 0.04)
-    setattr(config, "model_name", "ResUNetBN2C-16feat-3conv.pth")
-    setattr(config, "static_ply_name", "pcl_ballast_tank.ply")
+    setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
     setattr(config, "topic_scan_ply", "/scan_ply")

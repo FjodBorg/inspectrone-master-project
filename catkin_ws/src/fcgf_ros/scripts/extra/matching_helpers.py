@@ -22,6 +22,7 @@ from extra import extensions
 # Faiss
 import faiss
 
+
 class MatcherBase():
     def __init__(self, config, ros_col):
         self._config = config
@@ -45,15 +46,20 @@ class MatcherBase():
             if not os.path.exists(config.paths.downloads):
                 os.makedirs(config.path.downloads)
             
+            if config.model_name=="ResUNetBN2C-16feat-3conv.pth":
+                rospy.loginfo("Downloading weights to " + config.model)
+                urlretrieve(
+                    "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
+                    config.paths.downloads + "ResUNetBN2C-16feat-3conv.pth",
+                )
+            else:
             #  TODO 32 features, download the one rune gave you. Its easier (3conv size)
-            rospy.loginfo("Downloading weights to " + config.model)
-            urlretrieve(
-                "https://node1.chrischoy.org/data/publications/fcgf/2019-09-18_14-15-59.pth",
-                config.paths.downloads + "ResUNetBN2C-16feat-3conv.pth",
-            )
+                shutdown_reason = "please download the model specified ({}) and put it into: {}".format(config.model_name, config.paths.downloads)
+                colored_reason = "\n\n\x1b[1;37;41m" + shutdown_reason + "\x1b[0m\n\n"
+                exit(colored_reason)
 
         checkpoint = torch.load(config.model)
-        model = mdl.resunet.ResUNetBN2C(1, 16, normalize_feature=True, conv1_kernel_size=3, D=3)
+        model = mdl.resunet.ResUNetBN2C(1, self._config.feature_size, normalize_feature=True, conv1_kernel_size=3, D=3)
         model.load_state_dict(checkpoint['state_dict'])
         model.eval()
 
@@ -66,7 +72,8 @@ class MatcherBase():
         return pcd_map
 
     def _load_topic_ply_points(self):
-        pcd_scan = self.ros_to_open3d(self._pcd_listener.pc)
+        pcd_scan = self.ros_to_open3d(self._pcd_listener.pc)       
+        #self.pcd_scan_stamp = self._pcd_listener.pc.header.stamp # TODO add stamp 
         return pcd_scan
 
 
@@ -140,10 +147,11 @@ class MatcherHelper(MatcherBase):
         #self.metrics.reset()
 
     def publish_pcd(self, *args):
-        self._pcd_broadcaster.publish_pcd(*args)
+        stamp = self._pcd_broadcaster.publish_pcd(*args)
+        return stamp
 
-    def publish_pose(self, T):
-        self._pose_broadcaster.publish_transform(T)
+    def publish_pose(self, T, stamp):
+        self._pose_broadcaster.publish_transform(T, stamp)
         pass
         #self._pose_broadcaster.publish_transform(T)
         #self._pose_broadcaster.publish_pose()
@@ -153,6 +161,9 @@ class MatcherHelper(MatcherBase):
 
 # defines functions for TEASER
 class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
+    def __init__(self, config, ros_col):
+        super().__init__(config, ros_col)  # init parent attributes
+        
     def Rt2T(self, R,t):
         T = np.identity(4)
         T[:3,:3] = R
@@ -227,7 +238,7 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         line_set.colors = open3d.utility.Vector3dVector(colors)
         return line_set
 
-    def calc_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND=0.01):
+    def calc_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND):
         # robust global registration using TEASER++
         # Noise_bound is roughly voxel_size
         # sometimes if downsample is extreme noisebound should probably be smaller
@@ -247,7 +258,9 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
             source_down, target_down, corrs_A, corrs_B
         )
         #line_set = self.draw_correspondences(np_corrs_A, np_corrs_B)
-        return self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
+        test = 0.02
+        test = self._config.NOISE_BOUND
+        return self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=test)
 
 # defines functions for Ransac
 class MatcherRansac(MatcherHelper):
@@ -307,7 +320,7 @@ class MatcherWithFaiss(MatcherTeaser):
     def __init__(self, config, ros_col):
         super().__init__(config, ros_col)
 
-        faiss_dimensions = 16 #TODO make this config variable?
+        faiss_dimensions = self._config.feature_size
         self.res = faiss.StandardGpuResources()  # use a single GPU
         ## Using a flat index
         self.index_flat0 = faiss.IndexFlatL2(faiss_dimensions)  # build a flat (CPU) index
@@ -353,6 +366,7 @@ class MatcherWithFaiss(MatcherTeaser):
 
 # append print statements to already defined functions from parent
 class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
+    # TODO when this is called everything is initialized a second time, find a way to fix it
     def __init__(self, _parent, config, ros_col):
         # store chosen parent class
         self.matcher = _parent.__class__
@@ -375,23 +389,23 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
     def find_transform_generic(self, *args, timer_name="finding transform", **kwargs):  # define new find_transform
         self.metrics.start_time(timer_name)
         # since find_transform_generic calls parent funtions it needs to be super() and not self
-        T = self.matcher.find_transform_generic(super(), *args, **kwargs)  # call parent function
+        T = self.matcher.find_transform_generic(self, *args, **kwargs)  # call parent function
         #T = self.matcher.find_transform_generic(self, *args, **kwargs)  # call parent function
         self.metrics.stop_time(timer_name)
         return T
 
-    def convert_correspondences(self, *args, timer_name="converting correspondences"):
-        self.metrics.start_time(timer_name)
-        corrs = self.matcher.convert_correspondences(self, *args)
-        self.metrics.stop_time(timer_name)
-        return corrs
+    # def convert_correspondences(self, *args, timer_name="converting correspondences"):
+    #     self.metrics.start_time(timer_name)
+    #     corrs = self.matcher.convert_correspondences(self, *args)
+    #     self.metrics.stop_time(timer_name)
+    #     return corrs
 
-    def find_correspondences(self, *args, timer_name="finding correspondences", **kwargs):
-        self.metrics.start_time(timer_name)
-        corrs = self.matcher.find_correspondences(self, *args, **kwargs)
-        #rospy.loginfo("correspondences: " + str(len(corrs_A)) + " " + str(len(corrs_B)))
-        self.metrics.stop_time(timer_name)
-        return corrs
+    # def find_correspondences(self, *args, timer_name="finding correspondences (trans)", **kwargs):
+    #     self.metrics.start_time(timer_name)
+    #     corrs = self.matcher.find_correspondences(self, *args, **kwargs)
+    #     #rospy.loginfo("correspondences: " + str(len(corrs_A)) + " " + str(len(corrs_B)))
+    #     self.metrics.stop_time(timer_name)
+    #     return corrs
 
     def get_open3d_features(self, *args, timer_name="processing ply"):
         self.metrics.start_time(timer_name)
@@ -406,12 +420,12 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
         return transformed
 
     def eval(self):
-        self.metrics.stop_time("total time")
+        self.metrics.stop_time("total 1 pcd time")
         self.metrics.print_all_timings()
 
     def reset_eval(self):
         self.metrics.reset()
-        self.metrics.start_time("total time")
+        self.metrics.start_time("total 1 pcd time")
 
     def get_map(self, timer_name="getting map"):
         self.metrics.start_time(timer_name)
@@ -427,15 +441,14 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
 
     def publish_pcd(self, *args, timer_name="publishing pcd's"):
         self.metrics.start_time(timer_name)
-        pcd = self.matcher.publish_pcd(self, *args)
+        stamp = self.matcher.publish_pcd(self, *args)
         self.metrics.stop_time(timer_name)
-        return pcd
+        return stamp
 
     def publish_pose(self, *args, timer_name="publishing pose"):
         self.metrics.start_time(timer_name)
-        pcd = self.matcher.publish_pose(self, *args)
+        self.matcher.publish_pose(self, *args)
         self.metrics.stop_time(timer_name)
-        return pcd
 
 
 # Link to the correct Matcher class

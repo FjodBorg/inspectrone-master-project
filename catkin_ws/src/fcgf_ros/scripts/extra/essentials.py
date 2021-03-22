@@ -23,7 +23,8 @@ class Config:
         '''
         self.paths = self._Paths(repos_dir)
         self.voxel_size = voxel_size
-        self.model = self.paths.downloads + model_name
+        self.model_name = model_name
+        self.model = self.paths.downloads + self.model_name
         self.static_ply = self.paths.plys + static_ply_name
         self.topic_ply = topic_ply
         self.add_metrics = add_metrics
