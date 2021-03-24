@@ -254,8 +254,7 @@ wget https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e3
 patch -p1 < gpu_fix.patch --force
 cd $HOME/repos/faiss
 mkdir build
-PYTHON_WRONG=$(which python)
-[ -f $PYTHON_WRONG ] && sudo mv $PYTHON_WRONG "${PYTHON_WRONG}.back"
+"/usr/bin/python" -c "print(\"i\'m here\")" && sudo mv "/usr/bin/python" "/usr/bin/python.back"
 PYTHON_BIN=$(which python3.7)
 cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DFAISS_ENABLE_PYTHON=ON \
@@ -264,6 +263,7 @@ cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DCMAKE_CUDA_ARCHITECTURES="72;75" \
                 -DPython_EXECUTABLE=$PYTHON_BIN \
                 -DFAISS_OPT_LEVEL=generic \
+                -DBUILD_SHARED_LIBS=ON \
                 -DBUILD_TESTING=ON 
                 # opt level needs to be generic on jetson
                 #-DBLA_VENDOR=Intel10_64_dyn 
@@ -274,5 +274,5 @@ sudo python3.7 setup.py build
 sudo python3.7 setup.py install
 cd $HOME/repos/faiss
 sudo make -C build install
-[ -f "${PYTHON_WRONG}.back" ] && sudo mv "${PYTHON_WRONG}.back" $PYTHON_WRONG
+"/usr/bin/python.back" -c "print(\"i\'m here\")"  && sudo mv "/usr/bin/python.back" "/usr/bin/python"
 #make -C build test # test if it works
