@@ -264,8 +264,8 @@ cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DCMAKE_CUDA_ARCHITECTURES="75;72" \
                 -DPython_EXECUTABLE=$PYTHON_BIN \
                 -DFAISS_OPT_LEVEL=generic \
-                -DBUILD_TESTING=OFF 
-                #doesn't compile on jetson with tests and opt level needs to be generic
+                -DBUILD_TESTING=ON 
+                # opt level needs to be generic on jetson
                 #-DBLA_VENDOR=Intel10_64_dyn 
 make -C build -j faiss
 make -C build -j swigfaiss
