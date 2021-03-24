@@ -244,7 +244,7 @@ catkin build -DCMAKE_BUILD_TYPE=Release \
 
 
 # install faiss
-sudo apt install -y swig
+sudo apt install -y swig libatlas-base-dev libatlas3-base clang-8
 cd $HOME/repos
 git clone https://github.com/facebookresearch/faiss
 cd faiss/faiss
@@ -254,8 +254,8 @@ wget https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e3
 patch -p1 < gpu_fix.patch --force
 cd $HOME/repos/faiss
 mkdir build
-"/usr/bin/python" -c "print(\"i\'m here\")" && sudo mv "/usr/bin/python" "/usr/bin/python.back"
 PYTHON_BIN=$(which python3.7)
+alias python=$PYTHON_BIN
 cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DFAISS_ENABLE_PYTHON=ON \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -267,12 +267,13 @@ cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DBUILD_TESTING=ON 
                 # opt level needs to be generic on jetson
                 #-DBLA_VENDOR=Intel10_64_dyn 
-make -C build -j faiss
-make -C build -j swigfaiss
+make -C build -j6 faiss # needs to be -j6 , -j doesn't compile correctly
+make -C build -j6 swigfaiss
 cd build/faiss/python
 sudo python3.7 setup.py build
 sudo python3.7 setup.py install
 cd $HOME/repos/faiss
 sudo make -C build install
-"/usr/bin/python.back" -c "print(\"i\'m here\")"  && sudo mv "/usr/bin/python.back" "/usr/bin/python"
+
+alias python="/usr/bin/python"
 #make -C build test # test if it works
