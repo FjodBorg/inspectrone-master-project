@@ -336,8 +336,8 @@ class MatcherWithFaiss(MatcherTeaser):
         feat0 = feats1_torch.detach().cpu().numpy()
         k = 1                          # we want to see k (here 1) nearest neighbors
 
-        print(feat0.shape)
-        print(feat1.shape)
+        # print(feat0.shape)
+        # print(feat1.shape)
         gpu_index_flat0 = faiss.index_cpu_to_gpu(self.res, 0, self.index_flat0)
         gpu_index_flat1 = faiss.index_cpu_to_gpu(self.res, 0, self.index_flat1)
         gpu_index_flat0.add(feat0)         # add vectors to the index

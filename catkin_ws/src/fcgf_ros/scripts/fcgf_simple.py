@@ -55,8 +55,8 @@ def demo():
 
     #metrics.print_all_timings()
     # Visualize the registration results
-    # if (config.add_metrics is True):
-    #     # open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+    if (config.add_metrics is True):
+        open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
     #     pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
     #     open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
 
@@ -67,10 +67,12 @@ if __name__ == "__main__":
     config = essentials.Config(
         model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
         repos_dir="repos/inspectrone/",
-        static_ply_name="pcl_ballast_tank.ply",
+        static_ply_name="ballast_tank.ply",
+        #static_ply_name="ballast_tank.ply",
         )
     # Set attributes, might contain attributes not defined in Config
     setattr(config, "feature_size", feature_size)
+    #setattr(config, "voxel_size", 0.06)
     setattr(config, "voxel_size", 0.04)
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
@@ -80,6 +82,8 @@ if __name__ == "__main__":
     setattr(config, "teaser", True)
     setattr(config, "faiss", True)
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
+    setattr(config, "debug", True)  # TODO make coloring of each point cloud to see if features are correct
+    
 
     metrics = extensions.PerformanceMetrics()
     pcd_listener = ros_helper.PCListener(config.topic_in_ply)
