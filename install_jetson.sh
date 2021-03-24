@@ -263,7 +263,9 @@ cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DCUDAToolkit_ROOT=/usr/local/cuda \
                 -DCMAKE_CUDA_ARCHITECTURES="75;72" \
                 -DPython_EXECUTABLE=$PYTHON_BIN \
-                -DBUILD_TESTING=ON
+                -DFAISS_OPT_LEVEL=generic \
+                -DBUILD_TESTING=OFF 
+                #doesn't compile on jetson with tests and opt level needs to be generic
                 #-DBLA_VENDOR=Intel10_64_dyn 
 make -C build -j faiss
 make -C build -j swigfaiss
@@ -272,5 +274,5 @@ sudo python3.7 setup.py build
 sudo python3.7 setup.py install
 cd $HOME/repos/faiss
 sudo make -C build install
-sudo mv "${PYTHON_WRONG}.back" $PYTHON_WRONG
+[ -f "${PYTHON_WRONG}.back" ] && sudo mv "${PYTHON_WRONG}.back" $PYTHON_WRONG
 #make -C build test # test if it works
