@@ -261,7 +261,6 @@ cd $HOME/repos/faiss
 mkdir build
 PYTHON_BIN=$(which python3.7)
 alias python=$PYTHON_BIN
-#cmake -B build . -DFAISS_ENABLE_GPU=OFF \
 cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DFAISS_ENABLE_PYTHON=ON \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -273,23 +272,7 @@ cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DCMAKE_VERBOSE_MAKEFILE=1 \
                 -DBUILD_TESTING=ON \
                 -DCMAKE_CXX_COMPILER=clang++-8 \
-                #-DCMAKE_CXX_COMPILER=g++-8 \
-                # opt level needs to be generic on jetson
-                #-DBLA_VENDOR=Intel10_64_dyn 
 
-# cmake -B build . -DFAISS_ENABLE_GPU=OFF \
-#                 -DFAISS_ENABLE_PYTHON=ON \
-#                 -DCMAKE_BUILD_TYPE=Release \
-#                 -DPython_EXECUTABLE=$PYTHON_BIN \
-#                 -DFAISS_OPT_LEVEL=generic \
-#                 -DBUILD_SHARED_LIBS=ON \
-#                 -DCMAKE_VERBOSE_MAKEFILE=1 \
-#                 -DCMAKE_CXX_COMPILER=clang++-8 \
-#                 # needs to be clang++-8 compiler. I think it's due to cuda 10.2 not supporting new versions of it...
-#                 # opt level needs to be generic on jetson
-#                 #-DBLA_VENDOR=Intel10_64_dyn 
-
-#make -C build -j6 faiss # needs to be -j6 , -j doesn't compile correctly
 make -C build -j6 swigfaiss
 cd build/faiss/python
 sudo python3.7 setup.py build
