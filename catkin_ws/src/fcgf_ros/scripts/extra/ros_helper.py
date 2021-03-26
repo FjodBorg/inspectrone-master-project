@@ -36,11 +36,11 @@ class PCBroadcaster:
         self.stamp = 0
 
     def publish_pcd(self, pcd_map, pcd_scan):
-        self.stamp = stamp = rospy.Time.now()
+        self.stamp = rospy.Time.now()
         ros_pcd_scan = self.open3d_to_ros(pcd_scan, frame_id="scan")
         ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
-        print(ros_pcd_map.header)
-        print(ros_pcd_scan.header)
+        # print(ros_pcd_map.header)
+        # print(ros_pcd_scan.header)
         self.pub_scan.publish(ros_pcd_scan)
         self.pub_map.publish(ros_pcd_map)
         return self.stamp
@@ -70,7 +70,7 @@ class PoseBroadcaster:
     def publish_transform(self, T, stamp):   
         if stamp == 0:
             stamp = rospy.Time.now()
-        print(stamp)
+        # print(stamp)
         self.t.header.stamp = stamp  # data.header.stamp
         self.t.header.frame_id = "map"
         self.t.child_frame_id = self.frame_id  # data.header.frame_id
@@ -88,7 +88,7 @@ class PoseBroadcaster:
         self.br.sendTransform(self.t)
 
         rospy.sleep(rospy.Duration(0.1)) # Wait a bit before trying for the lookup
-        print(self.t.header)
+        # print(self.t.header)
         #self.tf_buffer.waitForTransform("map", self.t.child_frame_id, rospy.Time(), rospy.Duration(4.0))
         try:
             trans = self.tf_buffer.lookup_transform('map', self.t.child_frame_id, stamp)

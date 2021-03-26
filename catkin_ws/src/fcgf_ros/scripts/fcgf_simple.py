@@ -11,7 +11,7 @@ import rospy
 
 # custom modules
 from extra import extensions, ros_helper, matching_helpers, essentials
-
+from util.visualization import get_colored_point_cloud_feature
 
 def demo():
     matcher.reset_eval()
@@ -55,10 +55,27 @@ def demo():
 
     #metrics.print_all_timings()
     # Visualize the registration results
-    # if (config.add_metrics is True):
-    #     open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
-    #     pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
-    #     open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
+    if (config.debug is True):
+        get_colored_point_cloud_feature(pcd_map_down,
+                                        map_features.detach().cpu().numpy(),
+                                        config.voxel_size)
+        get_colored_point_cloud_feature(pcd_scan_down,
+                                        scan_features.detach().cpu().numpy(),
+                                        config.voxel_size)
+        if config.teaser is True:
+            
+            corrs_A, corrs_B = matcher.find_correspondences(
+                map_features, scan_features, mutual_filter=True
+            )
+
+            np_corrs_A, np_corrs_B = matcher.convert_correspondences(
+                pcd_map_down, pcd_scan_down, corrs_A, corrs_B
+            )
+            line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+            open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+        pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
+        open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
+        
 
 if __name__ == "__main__":
 
@@ -73,16 +90,17 @@ if __name__ == "__main__":
     # Set attributes, might contain attributes not defined in Config
     setattr(config, "feature_size", feature_size)
     #setattr(config, "voxel_size", 0.06)
-    setattr(config, "voxel_size", 0.04)
+    setattr(config, "voxel_size", 0.1)
+    #setattr(config, "voxel_size", 0.04)
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
     setattr(config, "teaser", True)
-    setattr(config, "faiss", True)
+    setattr(config, "faiss", True) # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
-    setattr(config, "debug", None)  # TODO make coloring of each point cloud to see if features are correct
+    setattr(config, "debug", True)  # TODO make coloring of each point cloud to see if features are correct
     
 
     metrics = extensions.PerformanceMetrics()
