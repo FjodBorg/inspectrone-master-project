@@ -242,9 +242,6 @@ catkin build -DCMAKE_BUILD_TYPE=Release \
             #-DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.7m.so
 
 
-# Make from master than v1.6.5
-
-
 sudo apt install -y swig libatlas-base-dev libatlas3-base g++-8
 cd $HOME/repos
 git clone https://github.com/facebookresearch/faiss
