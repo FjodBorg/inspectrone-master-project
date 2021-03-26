@@ -55,8 +55,8 @@ def demo():
 
     #metrics.print_all_timings()
     # Visualize the registration results
-    if (config.add_metrics is True):
-        open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+    # if (config.add_metrics is True):
+    #     open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
     #     pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
     #     open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     setattr(config, "teaser", True)
     setattr(config, "faiss", True)
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
-    setattr(config, "debug", True)  # TODO make coloring of each point cloud to see if features are correct
+    setattr(config, "debug", None)  # TODO make coloring of each point cloud to see if features are correct
     
 
     metrics = extensions.PerformanceMetrics()
