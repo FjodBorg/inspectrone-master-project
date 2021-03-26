@@ -242,20 +242,26 @@ catkin build -DCMAKE_BUILD_TYPE=Release \
             #-DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.7m.so
 
 
+# Make from master than v1.6.5
 
-# install faiss
-sudo apt install -y swig libatlas-base-dev libatlas3-base clang-8
+
+sudo apt install -y swig libatlas-base-dev libatlas3-base g++-8
 cd $HOME/repos
 git clone https://github.com/facebookresearch/faiss
 cd faiss/faiss
-#git checkout tags/v1.7.0 # broken with cuda 11.2?
-git checkout tags/v1.6.5 # works for cuda 11.2 on ubuntu 18
+# On the jetson only master works... So i might break
+
+git stash # to remove changes
+#git checkout tags/v1.7.0 # gpu errors
+#git checkout tags/v1.6.5 # works for cuda 11.2 on ubuntu 18 but brokwn for cuda 10.2
+git checkout tags/v1.6.4
 wget https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e327b9058d57a54d4469ef6baad.diff --output-document=gpu_fix.patch
 patch -p1 < gpu_fix.patch --force
 cd $HOME/repos/faiss
 mkdir build
 PYTHON_BIN=$(which python3.7)
 alias python=$PYTHON_BIN
+#cmake -B build . -DFAISS_ENABLE_GPU=OFF \
 cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DFAISS_ENABLE_PYTHON=ON \
                 -DCMAKE_BUILD_TYPE=Release \
@@ -264,10 +270,26 @@ cmake -B build . -DFAISS_ENABLE_GPU=ON \
                 -DPython_EXECUTABLE=$PYTHON_BIN \
                 -DFAISS_OPT_LEVEL=generic \
                 -DBUILD_SHARED_LIBS=ON \
-                -DBUILD_TESTING=ON 
+                -DCMAKE_VERBOSE_MAKEFILE=1 \
+                -DBUILD_TESTING=ON \
+                -DCMAKE_CXX_COMPILER=clang++-8 \
+                #-DCMAKE_CXX_COMPILER=g++-8 \
                 # opt level needs to be generic on jetson
                 #-DBLA_VENDOR=Intel10_64_dyn 
-make -C build -j6 faiss # needs to be -j6 , -j doesn't compile correctly
+
+# cmake -B build . -DFAISS_ENABLE_GPU=OFF \
+#                 -DFAISS_ENABLE_PYTHON=ON \
+#                 -DCMAKE_BUILD_TYPE=Release \
+#                 -DPython_EXECUTABLE=$PYTHON_BIN \
+#                 -DFAISS_OPT_LEVEL=generic \
+#                 -DBUILD_SHARED_LIBS=ON \
+#                 -DCMAKE_VERBOSE_MAKEFILE=1 \
+#                 -DCMAKE_CXX_COMPILER=clang++-8 \
+#                 # needs to be clang++-8 compiler. I think it's due to cuda 10.2 not supporting new versions of it...
+#                 # opt level needs to be generic on jetson
+#                 #-DBLA_VENDOR=Intel10_64_dyn 
+
+#make -C build -j6 faiss # needs to be -j6 , -j doesn't compile correctly
 make -C build -j6 swigfaiss
 cd build/faiss/python
 sudo python3.7 setup.py build
@@ -277,3 +299,7 @@ sudo make -C build install
 
 alias python="/usr/bin/python"
 #make -C build test # test if it works
+
+echo "\nOn ubuntu the master branch is broken, on jetson 1.6.5 and 1.7.0 is broken. So change the last part of this script accordingly"
+# some libraires might be missing look at https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e327b9058d57a54d4469ef6baad.diff
+echo "remember to restart"
