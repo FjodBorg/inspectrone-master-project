@@ -1,0 +1,59 @@
+Ply_ballast_tank.ply works alright but ballast_tank.ply is bad
+
+Ransac vs Teaser
+
+Knn gpu vs cpu
+
+try out faiss'
+FCGF
+teaser
+Ransac
+
+
+
+TODO 
+Work on kinect to start with
+Pose og faiss
+read before working on faiss
+Use kinetc groundtruth for pose esitmation
+
+IF doable:
+rviz instead of open3d visulization
+Continuer pose esitmation (2Hz?) for mynteye and kinect
+32 Features in pytorch model
+
+
+# 23 march
+add resume dir in config.py (add translation)
+
+feature distances:
+    bad fit:0.101 0.073 0.09  0.079 0.089 0.094 0.108 0.101 0.112 0.122 0.115 0.082 0.107 0.089 0.088 0.096
+    good fit:[0.098 0.09  0.11  0.09  0.091 0.097 0.085 0.099 0.086 0.123 0.119 0.093 0.089 0.077 0.11  0.098
+
+look into retraining!
+    add rotation around pitch and/or roll together with yaw (line ~87 in data_loader.py)
+    Remove scale (we don't scale things here) (line 195)
+    Add translation???
+shape recognizion (segmentation?)
+
+
+check fitness (research fast methods)
+    Box filtering (around the translated pointcloud) to check if pointcloud fitness is good
+    using 'center' points only
+    ransac?
+    plane fitting? (plane orientation fitting)
+    corner fitting? 
+    particle filter?
+    correspondences?
+        Check corner correspondences neighbors to see if fit correctly?
+        bag of words (word is histogram of features) approach?
+        together with KNN use bag of words? (detecting area/obj) 
+
+        look into papers on bag of words on pointclouds
+    
+1. fitting (on the point cloud itself)
+2. bag of words (fixing point clouds)
+3. particle filter (esitmation input into new esitmation)
+
+
+write a ~1-2 page description of each method 
