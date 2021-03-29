@@ -80,7 +80,7 @@ class MatcherBase():
 class MatcherHelper(MatcherBase):
     def __init__(self, config, ros_col):
         super().__init__(config, ros_col)  # init parent attributes
-
+        self.feature_distance = []  # TODO remove these when done debugging features
         # init extra attributes for downsampling and features
         
         self._pcd_map_down = open3d.geometry.PointCloud()
@@ -158,6 +158,12 @@ class MatcherHelper(MatcherBase):
 
     # TODO raise errors if functions aren't defined
 
+    def eval_transform(self, source, target, T, threshold=None):
+        if threshold is None:
+            threshold = self._config.voxel_size
+        reg_quality = open3d.pipelines.registration.evaluate_registration(source, target, threshold, T)
+        print(reg_quality)
+        return reg_quality
 
 # defines functions for TEASER
 class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
@@ -175,10 +181,10 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         solver_params.cbar2 = 1.0
         solver_params.noise_bound = noise_bound
         solver_params.estimate_scaling = False
-        solver_params.inlier_selection_mode = \
-            teaserpp_python.RobustRegistrationSolver.INLIER_SELECTION_MODE.PMC_EXACT
-        solver_params.rotation_tim_graph = \
-            teaserpp_python.RobustRegistrationSolver.INLIER_GRAPH_FORMULATION.CHAIN
+        # solver_params.inlier_selection_mode = \
+        #     teaserpp_python.RobustRegistrationSolver.INLIER_SELECTION_MODE.PMC_EXACT
+        # solver_params.rotation_tim_graph = \
+        #     teaserpp_python.RobustRegistrationSolver.INLIER_GRAPH_FORMULATION.CHAIN
         solver_params.rotation_estimation_algorithm = \
             teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
         solver_params.rotation_gnc_factor = 1.4
@@ -219,6 +225,12 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         np_B_xyz = self.pcd2xyz(sensor_pcd)  # np array of size 3 by M
         np_corrs_A = np_A_xyz[:, corrs_A]  # np array of size 3 by num_corrs
         np_corrs_B = np_B_xyz[:, corrs_B]  # np array of size 3 by num_corrs
+        #print(feat0[0:3], "\n\n\n")
+        #print(np.sqrt(np.sum(np_corrs_A-np_corrs_B)**2)[0:5])
+        #print(np_corrs_A.shape, corrs_A.shape)
+        #print(np.linalg.norm(np_corrs_A - np_corrs_B))
+        #print(np_corrs_A[0:5])
+        #print(np_corrs_B[0:5])
         return np_corrs_A, np_corrs_B
 
     def draw_correspondences(self, A_corr, B_corr):
@@ -227,6 +239,7 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         
         # visualize the point clouds together with feature correspondences
         points = np.concatenate((A_corr.T, B_corr.T), axis=0)
+        #print(points)
         lines = []
         for i in range(num_corrs):
             lines.append([i, i + num_corrs])
@@ -258,9 +271,8 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
             source_down, target_down, corrs_A, corrs_B
         )
         #line_set = self.draw_correspondences(np_corrs_A, np_corrs_B)
-        test = 0.02
-        test = self._config.NOISE_BOUND
-        return self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=test)
+        T = self.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=self._config.NOISE_BOUND)
+        return T
 
 # defines functions for Ransac
 class MatcherRansac(MatcherHelper):
@@ -334,10 +346,9 @@ class MatcherWithFaiss(MatcherTeaser):
         # TODO: Optimise faiss for use with Torch...
         feat1 = feats0_torch.detach().cpu().numpy()
         feat0 = feats1_torch.detach().cpu().numpy()
+        
         k = 1                          # we want to see k (here 1) nearest neighbors
 
-        # print(feat0.shape)
-        # print(feat1.shape)
         gpu_index_flat0 = faiss.index_cpu_to_gpu(self.res, 0, self.index_flat0)
         gpu_index_flat1 = faiss.index_cpu_to_gpu(self.res, 0, self.index_flat1)
         gpu_index_flat0.add(feat0)         # add vectors to the index
@@ -361,6 +372,27 @@ class MatcherWithFaiss(MatcherTeaser):
         mutual_filter = (corres10_idx0[corres01_idx1] == corres01_idx0)
         corres_idx0 = corres01_idx0[mutual_filter]
         corres_idx1 = corres01_idx1[mutual_filter]
+
+        # print(feat0.shape, feat1.shape, nns10.shape, mutual_filter.shape)
+        # print(corres10_idx0.shape, corres01_idx1.shape, corres01_idx0.shape)
+        # print(corres01_idx1[0:100])
+        # print(corres01_idx0[0:100])
+        # print(feat0[corres01_idx1[0:6]])
+        # print(feat1[corres01_idx0[0:6]])
+        # print(abs(feat0[corres01_idx1[0:6]] - feat1[corres01_idx0[0:6]]))
+        # print(corres_idx0.shape, corres_idx1.shape)
+
+        # Matches "distance" in each feature
+        with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+            start = 0
+            end = 1000
+            feat_dist = np.abs(feat0[corres01_idx1[start:end]] - feat1[corres01_idx0[start:end]])
+            # print(feat_dist)
+            # print the average distance of each feature of all correspondences:
+            avg_feat_dist = np.sum(feat_dist/(end-start), 0)
+            self.feature_distance.append([np.insert(avg_feat_dist, 0, 0)])
+            print(avg_feat_dist)
+            #print(self.feature_distance)
 
         return corres_idx0, corres_idx1
 

@@ -35,7 +35,7 @@ class PCBroadcaster:
         self.pub_scan = rospy.Publisher(topic_scan_ply, sensor_msgs.msg.PointCloud2, queue_size=1, latch=True)
         self.stamp = 0
 
-    def publish_pcd(self, pcd_map, pcd_scan):
+    def publish_pcd(self, pcd_scan, pcd_map):
         self.stamp = rospy.Time.now()
         ros_pcd_scan = self.open3d_to_ros(pcd_scan, frame_id="scan")
         ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
