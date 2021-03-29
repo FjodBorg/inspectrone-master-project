@@ -385,13 +385,14 @@ class MatcherWithFaiss(MatcherTeaser):
         # Matches "distance" in each feature
         with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
             start = 0
-            end = 1000
+            #end = 1000
+            end = len(corres01_idx1)
             feat_dist = np.abs(feat0[corres01_idx1[start:end]] - feat1[corres01_idx0[start:end]])
             # print(feat_dist)
             # print the average distance of each feature of all correspondences:
             avg_feat_dist = np.sum(feat_dist/(end-start), 0)
             self.feature_distance.append([np.insert(avg_feat_dist, 0, 0)])
-            print(avg_feat_dist)
+            #print(avg_feat_dist)
             #print(self.feature_distance)
 
         return corres_idx0, corres_idx1

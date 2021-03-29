@@ -56,8 +56,6 @@ def demo():
     
     matcher.feature_distance[len(matcher.feature_distance)-1][0][0] = reg_qual.fitness
     
-    with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
-        print(np.vstack(matcher.feature_distance))
     #metrics.print_all_timings()
     # Visualize the registration results
     if (config.debug is True):
@@ -136,10 +134,17 @@ if __name__ == "__main__":
 
     demo()
 
+    prev_time = time.time()
     while not rospy.is_shutdown():
         if prev_red_n != pcd_listener.n:
             prev_red_n = pcd_listener.n
             demo()
-            
+            prev_time = time.time()
+        
+        if time.time() - prev_time > 2:
+            with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+                print(np.vstack(matcher.feature_distance))
+            rospy.loginfo("No Publsihed Pointclouds, trying again in 0.2 sec")
+            rospy.sleep(0.2)
 
     rospy.spin()
