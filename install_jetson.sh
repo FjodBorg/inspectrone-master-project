@@ -146,7 +146,7 @@ python3.7 -m pip install numpy
 git clone https://github.com/NVIDIA/MinkowskiEngine.git
 cd MinkowskiEngine
 git checkout tags/v0.5.0
-sed -e '/pip/ s/^#*/#/' -i setup.py # remove instance of pip (not needed if you pip links to python3.7)
+sed -e '/pip/ s/^#*/#/' -i setup.py # remove instance of pip (not needed if your pip links to python3.7)
 export CXX=g++; 
 export CC=gcc;
 export CUDA_HOME=/usr/local/cuda; 
