@@ -1,0 +1,1 @@
+This is just my custom version of the compiled FCGF version. The original ran out of vram within seconds and was incomplete.
