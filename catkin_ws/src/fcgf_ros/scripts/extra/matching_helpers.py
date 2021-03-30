@@ -27,11 +27,11 @@ class MatcherBase():
     def __init__(self, config, ros_col):
         self._config = config
         self._voxel_size = config.voxel_size
-        self._model, self.device = self._load_model(config)
+        self._model, self._device = self._load_model(config)
         self._pcd_map = open3d.geometry.PointCloud()
         self._pcd_scan = open3d.geometry.PointCloud()
         self._pcd_map = self._load_static_ply(config)
-        
+
         self._pcd_listener = ros_col.pcd_listener
         self._pose_broadcaster = ros_col.pose_broadcaster
         self._pcd_broadcaster = ros_col.pcd_broadcaster
@@ -110,7 +110,7 @@ class MatcherHelper(MatcherBase):
             self._model,
             xyz=np.array(point_cloud.points),
             voxel_size=self._voxel_size,
-            device=self.device,
+            device=self._device,
             skip_check=True)
         return xyz_down, feature
 
@@ -131,6 +131,7 @@ class MatcherHelper(MatcherBase):
             xyz_down, features = self.get_xyz_features(point_cloud)
             pcd_down.points = open3d.utility.Vector3dVector(xyz_down)
             pcd_down.paint_uniform_color([0, 0, 0])
+        
         return pcd_down, features
 
     def apply_transform(self, source, T):

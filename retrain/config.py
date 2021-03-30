@@ -22,7 +22,7 @@ logging_arg.add_argument('--out_dir', type=str, default=home+"/repos/inspectrone
 trainer_arg = add_argument_group('Trainer')
 trainer_arg.add_argument('--trainer', type=str, default='HardestContrastiveLossTrainer')
 trainer_arg.add_argument('--save_freq_epoch', type=int, default=1)
-trainer_arg.add_argument('--batch_size', type=int, default=1)
+trainer_arg.add_argument('--batch_size', type=int, default=1) # should be larger (4), but i'm out of memory :(
 trainer_arg.add_argument('--val_batch_size', type=int, default=1)
 
 # Hard negative mining
@@ -51,7 +51,7 @@ trainer_arg.add_argument('--test_phase', type=str, default="test")
 
 trainer_arg.add_argument('--stat_freq', type=int, default=40)
 trainer_arg.add_argument('--test_valid', type=str2bool, default=True)
-trainer_arg.add_argument('--val_max_iter', type=int, default=200)
+trainer_arg.add_argument('--val_max_iter', type=int, default=400)
 trainer_arg.add_argument('--val_epoch_freq', type=int, default=1)
 trainer_arg.add_argument(
     '--positive_pair_search_voxel_size_multiplier', type=float, default=1.5)
@@ -67,7 +67,7 @@ trainer_arg.add_argument('--triplet_num_rand', type=int, default=1024)
 net_arg = add_argument_group('Network')
 net_arg.add_argument('--model', type=str, default='ResUNetBN2C')
 net_arg.add_argument('--model_n_out', type=int, default=32, help='Feature dimension')
-net_arg.add_argument('--conv1_kernel_size', type=int, default=3)
+net_arg.add_argument('--conv1_kernel_size', type=int, default=3) # this was 5 but previous model was trained on 3
 net_arg.add_argument('--normalize_feature', type=str2bool, default=True)
 net_arg.add_argument('--dist_type', type=str, default='L2')
 net_arg.add_argument('--best_val_metric', type=str, default='feat_match_ratio')

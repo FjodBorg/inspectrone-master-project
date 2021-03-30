@@ -13,6 +13,8 @@ import rospy
 from extra import extensions, ros_helper, matching_helpers, essentials
 from util.visualization import get_colored_point_cloud_feature
 
+os.system("export OMP_NUM_THREADS=12")
+
 def demo():
     matcher.reset_eval()
 
@@ -25,26 +27,6 @@ def demo():
     pcd_map_down, map_features = matcher.get_open3d_features(pcd_map)
 
     pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)    
-
-    # if config.teaser is True:
-    #     corrs_A, corrs_B = matcher.find_correspondences(
-    #         map_features, scan_features, mutual_filter=True
-    #     )
-
-    #     np_corrs_A, np_corrs_B = matcher.convert_correspondences(
-    #         pcd_map_down, pcd_scan_down, corrs_A, corrs_B
-    #     )
-
-    #     # metrics.start_time("drawing correspondences")
-    #     # line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
-    #     # metrics.stop_time("drawing correspondences")
-
-    #     #TODO swap around the map and scan transform order
-    #     T = matcher.calc_transform(np_corrs_A, np_corrs_B, NOISE_BOUND=0.05)
-
-    # else:
-    #     T = matcher.find_transform(pcd_map_down, pcd_scan_down, map_features, scan_features)
-
 
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
     stamp = matcher.publish_pcd(pcd_scan_down, pcd_map_down)
@@ -98,7 +80,7 @@ if __name__ == "__main__":
     # Set attributes, might contain attributes not defined in Config
     setattr(config, "feature_size", feature_size)
     #setattr(config, "voxel_size", 0.06)
-    setattr(config, "voxel_size", 0.05)
+    setattr(config, "voxel_size", 0.08)
     #setattr(config, "voxel_size", 0.04)
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
@@ -108,7 +90,7 @@ if __name__ == "__main__":
     setattr(config, "teaser", True)
     setattr(config, "faiss", True) # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
-    setattr(config, "debug", False)  # VERY SLOW increase voxel_size for speed up
+    setattr(config, "debug", True)  # VERY SLOW increase voxel_size for speed up
     
 
     metrics = extensions.PerformanceMetrics()

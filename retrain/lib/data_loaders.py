@@ -201,15 +201,19 @@ class IndoorPairDataset(PairDataset):
     logging.info(f"Loading the subset {phase} from {root}")
 
     subset_names = open(self.DATA_FILES[phase]).read().split()
+    print(subset_names, self.OVERLAP_RATIO)
     for name in subset_names:
       fname = name + "*%.2f.txt" % self.OVERLAP_RATIO
+      print(fname)
       fnames_txt = glob.glob(root + "/" + fname)
       assert len(fnames_txt) > 0, f"Make sure that the path {root} has data {fname}"
       for fname_txt in fnames_txt:
         with open(fname_txt) as f:
           content = f.readlines()
+        #print(fname_txt)
         fnames = [x.strip().split() for x in content]
         for fname in fnames:
+          #print(fname)
           self.files.append([fname[0], fname[1]])
 
   def __getitem__(self, idx):
