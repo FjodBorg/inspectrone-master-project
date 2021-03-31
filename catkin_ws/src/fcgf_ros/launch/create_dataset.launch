@@ -1,0 +1,14 @@
+<launch>
+    <node pkg="fcgf_ros" type="create_dataset.py" name="dataset_saver" output="screen" launch-prefix="">
+    
+    </node>
+
+    <!-- <node pkg="ply_publisher" type="ply_publisher" name="ply_publisher" output="screen">
+         <param name="file_path" value="$(find ply_publisher)/cfg/ballast_tank.ply" />
+         <param name="topic" value="/ballast_tank_ply" />
+         <param name="frame" value="/map" />
+         <param name="rate" value="1.0" />
+    </node> -->
+    
+    <param name="use_sim_time" value="false"/>
+</launch>
