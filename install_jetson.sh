@@ -217,7 +217,7 @@ source /opt/ros/melodic/setup.bash
 
 # more dependencies
 sudo apt install -y ros-melodic-pcl-ros ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
-
+python3.7 -m pip install pycryptodome pycryptodomex
 
 #sudo apt install -y python-catkin-tools 
 #sudo apt install -y python3-catkin-pkg-modules python3-rospkg-modules python3-empy
