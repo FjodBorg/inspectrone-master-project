@@ -217,13 +217,13 @@ source /opt/ros/melodic/setup.bash
 
 # more dependencies
 sudo apt install -y ros-melodic-pcl-ros ros-melodic-tf2-sensor-msgs rviz ros-melodic-ros-numpy
-python3.7 -m pip install pycryptodome pycryptodomex gnupg
+python3.7 -m pip install pycryptodome pycryptodomex gnupg lz4 bagpy
 
 #sudo apt install -y python-catkin-tools 
 #sudo apt install -y python3-catkin-pkg-modules python3-rospkg-modules python3-empy
 #python3.7 -m pip install rospkg 
 
-# compiling tf2 for python3
+# compiling tf tf2 and roslz4 for python3.7
 cd $HOME/repos/inspectrone/catkin_ws/
 catkin clean --yes
 catkin build fcgf_ros -DPYTHON_EXECUTABLE=/usr/bin/python3.7
@@ -231,6 +231,8 @@ source devel/setup.bash
 wstool init
 wstool set -y src/geometry --git https://github.com/ros/geometry -v 1.12.1
 wstool set -y src/geometry2 --git https://github.com/ros/geometry2 -v 0.6.5
+wstool set -y src/ros_comm --git https://github.com/ros/ros_comm -v 1.15.10
+
 wstool up
 rosdep install --from-paths src --ignore-src -y -r
 
