@@ -90,6 +90,7 @@ class MatcherHelper(MatcherBase):
     def pcd2xyz(self, pcd):
         return np.asarray(pcd.points).T
 
+    # TODO add this to ros_helper instead of here
     def ros_to_open3d(self, pc_ros):
         # convert to xyz point cloud
         pc_xyz = pc2.read_points(
