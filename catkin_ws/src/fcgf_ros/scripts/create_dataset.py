@@ -5,6 +5,8 @@ import numpy as np
 import sensor_msgs.point_cloud2 as pc2
 import os
 import open3d as o3d
+import tf
+import copy
 
 
 bag_dir = "/home/fjod/repos/inspectrone/catkin_ws/bags/"
@@ -15,19 +17,31 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["pcl_ballast_tank.ply", "ballast_tank.ply"]
 reference = ply_files[0]
+global_counter = 0
+
 
 print(
     "Please run this with rosrun. LZ4 is broken otherwise"
 )
 
 
-def make_global_reference():
+def configure_pcd(pcd):
+    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    pcd.voxel_down_sample(voxel_size=voxel_size)
+
+
+def make_global_variables():
+    global voxel_size
     global pcd_ref
+    
+    voxel_size = 0.025  # must be same as config.py
     xyz, _ = ply2xyz(ply_dir + reference)
-    print(xyz)
+
     pcd_ref = o3d.geometry.PointCloud()
     pcd_ref.points = o3d.utility.Vector3dVector(xyz)
 
+    configure_pcd(pcd_ref)
+    
 
 def ros2xyz(pc_ros):
 
@@ -122,41 +136,111 @@ def get_bag_info(bag_file, i):
     return bag, bag_prefix, seq_count
 
 
-def local_allignment(source, target, threshold, T_rough):
-    max_iter = 20
+def local_allignment(source, target, max_iter, threshold, T_rough):
     evaluation = o3d.pipelines.registration.evaluate_registration(
         source, pcd_ref, threshold, T_rough)
-    print("Fitness before:", evaluation.fitness)
+    print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     reg_p2p = o3d.pipelines.registration.registration_icp(
         source, target, threshold, T_rough,
-        o3d.pipelines.registration.TransformationEstimationPointToPoint(),
-        o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter))
-    print("Fitness after:", reg_p2p.fitness)
+        o3d.pipelines.registration.TransformationEstimationPointToPlane(),
+        o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter, relative_fitness=0.99))
+    print("Fitness, rms after:", reg_p2p.fitness, evaluation.inlier_rmse)
 
     return reg_p2p.transformation
     
 
-def in_ref_frame(xyz_np):
+def to_ref_frame(xyz_np, T_rough):
     # method to fix all data samples to be in the same frame
-    threshold = 0.025 # TODO define this somewhere nicer
+    threshold = voxel_size  # TODO define this somewhere nicer
+    max_iter = 200
     pcd_source = o3d.geometry.PointCloud()
     pcd_source.points = o3d.utility.Vector3dVector(xyz_np)
     pcd_source.paint_uniform_color([1,0,0])
-
-    # TODO use imu data to find rough transform
-    T_rough = np.asarray([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
-                            [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
-
-
-    T_full = local_allignment(pcd_source, pcd_ref, threshold, T_rough)
+    configure_pcd(pcd_source)
     
-    pcd_source.transform(T_full)
-    o3d.visualization.draw([pcd_source, pcd_ref])
+    T_full = local_allignment(pcd_source, pcd_ref, max_iter, threshold, T_rough)
+    
+    
+    global global_counter
+    if global_counter % 50 == 0:
+        #pcd_source_inbetween = copy.deepcopy(pcd_source)
+        #pcd_source_inbetween.transform(T_rough)
+        #o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
+        pcd_source.transform(T_full)
+        o3d.visualization.draw([pcd_source, pcd_ref])
+    
+
+    global_counter += 1 
 
     return np.asarray(pcd_source.points)
 
 
+def make_transform_from_ros(ros_pose):
+    q = ros_pose.orientation
+    t = ros_pose.position
+    # quaternion = (q.x, q.y, q.z, q.w)
+    # position = np.array([t.x+100, t.y, t.z])
+    
+    R2 = tf.transformations.euler_matrix(np.pi/2, 0, -np.pi/2)
+    
+    # R = tf.transformations.quaternion_matrix(quaternion)
+    # T = np.eye(4)
+    # T[0:3, 3] = position
+    
+    # print(np.matmul(R, T))
 
+    # position = [-0.028, -0.703, 0.955]  # rig to map
+    # quaternion = [0.088, 0.991, 0.039, 0.090]
+
+    # position = [0.747, 0.895, 0.188] # cam0 to map
+    # quaternion = [-0.497, 0.558, -0.491, -0.447]
+    # #quaternion = [-0.497, 0.558, -0.491, 0.447]
+
+    # position = [-0.214, -0.775, 0.880]
+    # quaternion = [0.045, 0.998, 0.010, 0.044]
+
+    # position = [-0.214, 0.880, -0.775] # north east down if thsi configuration is used
+    # #R2 = tf.transformations.euler_matrix(0, np.pi/2, -np.pi/2)
+    
+    # # position = [0.188, 0.747, 0.895] # cam0 to map
+    # # quaternion = [ -0.7242872, 0, 0, 0.6894984 ] # -90deg around x
+    # # quaternion = [ -0.4993949, 0.5245919, 0.4993949, 0.4754081 ] # -90 around x and 90 z
+    # # quaternion = [ -0.4993949, 0.4993949, -0.5245919, 0.4754081 ] # -90 around x and 90 y
+    # R = tf.transformations.quaternion_matrix(quaternion)
+    # T = np.eye(4)
+    # T[0:3, 3] = position
+    
+    # T_rough = (np.matmul(np.matmul(R, T), R2))
+    
+    # # testing
+
+    # quaternion = [-0.497, 0.558, -0.491, 0.447]
+
+    # # WUN
+    # position = [0.188, 0.747, -0.895] # cam0 to map
+    # position = [-0.895,  -0.747, -0.188] # cam0 to map
+    # #quaternion = [ -0.4993949, 0.4993949, -0.5245919, 0.4754081 ] # -90 around x and 90 y
+    # R = tf.transformations.quaternion_matrix(quaternion)
+    # T = np.eye(4)
+    # T[0:3, 3] = position
+    
+    # T_rough = np.matmul(R, T)
+
+
+    quaternion = (q.x, q.y, q.z, q.w)
+    position = np.array([t.x, t.y, t.z])
+    position = np.add(position, np.array([0.057, 0.021, 0.011]))
+
+
+    R = tf.transformations.quaternion_matrix(quaternion)
+    T = np.eye(4)
+    T[0:3, 3] = position
+
+    T_rough = (np.matmul(T, np.matmul(R, R2)))
+
+    # EDN for cam
+    return T_rough
+    
 def process_ply(ply_file, choice, frs):
     source = ply_file.split(".")[0]  # remove extension
     fname = source + ".npz"
@@ -184,15 +268,21 @@ def process_ply(ply_file, choice, frs):
     if not skip:
         pcd_np_xyz, pcd_np_color = ply2xyz(ply_dir + ply_file)
 
+        T = np.asarray([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
+        
         # transform to correct frame
-        pcd_np_xyz_trans = in_ref_frame(pcd_np_xyz)
+        
+        # Add this when other is fixed
+        # pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        pcd_np_xyz_trans = pcd_np_xyz
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
 
     print(str_prefix + fname)
 
 
-def process_bag(source, msg, idx, seq_count, choice, frs):
+def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
     seq_str = "@seq_{:05d}".format(idx)
     fname = source + seq_str + ".npz"
 
@@ -207,14 +297,25 @@ def process_bag(source, msg, idx, seq_count, choice, frs):
 
     # if file wasen't skipped
     if not skip:
+        print("pc:  ", t.to_sec())
+        while True: # do while
+            _, msg2, t2 = next(odom_bag)
+            #print("odom:", t2.to_sec())
+            print("pc - odom time diff: ", t.to_sec() - t2.to_sec())
+            if t.to_sec() - t2.to_sec() < 0.05:
+                break
+
+        T = make_transform_from_ros(msg2.pose.pose)
+
         pcd_np_xyz, pcd_np_color = ros2xyz(msg)
 
         # transform to correct frame
-        pcd_np_xyz_trans = in_ref_frame(pcd_np_xyz)
+        pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
 
     print(str_prefix + fname + "\t", str_suffix)
+
 
 
 def create_pointcloud_dataset():
@@ -237,11 +338,9 @@ def create_pointcloud_dataset():
             
             # process each pc2 entry
             for k, (topic, msg, t) in enumerate(pc_bag):
-                print("pc:  ", t)
-                _, msg2, t2 = next(odom_bag)
-                print("look at line 242, odom:", t2, "\n", msg2)
+                
                 # TODO find a way to get imu time to the corresponding ply
-                process_bag(bag_prefix, msg, k, seq_count, choice, frs)
+                process_bag(bag_prefix, msg, t, k, seq_count, choice, frs, odom_bag)
             rosbag.close()
 
 
@@ -338,7 +437,7 @@ def main():
         print("creating path at", dataset_dir)
         os.mkdir(dataset_dir)
   
-    make_global_reference()
+    make_global_variables()
     create_pointcloud_dataset()
     # create_matching_file()
 
