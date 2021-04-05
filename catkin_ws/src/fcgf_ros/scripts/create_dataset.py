@@ -15,25 +15,27 @@ pc2_topics = ["/points2"]
 odom_topics = ["/tagslam/odom/body_rig"]
 dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/"
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
-ply_files = ["pcl_ballast_tank.ply", "ballast_tank.ply"]
-reference = ply_files[0]
+ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
+reference = ply_files[0] # use
 global_counter = 0
 
-
-print(
-    "Please run this with rosrun. LZ4 is broken otherwise"
-)
 
 
 def configure_pcd(pcd):
     pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
     pcd.voxel_down_sample(voxel_size=voxel_size)
-
+    #cl, ind = pcd.remove_radius_outlier(nb_points=2, radius=voxel_size*2)
+    #inliers = pcd.select_by_index(ind)
+    # return pcd
+    #outlier_cloud = pcd.select_by_index(ind, invert=True)
+    #print(ind)
 
 def make_global_variables():
     global voxel_size
     global pcd_ref
+    global skip_to_idx
     
+    skip_to_idx = 98
     voxel_size = 0.025  # must be same as config.py
     xyz, _ = ply2xyz(ply_dir + reference)
 
@@ -137,14 +139,15 @@ def get_bag_info(bag_file, i):
 
 
 def local_allignment(source, target, max_iter, threshold, T_rough):
+    loss = o3d.pipelines.registration.TukeyLoss(k=threshold)
     evaluation = o3d.pipelines.registration.evaluate_registration(
-        source, pcd_ref, threshold, T_rough)
+        source, target, voxel_size, T_rough)
     print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     reg_p2p = o3d.pipelines.registration.registration_icp(
         source, target, threshold, T_rough,
-        o3d.pipelines.registration.TransformationEstimationPointToPlane(),
+        o3d.pipelines.registration.TransformationEstimationPointToPlane(loss),
         o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter, relative_fitness=0.99))
-    print("Fitness, rms after:", reg_p2p.fitness, evaluation.inlier_rmse)
+    print("Fitness, rms after: ", reg_p2p.fitness, reg_p2p.inlier_rmse)
 
     return reg_p2p.transformation
     
@@ -152,22 +155,31 @@ def local_allignment(source, target, max_iter, threshold, T_rough):
 def to_ref_frame(xyz_np, T_rough):
     # method to fix all data samples to be in the same frame
     threshold = voxel_size  # TODO define this somewhere nicer
-    max_iter = 200
+    max_iter = 100
     pcd_source = o3d.geometry.PointCloud()
     pcd_source.points = o3d.utility.Vector3dVector(xyz_np)
     pcd_source.paint_uniform_color([1,0,0])
     configure_pcd(pcd_source)
     
-    T_full = local_allignment(pcd_source, pcd_ref, max_iter, threshold, T_rough)
+    # TODO Source if noise is relevant http://www.open3d.org/docs/0.11.0/tutorial/pipelines/robust_kernels.html#Point-to-plane-ICP-using-Robust-Kernels
+    T_fine = local_allignment(pcd_source, pcd_ref, max_iter, 1, T_rough)
+    T_full = local_allignment(pcd_source, pcd_ref, int(max_iter/4), threshold, T_fine)
     
+    evaluation = o3d.pipelines.registration.evaluate_registration(
+        pcd_source, pcd_ref, threshold, T_full)
+    #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
     global global_counter
-    if global_counter % 50 == 0:
-        #pcd_source_inbetween = copy.deepcopy(pcd_source)
-        #pcd_source_inbetween.transform(T_rough)
-        #o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
+    if global_counter % 100 == 0 or evaluation.fitness < 0.85:
+    #if evaluation.fitness < 0.9:
+        pcd_source_inbetween = copy.deepcopy(pcd_source)
+        pcd_source_inbetween.transform(T_rough)
+        o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
+        pcd_source_inbetween2 = copy.deepcopy(pcd_source)
+        pcd_source_inbetween2.transform(T_fine)
+        o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
         pcd_source.transform(T_full)
-        o3d.visualization.draw([pcd_source, pcd_ref])
+        # o3d.visualization.draw([pcd_source, pcd_ref])
     
 
     global_counter += 1 
@@ -297,12 +309,12 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 
     # if file wasen't skipped
     if not skip:
-        print("pc:  ", t.to_sec())
+        #print("pc:  ", t.to_sec())
         while True: # do while
             _, msg2, t2 = next(odom_bag)
             #print("odom:", t2.to_sec())
             print("pc - odom time diff: ", t.to_sec() - t2.to_sec())
-            if t.to_sec() - t2.to_sec() < 0.05:
+            if t.to_sec() - t2.to_sec() < 0.15: # sampling is roughly 5 Hz
                 break
 
         T = make_transform_from_ros(msg2.pose.pose)
@@ -338,6 +350,9 @@ def create_pointcloud_dataset():
             
             # process each pc2 entry
             for k, (topic, msg, t) in enumerate(pc_bag):
+                if k < skip_to_idx:
+                    print("skipping", k, "out of", skip_to_idx)
+                    continue
                 
                 # TODO find a way to get imu time to the corresponding ply
                 process_bag(bag_prefix, msg, t, k, seq_count, choice, frs, odom_bag)
@@ -388,6 +403,7 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
                 # print("processing", file, "with", file_target)
                 string = string + file + " vs " + file_target + "\n"
                 # TODO calculate some overlap between file and file_target with open3d
+                # overlap is equal to target on source.
                 overlap = "Nan"
                 # print("  overlap was:", overlap)
 
