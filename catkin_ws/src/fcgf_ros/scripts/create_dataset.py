@@ -220,55 +220,9 @@ def to_ref_frame(xyz_np, T_rough):
 def make_transform_from_ros(ros_pose):
     q = ros_pose.orientation
     t = ros_pose.position
-    #print(q)
-    # quaternion = (q.x, q.y, q.z, q.w)
-    # position = np.array([t.x+100, t.y, t.z])
-    
+
+    # rotation from imu too cam0 frame?
     R2 = tf.transformations.euler_matrix(np.pi/2, 0, -np.pi/2)
-    
-    # R = tf.transformations.quaternion_matrix(quaternion)
-    # T = np.eye(4)
-    # T[0:3, 3] = position
-    
-    # print(np.matmul(R, T))
-
-    # position = [-0.028, -0.703, 0.955]  # rig to map
-    # quaternion = [0.088, 0.991, 0.039, 0.090]
-
-    # position = [0.747, 0.895, 0.188] # cam0 to map
-    # quaternion = [-0.497, 0.558, -0.491, -0.447]
-    # #quaternion = [-0.497, 0.558, -0.491, 0.447]
-
-    # position = [-0.214, -0.775, 0.880]
-    # quaternion = [0.045, 0.998, 0.010, 0.044]
-
-    # position = [-0.214, 0.880, -0.775] # north east down if thsi configuration is used
-    # #R2 = tf.transformations.euler_matrix(0, np.pi/2, -np.pi/2)
-    
-    # # position = [0.188, 0.747, 0.895] # cam0 to map
-    # # quaternion = [ -0.7242872, 0, 0, 0.6894984 ] # -90deg around x
-    # # quaternion = [ -0.4993949, 0.5245919, 0.4993949, 0.4754081 ] # -90 around x and 90 z
-    # # quaternion = [ -0.4993949, 0.4993949, -0.5245919, 0.4754081 ] # -90 around x and 90 y
-    # R = tf.transformations.quaternion_matrix(quaternion)
-    # T = np.eye(4)
-    # T[0:3, 3] = position
-    
-    # T_rough = (np.matmul(np.matmul(R, T), R2))
-    
-    # # testing
-
-    # quaternion = [-0.497, 0.558, -0.491, 0.447]
-
-    # # WUN
-    # position = [0.188, 0.747, -0.895] # cam0 to map
-    # position = [-0.895,  -0.747, -0.188] # cam0 to map
-    # #quaternion = [ -0.4993949, 0.4993949, -0.5245919, 0.4754081 ] # -90 around x and 90 y
-    # R = tf.transformations.quaternion_matrix(quaternion)
-    # T = np.eye(4)
-    # T[0:3, 3] = position
-    
-    # T_rough = np.matmul(R, T)
-
 
     quaternion = (q.x, q.y, q.z, q.w)
     euler = tf.transformations.euler_from_quaternion(quaternion)
@@ -298,25 +252,9 @@ def make_transform_from_ros(ros_pose):
                        weights[1]*T_rough[0:3, 3])
         R_new = tf.transformations.quaternion_matrix(q_avg)
         
-        # print(T_rough)
-        #T_rough = copy.copy(prev_T)
         T_rough[0:3, 0:3] = R_new[0:3, 0:3]
         T_rough[0:3, 3] = t_avg
         
-        # print(T_rough)
-
-        #T_rough = (np.matmul(T, np.matmul(R, R2)))
-
-        # print(q1)
-        # print(q2)
-        # print(q_avg)
-        # print(tf.transformations.euler_from_quaternion(q1))
-        # print(tf.transformations.euler_from_quaternion(q2))
-        # print(tf.transformations.euler_from_quaternion(q_avg))
-        #euler2 = np.add(euler, prev_euler_full)/2
-    #     print(prev_euler_full)
-    #     print(euler2)
-    # print(tf.transformations.euler_from_matrix(T_rough))
         
 
 
