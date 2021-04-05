@@ -34,8 +34,10 @@ def make_global_variables():
     global voxel_size
     global pcd_ref
     global skip_to_idx
-    
-    skip_to_idx = 98
+    global prev_T
+
+    prev_T = None
+    skip_to_idx = 0
     voxel_size = 0.025  # must be same as config.py
     xyz, _ = ply2xyz(ply_dir + reference)
 
@@ -43,7 +45,32 @@ def make_global_variables():
     pcd_ref.points = o3d.utility.Vector3dVector(xyz)
 
     configure_pcd(pcd_ref)
-    
+
+
+# TODO read up on https://stackoverflow.com/questions/12374087/average-of-multiple-quaternions
+def weightedAverageQuaternions(Q, w):
+    # Number of quaternions to average
+    M = Q.shape[0]
+    A = np.zeros(shape=(4, 4))
+    weightSum = 0
+
+    for i in range(0, M):
+        q = Q[i, :]
+        A = w[i] * np.outer(q, q) + A
+        weightSum += w[i]
+
+    # scale
+    A = (1.0/weightSum) * A
+
+    # compute eigenvalues and -vectors
+    eigenValues, eigenVectors = np.linalg.eig(A)
+
+    # Sort by largest eigenvalue
+    eigenVectors = eigenVectors[:, eigenValues.argsort()[::-1]]
+
+    # return the real part of the largest eigenvector (has only real part)
+    return np.real(eigenVectors[:, 0])
+
 
 def ros2xyz(pc_ros):
 
@@ -170,26 +197,30 @@ def to_ref_frame(xyz_np, T_rough):
     #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
     global global_counter
-    if global_counter % 100 == 0 or evaluation.fitness < 0.85:
+    if global_counter % 50 == 1 or evaluation.fitness < 0.7:
     #if evaluation.fitness < 0.9:
         pcd_source_inbetween = copy.deepcopy(pcd_source)
         pcd_source_inbetween.transform(T_rough)
         o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
-        pcd_source_inbetween2 = copy.deepcopy(pcd_source)
-        pcd_source_inbetween2.transform(T_fine)
-        o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
+        # pcd_source_inbetween2 = copy.deepcopy(pcd_source)
+        # pcd_source_inbetween2.transform(T_fine)
+        # o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
         pcd_source.transform(T_full)
-        # o3d.visualization.draw([pcd_source, pcd_ref])
+        o3d.visualization.draw([pcd_source, pcd_ref])
     
 
     global_counter += 1 
+    global prev_T
+    prev_T = T_full
 
     return np.asarray(pcd_source.points)
+
 
 
 def make_transform_from_ros(ros_pose):
     q = ros_pose.orientation
     t = ros_pose.position
+    #print(q)
     # quaternion = (q.x, q.y, q.z, q.w)
     # position = np.array([t.x+100, t.y, t.z])
     
@@ -240,15 +271,54 @@ def make_transform_from_ros(ros_pose):
 
 
     quaternion = (q.x, q.y, q.z, q.w)
+    euler = tf.transformations.euler_from_quaternion(quaternion)
     position = np.array([t.x, t.y, t.z])
     position = np.add(position, np.array([0.057, 0.021, 0.011]))
 
 
-    R = tf.transformations.quaternion_matrix(quaternion)
+    #R = tf.transformations.quaternion_matrix(quaternion)
+    R = tf.transformations.euler_matrix(*euler)
+    
     T = np.eye(4)
     T[0:3, 3] = position
 
-    T_rough = (np.matmul(T, np.matmul(R, R2)))
+    T_rough = np.matmul(T, np.matmul(R, R2))
+
+    # print(euler)
+    # TODO there is a bug in imu data where it doesn't change for 1 second but 
+    # still publishes. This is the fix for it 
+    # simply take the average of previous and current rotation 
+    if prev_T is not None:
+        q1 = tf.transformations.quaternion_from_matrix(prev_T)
+        q2 = tf.transformations.quaternion_from_matrix(T_rough)
+        Q = np.array([q1, q2])
+        weights = np.array([0.8, 0.2])
+        q_avg = weightedAverageQuaternions(Q, weights)
+        t_avg = np.add(weights[0]*prev_T[0:3, 3],
+                       weights[1]*T_rough[0:3, 3])
+        R_new = tf.transformations.quaternion_matrix(q_avg)
+        
+        # print(T_rough)
+        #T_rough = copy.copy(prev_T)
+        T_rough[0:3, 0:3] = R_new[0:3, 0:3]
+        T_rough[0:3, 3] = t_avg
+        
+        # print(T_rough)
+
+        #T_rough = (np.matmul(T, np.matmul(R, R2)))
+
+        # print(q1)
+        # print(q2)
+        # print(q_avg)
+        # print(tf.transformations.euler_from_quaternion(q1))
+        # print(tf.transformations.euler_from_quaternion(q2))
+        # print(tf.transformations.euler_from_quaternion(q_avg))
+        #euler2 = np.add(euler, prev_euler_full)/2
+    #     print(prev_euler_full)
+    #     print(euler2)
+    # print(tf.transformations.euler_from_matrix(T_rough))
+        
+
 
     # EDN for cam
     return T_rough
