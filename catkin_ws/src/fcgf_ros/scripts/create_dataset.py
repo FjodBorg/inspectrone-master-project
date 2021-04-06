@@ -108,7 +108,7 @@ def get_choice(extension=".npz"):
     choice = frs[0]
 
     if any(File.endswith(extension) for File in os.listdir(dataset_dir)):
-        print("files with extension .npz exists")
+        print("files with extension {} exists".format(extension))
         while True:
             # ask user for what to do
             print("Do you want to:")
@@ -202,11 +202,12 @@ def to_ref_frame(xyz_np, T_rough):
         pcd_source_inbetween = copy.deepcopy(pcd_source)
         pcd_source_inbetween.transform(T_rough)
         o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
-        # pcd_source_inbetween2 = copy.deepcopy(pcd_source)
-        # pcd_source_inbetween2.transform(T_fine)
-        # o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
-        pcd_source.transform(T_full)
-        o3d.visualization.draw([pcd_source, pcd_ref])
+        pcd_source_inbetween2 = copy.deepcopy(pcd_source)
+        pcd_source_inbetween2.transform(T_full)
+        o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
+        #o3d.visualization.draw([pcd_source, pcd_ref])
+    
+    pcd_source.transform(T_full)
     
 
     global_counter += 1 
@@ -294,8 +295,8 @@ def process_ply(ply_file, choice, frs):
         # transform to correct frame
         
         # Add this when other is fixed
-        # pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
-        pcd_np_xyz_trans = pcd_np_xyz
+        pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        # pcd_np_xyz_trans = pcd_np_xyz
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
 
@@ -322,7 +323,7 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
             _, msg2, t2 = next(odom_bag)
             #print("odom:", t2.to_sec())
             print("pc - odom time diff: ", t.to_sec() - t2.to_sec())
-            if t.to_sec() - t2.to_sec() < 0.15: # sampling is roughly 5 Hz
+            if t.to_sec() - t2.to_sec() < 0.25: # sampling is roughly 5 Hz
                 break
 
         T = make_transform_from_ros(msg2.pose.pose)
@@ -341,16 +342,18 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 def create_pointcloud_dataset():
     # check if file exists
     choice, frs = get_choice(extension=".npz")
-
+    global prev_T
 
     if choice != frs[2]:  # if skip was  not selected
 
         # process ply's
         for i, ply_file in enumerate(ply_files):
+            prev_T = None
             process_ply(ply_file, choice, frs)
 
         # process bags
         for i, bag_file in enumerate(bag_files):
+            prev_T = None
             rosbag, bag_prefix, seq_count = get_bag_info(bag_file, i)
 
             pc_bag = rosbag.read_messages(topics=[pc2_topics[i]])
@@ -365,6 +368,8 @@ def create_pointcloud_dataset():
                 # TODO find a way to get imu time to the corresponding ply
                 process_bag(bag_prefix, msg, t, k, seq_count, choice, frs, odom_bag)
             rosbag.close()
+        print("Done with dataset generation")
+
 
 
 def generate_txt_name(batch, idx, cross_matches):
@@ -447,12 +452,13 @@ def create_txtfiles(choice, frs):
         else:
             batch = npz_files[i:length]
         process_batch(choice, frs, i, batch, file_targets, cross_matches)
-
+    
 
 def create_matching_file():
     choice, frs = get_choice(extension=".txt")
     if choice != frs[2]:  # if skip was  not selected
         create_txtfiles(choice, frs)
+        print("done with text generation")
 
 
 def main():
@@ -463,7 +469,7 @@ def main():
   
     make_global_variables()
     create_pointcloud_dataset()
-    # create_matching_file()
+    create_matching_file()
 
 
 if __name__ == "__main__":
