@@ -16,19 +16,22 @@ odom_topics = ["/tagslam/odom/body_rig"]
 dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/"
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
-reference = ply_files[0] # use
+reference = ply_files[0]  # use
 global_counter = 0
 
 
-
 def configure_pcd(pcd):
+    print(pcd)
     pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
-    pcd.voxel_down_sample(voxel_size=voxel_size)
+    pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+    print(pcd)
+    return pcd
     #cl, ind = pcd.remove_radius_outlier(nb_points=2, radius=voxel_size*2)
     #inliers = pcd.select_by_index(ind)
     # return pcd
     #outlier_cloud = pcd.select_by_index(ind, invert=True)
     #print(ind)
+
 
 def make_global_variables():
     global voxel_size
@@ -44,7 +47,7 @@ def make_global_variables():
     pcd_ref = o3d.geometry.PointCloud()
     pcd_ref.points = o3d.utility.Vector3dVector(xyz)
 
-    configure_pcd(pcd_ref)
+    pcd_ref = configure_pcd(pcd_ref)
 
 
 # TODO read up on https://stackoverflow.com/questions/12374087/average-of-multiple-quaternions
@@ -185,8 +188,9 @@ def to_ref_frame(xyz_np, T_rough):
     max_iter = 100
     pcd_source = o3d.geometry.PointCloud()
     pcd_source.points = o3d.utility.Vector3dVector(xyz_np)
+    pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
     pcd_source.paint_uniform_color([1,0,0])
-    configure_pcd(pcd_source)
+    pcd_source = configure_pcd(pcd_source)
     
     # TODO Source if noise is relevant http://www.open3d.org/docs/0.11.0/tutorial/pipelines/robust_kernels.html#Point-to-plane-ICP-using-Robust-Kernels
     T_fine = local_allignment(pcd_source, pcd_ref, max_iter, 1, T_rough)
@@ -197,7 +201,7 @@ def to_ref_frame(xyz_np, T_rough):
     #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
     global global_counter
-    if global_counter % 50 == 1 or evaluation.fitness < 0.7:
+    if global_counter % 100 == 1 or evaluation.fitness < 0.7:
     #if evaluation.fitness < 0.9:
         pcd_source_inbetween = copy.deepcopy(pcd_source)
         pcd_source_inbetween.transform(T_rough)
@@ -215,7 +219,6 @@ def to_ref_frame(xyz_np, T_rough):
     prev_T = T_full
 
     return np.asarray(pcd_source.points)
-
 
 
 def make_transform_from_ros(ros_pose):
@@ -262,6 +265,7 @@ def make_transform_from_ros(ros_pose):
     # EDN for cam
     return T_rough
     
+
 def process_ply(ply_file, choice, frs):
     source = ply_file.split(".")[0]  # remove extension
     fname = source + ".npz"
@@ -296,6 +300,7 @@ def process_ply(ply_file, choice, frs):
         
         # Add this when other is fixed
         pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        # TODO should these be resampled here???
         # pcd_np_xyz_trans = pcd_np_xyz
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
@@ -330,13 +335,13 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 
         pcd_np_xyz, pcd_np_color = ros2xyz(msg)
 
+        # TODO should these be resampled here???
         # transform to correct frame
         pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
 
     print(str_prefix + fname + "\t", str_suffix)
-
 
 
 def create_pointcloud_dataset():
@@ -371,7 +376,6 @@ def create_pointcloud_dataset():
         print("Done with dataset generation")
 
 
-
 def generate_txt_name(batch, idx, cross_matches):
     # get source name
     # print(batch)
@@ -388,6 +392,35 @@ def generate_txt_name(batch, idx, cross_matches):
     txt_path = dataset_dir + txt_name
 
     return txt_path
+
+
+def calc_overlap(file, file_target):
+    pcd_source = o3d.geometry.PointCloud()
+    pcd_target = o3d.geometry.PointCloud()
+    npz_file1 = np.load(dataset_dir + file)
+    npz_file2 = np.load(dataset_dir + file_target)
+    xyz1 = npz_file1['pcd']
+    xyz2 = npz_file2['pcd']
+    pcd_source.points = o3d.utility.Vector3dVector(xyz1)
+    pcd_target.points = o3d.utility.Vector3dVector(xyz2)
+    pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
+    pcd_target = pcd_target.voxel_down_sample(voxel_size=voxel_size)
+    pcd_combined = pcd_source + pcd_target
+    pcd_merged = pcd_combined.voxel_down_sample(voxel_size=voxel_size)
+
+    p_count_source = len(pcd_source.points)
+    p_count_target = len(pcd_target.points)
+    p_count_merged = len(pcd_merged.points)
+    #p_count_rest = p_count_source + p_count_target - p_count_merged
+
+    pcd_source.paint_uniform_color([1,0,0])
+    pcd_target.paint_uniform_color([0,1,0])
+    o3d.visualization.draw([pcd_source, pcd_target])
+    o3d.visualization.draw([pcd_merged])
+    
+
+    print(len(pcd_source.points), pcd_target, pcd_combined, pcd_merged)
+    return pcd_merged
 
 
 def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
@@ -414,10 +447,10 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
 
             for file_target in file_targets:
                 # print("processing", file, "with", file_target)
-                string = string + file + " vs " + file_target + "\n"
                 # TODO calculate some overlap between file and file_target with open3d
                 # overlap is equal to target on source.
-                overlap = "Nan"
+                overlap = calc_overlap(file, file_target)
+                string = string + file + " vs " + file_target + " at " + str(overlap) + "\n"
                 # print("  overlap was:", overlap)
 
         f = open(txt_path, "w")
