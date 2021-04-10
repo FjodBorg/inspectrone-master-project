@@ -17,6 +17,7 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
+overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 
 
@@ -172,12 +173,12 @@ def local_allignment(source, target, max_iter, threshold, T_rough):
     loss = o3d.pipelines.registration.TukeyLoss(k=threshold)
     evaluation = o3d.pipelines.registration.evaluate_registration(
         source, target, voxel_size, T_rough)
-    print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse, "threshold: ", threshold)
+    print("Before:  Fitness: {:0.5f}  rms: {:0.5f}  threshold: {}".format(evaluation.fitness, evaluation.inlier_rmse, threshold))
     reg_p2p = o3d.pipelines.registration.registration_icp(
         source, target, threshold, T_rough,
         o3d.pipelines.registration.TransformationEstimationPointToPlane(loss),
         o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter, relative_fitness=0.99))
-    print("Fitness, rms after: ", reg_p2p.fitness, reg_p2p.inlier_rmse, "threshold: ", threshold)
+    print("After    Fitness: {:0.5f}  rms: {:0.5f}  threshold: {}".format(reg_p2p.fitness, reg_p2p.inlier_rmse, threshold))
 
     return reg_p2p.transformation
     
@@ -202,7 +203,7 @@ def to_ref_frame(xyz_np, T_roughest):
     #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
     global global_counter
-    if global_counter % 50 == 1 or evaluation.fitness < 0.7:
+    if global_counter % 200 == 1 or evaluation.fitness < 0.7:
     #if evaluation.fitness < 0.9:
         pcd_source_inbetween = copy.deepcopy(pcd_source)
         pcd_source_inbetween.transform(T_rough)
@@ -311,7 +312,7 @@ def process_ply(ply_file, choice, frs):
 def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
     seq_str = "@seq_{:05d}".format(idx)
     fname = source + seq_str + ".npz"
-
+    global prev_msg_t
     skip = False
 
     # check if file is there
@@ -323,12 +324,21 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 
     # if file wasen't skipped
     if not skip:
+        
         #print("pc:  ", t.to_sec())
-        while True: # do while
-            _, msg2, t2 = next(odom_bag)
+        while True: 
+            # exception if next can't get new element
+            try:
+                _, msg2, t2 = next(odom_bag)
+            except StopIteration: # this can be made in a more smart way, but i'm lazy
+                msg2, t2 = prev_msg_t
+                break
+
             #print("odom:", t2.to_sec())
             print("pc - odom time diff: ", t.to_sec() - t2.to_sec())
-            if t.to_sec() - t2.to_sec() < 0.25: # sampling is roughly 5 Hz
+            if t.to_sec() - t2.to_sec() < 0.02: # sampling is roughly 5 Hz
+                
+                prev_msg_t = msg2, t2
                 break
 
         T = make_transform_from_ros(msg2.pose.pose)
@@ -383,15 +393,17 @@ def generate_txt_name(batch, idx, cross_matches):
 
     # select correct indecies
     from_idx = idx
-    to_idx = from_idx + len(batch) - 1
+    to_idx = (from_idx + len(batch) - 1)
 
     # full file name:
     txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
+    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/cross_matches))
+
 
     # file to write to:
-    txt_path = dataset_dir + txt_name
+    file_abs = dataset_dir + txt_name
 
-    return txt_path
+    return file_abs
 
 
 def calc_overlap(file, file_target):
@@ -412,6 +424,7 @@ def calc_overlap(file, file_target):
     p_target = len(pcd_target.points)
     p_merged = len(pcd_merged.points)
     p_rest = p_source + p_target - p_merged
+    p_overlap = p_rest/(p_merged)
 
     pcd_source.paint_uniform_color([1,0,0])
     pcd_target.paint_uniform_color([0,1,0])
@@ -419,12 +432,13 @@ def calc_overlap(file, file_target):
     #o3d.visualization.draw([pcd_merged])
     
 
-    print("{} {} {} {}".format(p_source, p_target, p_merged, p_rest))
-    return pcd_merged
+    
+    # print("{} {} {} {} {:0.5f}".format(p_source, p_target, p_merged, p_rest, p_overlap))
+    # TODO only consider it if tank to scan has a fitness above 10% maybe ? 
+    return p_overlap
 
 
 def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
-    file_exists = False
     skip = False
 
     # seq = batch[i].split("@")[1]  # sequence + extension
@@ -433,11 +447,13 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
     # if (idx % cross_matches) == 0:
     #     # when x cross_mathces has been found
 
-    txt_path = generate_txt_name(batch, idx, cross_matches)
+    file_abs = generate_txt_name(batch, idx, cross_matches)
 
     # status = "{}/{}".format(idx+1, seq_count)  # remaining files
 
-    skip, str_prefix, str_suffix = generate_str_operation(txt_path, choice, frs)
+    skip, str_prefix, str_suffix = generate_str_operation(file_abs, choice, frs)
+
+    # TODO find overlap for tanks?
 
     # print(txt_path, skip,"\n\n\n")
     if not skip:
@@ -447,17 +463,19 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
 
             for file_target in file_targets:
                 # print("processing", file, "with", file_target)
-                # TODO calculate some overlap between file and file_target with open3d
+                # TODO make file for each overlap step
                 # overlap is equal to target on source.
                 overlap = calc_overlap(file, file_target)
-                string = string + file + " vs " + file_target + " at " + str(overlap) + "\n"
+                string = "{} {} {:0.6f}\n".format(string + file, file_target, overlap)
                 # print("  overlap was:", overlap)
 
-        f = open(txt_path, "w")
+        f = open(file_abs, "w")
         f.write(string)
         f.close()
 
-    print(str_prefix + txt_path.split("/")[-1] + "\t", str_suffix)
+        # TODO make overlap files here. Just remove lines with to little overlap!
+
+    print(str_prefix + file_abs.split("/")[-1] + "\t", str_suffix)
     return skip
 
     # print("appending", len(file_targets), "matches to", txt_file, "\n")
@@ -493,6 +511,29 @@ def create_matching_file():
         create_txtfiles(choice, frs)
         print("done with text generation")
 
+def create_overlap_files():
+    for file in os.listdir(dataset_dir):
+        if file.endswith(".txt"):
+            f = open(os.path.join(dataset_dir, file), "r")
+            string = f.read()
+            f.close()
+            for overlap_thr in overlaps:
+                new_string = ""
+                for line in string.split("\n"):
+                    try:
+                        overlap = float(line.split(" ")[-1])
+                        if overlap > overlap_thr:
+                            new_string = new_string + line + "\n"
+                    except ValueError:
+                        pass
+                print(new_string)
+            
+                file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
+                print(file_overlap)
+                f = open(os.path.join(dataset_dir, file_overlap), "w")
+                f.write(new_string)
+                f.close()
+    # for overlap in overlaps:
 
 def main():
 
@@ -503,7 +544,7 @@ def main():
     make_global_variables()
     create_pointcloud_dataset()
     create_matching_file()
-
+    create_overlap_files()
 
 if __name__ == "__main__":
     main()
