@@ -21,10 +21,10 @@ global_counter = 0
 
 
 def configure_pcd(pcd):
-    print(pcd)
-    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    # print(pcd)
     pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
-    print(pcd)
+    pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
+    # print(pcd)
     return pcd
     #cl, ind = pcd.remove_radius_outlier(nb_points=2, radius=voxel_size*2)
     #inliers = pcd.select_by_index(ind)
@@ -172,17 +172,17 @@ def local_allignment(source, target, max_iter, threshold, T_rough):
     loss = o3d.pipelines.registration.TukeyLoss(k=threshold)
     evaluation = o3d.pipelines.registration.evaluate_registration(
         source, target, voxel_size, T_rough)
-    print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
+    print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse, "threshold: ", threshold)
     reg_p2p = o3d.pipelines.registration.registration_icp(
         source, target, threshold, T_rough,
         o3d.pipelines.registration.TransformationEstimationPointToPlane(loss),
         o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter, relative_fitness=0.99))
-    print("Fitness, rms after: ", reg_p2p.fitness, reg_p2p.inlier_rmse)
+    print("Fitness, rms after: ", reg_p2p.fitness, reg_p2p.inlier_rmse, "threshold: ", threshold)
 
     return reg_p2p.transformation
     
 
-def to_ref_frame(xyz_np, T_rough):
+def to_ref_frame(xyz_np, T_roughest):
     # method to fix all data samples to be in the same frame
     threshold = voxel_size  # TODO define this somewhere nicer
     max_iter = 100
@@ -193,7 +193,8 @@ def to_ref_frame(xyz_np, T_rough):
     pcd_source = configure_pcd(pcd_source)
     
     # TODO Source if noise is relevant http://www.open3d.org/docs/0.11.0/tutorial/pipelines/robust_kernels.html#Point-to-plane-ICP-using-Robust-Kernels
-    T_fine = local_allignment(pcd_source, pcd_ref, max_iter, 1, T_rough)
+    T_rough = local_allignment(pcd_source, pcd_ref, max_iter, 1, T_roughest)
+    T_fine = local_allignment(pcd_source, pcd_ref, max_iter, 0.25, T_rough)
     T_full = local_allignment(pcd_source, pcd_ref, int(max_iter/4), threshold, T_fine)
     
     evaluation = o3d.pipelines.registration.evaluate_registration(
@@ -201,7 +202,7 @@ def to_ref_frame(xyz_np, T_rough):
     #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
     global global_counter
-    if global_counter % 100 == 1 or evaluation.fitness < 0.7:
+    if global_counter % 50 == 1 or evaluation.fitness < 0.7:
     #if evaluation.fitness < 0.9:
         pcd_source_inbetween = copy.deepcopy(pcd_source)
         pcd_source_inbetween.transform(T_rough)
@@ -212,7 +213,6 @@ def to_ref_frame(xyz_np, T_rough):
         #o3d.visualization.draw([pcd_source, pcd_ref])
     
     pcd_source.transform(T_full)
-    
 
     global_counter += 1 
     global prev_T
@@ -250,7 +250,7 @@ def make_transform_from_ros(ros_pose):
         q1 = tf.transformations.quaternion_from_matrix(prev_T)
         q2 = tf.transformations.quaternion_from_matrix(T_rough)
         Q = np.array([q1, q2])
-        weights = np.array([0.8, 0.2])
+        weights = np.array([0.9, 0.1])
         q_avg = weightedAverageQuaternions(Q, weights)
         t_avg = np.add(weights[0]*prev_T[0:3, 3],
                        weights[1]*T_rough[0:3, 3])
@@ -403,23 +403,23 @@ def calc_overlap(file, file_target):
     xyz2 = npz_file2['pcd']
     pcd_source.points = o3d.utility.Vector3dVector(xyz1)
     pcd_target.points = o3d.utility.Vector3dVector(xyz2)
-    pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
-    pcd_target = pcd_target.voxel_down_sample(voxel_size=voxel_size)
+    # pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
+    # pcd_target = pcd_target.voxel_down_sample(voxel_size=voxel_size)
     pcd_combined = pcd_source + pcd_target
     pcd_merged = pcd_combined.voxel_down_sample(voxel_size=voxel_size)
 
-    p_count_source = len(pcd_source.points)
-    p_count_target = len(pcd_target.points)
-    p_count_merged = len(pcd_merged.points)
-    #p_count_rest = p_count_source + p_count_target - p_count_merged
+    p_source = len(pcd_source.points)
+    p_target = len(pcd_target.points)
+    p_merged = len(pcd_merged.points)
+    p_rest = p_source + p_target - p_merged
 
     pcd_source.paint_uniform_color([1,0,0])
     pcd_target.paint_uniform_color([0,1,0])
-    o3d.visualization.draw([pcd_source, pcd_target])
-    o3d.visualization.draw([pcd_merged])
+    #o3d.visualization.draw([pcd_source, pcd_target])
+    #o3d.visualization.draw([pcd_merged])
     
 
-    print(len(pcd_source.points), pcd_target, pcd_combined, pcd_merged)
+    print("{} {} {} {}".format(p_source, p_target, p_merged, p_rest))
     return pcd_merged
 
 
