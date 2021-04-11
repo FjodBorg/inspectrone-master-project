@@ -74,3 +74,22 @@ store color.npy
 Overlap ratio needs to be calculated
 and text file with all npz files in and combination 
     [pcd1, pcd2, overlap ratio]
+
+###
+write about quaternion averageing
+bad imu (missing data), estimate something close to it using previous transform
+Ask about imu frame, it doesn't seem to be right
+where is imu frame, what is the relation to imu frame. What is the "groundtruth" pose?
+
+
+# 6 april
+ideas
+    1. Cut tank into pieces for dataset
+    2. match between scans
+    3. match with whole tank
+    
+    (crop box function open3d) open3d.geometry.crop_point_cloud
+
+    once dataset works, give to rune
+    once dataset works with kinect try out mynteye
+    upload dataset to nas (find guide on teams)
