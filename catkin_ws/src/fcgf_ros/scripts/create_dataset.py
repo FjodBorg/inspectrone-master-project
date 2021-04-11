@@ -452,7 +452,7 @@ def process_batch(choice, frs, idx, batch, file_targets):
     # if (idx % cross_match_size) == 0:
     #     # when x cross_mathces has been found
 
-    file_abs = generate_txt_name(batch, idx, cross_match_size)
+    file_abs = generate_txt_name(batch, idx)
 
     # status = "{}/{}".format(idx+1, seq_count)  # remaining files
 
@@ -512,7 +512,7 @@ def create_txtfiles(choice, frs):
             batch = npz_files[i : i + cross_match_size]
         else:
             batch = npz_files[i:length]
-        process_batch(choice, frs, i, batch, file_targets, cross_match_size)
+        process_batch(choice, frs, i, batch, file_targets)
     
 
 def create_matching_file():
