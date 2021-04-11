@@ -35,12 +35,10 @@ def configure_pcd(pcd):
 
 
 def make_global_variables():
-    global voxel_size
-    global pcd_ref
-    global skip_to_idx
-    global prev_T
+    global voxel_size, pcd_ref, skip_to_idx, prev_T, min_size
 
     prev_T = None
+    min_size = 4000 # pointcloud size
     skip_to_idx = 0
     voxel_size = 0.025  # must be same as config.py
     xyz, _ = ply2xyz(ply_dir + reference)
@@ -426,6 +424,11 @@ def calc_overlap(file, file_target):
     p_rest = p_source + p_target - p_merged
     p_overlap = p_rest/(p_merged)
 
+    if p_source < min_size or p_target < min_size:
+        print("#points: ({} or {}) is less than min_size: {}".format(p_source, p_target, min_size))
+        return None
+
+
     pcd_source.paint_uniform_color([1,0,0])
     pcd_target.paint_uniform_color([0,1,0])
     #o3d.visualization.draw([pcd_source, pcd_target])
@@ -462,18 +465,15 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
             # print(str_prefix + file + "\t", str_suffix)
 
             for file_target in file_targets:
-                # print("processing", file, "with", file_target)
-                # TODO make file for each overlap step
-                # overlap is equal to target on source.
                 overlap = calc_overlap(file, file_target)
-                string = "{} {} {:0.6f}\n".format(string + file, file_target, overlap)
+                if overlap is not None:
+                    # append to string
+                    string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
                 # print("  overlap was:", overlap)
 
         f = open(file_abs, "w")
         f.write(string)
         f.close()
-
-        # TODO make overlap files here. Just remove lines with to little overlap!
 
     print(str_prefix + file_abs.split("/")[-1] + "\t", str_suffix)
     return skip
@@ -511,9 +511,13 @@ def create_matching_file():
         create_txtfiles(choice, frs)
         print("done with text generation")
 
+
 def create_overlap_files():
     for file in os.listdir(dataset_dir):
         if file.endswith(".txt"):
+            if float(file.split("-")[-1].split(".txt")[0]) < 1.0:
+                # if overlap file exists
+                continue
             f = open(os.path.join(dataset_dir, file), "r")
             string = f.read()
             f.close()
@@ -526,10 +530,10 @@ def create_overlap_files():
                             new_string = new_string + line + "\n"
                     except ValueError:
                         pass
-                print(new_string)
+                # print(new_string)
             
                 file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
-                print(file_overlap)
+                print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n")), file_overlap, ))
                 f = open(os.path.join(dataset_dir, file_overlap), "w")
                 f.write(new_string)
                 f.close()
