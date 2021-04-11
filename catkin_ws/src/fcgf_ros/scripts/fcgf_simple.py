@@ -52,15 +52,16 @@ def demo():
             )
             line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
         
-        get_colored_point_cloud_feature(pcd_map_down,
-                                        map_features.detach().cpu().numpy(),
-                                        config.voxel_size)
-        open3d.visualization.draw([pcd_map_down])
-        get_colored_point_cloud_feature(pcd_scan_down,
-                                        scan_features.detach().cpu().numpy(),
-                                        config.voxel_size)
-        open3d.visualization.draw([pcd_scan_down])
-        
+        if config.super_debug is True:
+            get_colored_point_cloud_feature(pcd_map_down,
+                                            map_features.detach().cpu().numpy(),
+                                            config.voxel_size)
+            open3d.visualization.draw([pcd_map_down])
+            get_colored_point_cloud_feature(pcd_scan_down,
+                                            scan_features.detach().cpu().numpy(),
+                                            config.voxel_size)
+            open3d.visualization.draw([pcd_scan_down])
+            
         if config.teaser:
             open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
         pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
@@ -70,18 +71,20 @@ def demo():
 if __name__ == "__main__":
 
     global metrics, matcher, config
-    feature_size = 16
+    feature_size = 32
     config = essentials.Config(
         model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
+        # model_name="retrained_models/checkpoint.pth",
+        # model_name="retrained_models/best_val_checkpoint.pth",
         repos_dir="repos/inspectrone/",
         static_ply_name="ballast_tank.ply",
         #static_ply_name="pcl_ballast_tank.ply",
         )
     # Set attributes, might contain attributes not defined in Config
     setattr(config, "feature_size", feature_size)
-    #setattr(config, "voxel_size", 0.06)
-    setattr(config, "voxel_size", 0.08)
-    #setattr(config, "voxel_size", 0.04)
+    # setattr(config, "voxel_size", 0.06)
+    # setattr(config, "voxel_size", 0.08)
+    setattr(config, "voxel_size", 0.025)
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
@@ -90,7 +93,8 @@ if __name__ == "__main__":
     setattr(config, "teaser", True)
     setattr(config, "faiss", True) # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
-    setattr(config, "debug", True)  # VERY SLOW increase voxel_size for speed up
+    setattr(config, "debug", False)  # show matches
+    setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
     
 
     metrics = extensions.PerformanceMetrics()
@@ -124,8 +128,9 @@ if __name__ == "__main__":
             prev_time = time.time()
         
         if time.time() - prev_time > 2:
-            with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
-                print(np.vstack(matcher.feature_distance))
+            if config.debug:
+                with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+                    print(np.vstack(matcher.feature_distance))
             rospy.loginfo("No Publsihed Pointclouds, trying again in 0.2 sec")
             rospy.sleep(0.2)
 
