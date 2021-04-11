@@ -17,6 +17,8 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
+use_cross_match = True
+cross_match_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 
@@ -334,7 +336,7 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 
             #print("odom:", t2.to_sec())
             print("pc - odom time diff: ", t.to_sec() - t2.to_sec())
-            if t.to_sec() - t2.to_sec() < 0.02: # sampling is roughly 5 Hz
+            if t.to_sec() - t2.to_sec() < 0.15: # sampling is roughly 5 Hz
                 
                 prev_msg_t = msg2, t2
                 break
@@ -384,10 +386,10 @@ def create_pointcloud_dataset():
         print("Done with dataset generation")
 
 
-def generate_txt_name(batch, idx, cross_matches):
+def generate_txt_name(batch, idx):
     # get source name
     # print(batch)
-    source_name = batch[idx % cross_matches].split("@")[0]
+    source_name = batch[idx % cross_match_size].split("@")[0]
 
     # select correct indecies
     from_idx = idx
@@ -395,7 +397,7 @@ def generate_txt_name(batch, idx, cross_matches):
 
     # full file name:
     txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
-    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/cross_matches))
+    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/cross_match_size))
 
 
     # file to write to:
@@ -441,16 +443,16 @@ def calc_overlap(file, file_target):
     return p_overlap
 
 
-def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
+def process_batch(choice, frs, idx, batch, file_targets):
     skip = False
 
     # seq = batch[i].split("@")[1]  # sequence + extension
     # idx = int(seq.split("_")[1].split(".")[0]) # idx
 
-    # if (idx % cross_matches) == 0:
+    # if (idx % cross_match_size) == 0:
     #     # when x cross_mathces has been found
 
-    file_abs = generate_txt_name(batch, idx, cross_matches)
+    file_abs = generate_txt_name(batch, idx, cross_match_size)
 
     # status = "{}/{}".format(idx+1, seq_count)  # remaining files
 
@@ -461,7 +463,7 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
     # print(txt_path, skip,"\n\n\n")
     if not skip:
         string = ""
-        for file in batch:
+        for i, file in enumerate(batch):
             # print(str_prefix + file + "\t", str_suffix)
 
             for file_target in file_targets:
@@ -470,6 +472,14 @@ def process_batch(choice, frs, idx, batch, file_targets, cross_matches):
                     # append to string
                     string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
                 # print("  overlap was:", overlap)
+
+            if use_cross_match:
+                for j in range(i+1, len(batch)):
+                    overlap = calc_overlap(file, batch[j])
+                    #print(i, j)
+                    if overlap is not None:
+                        # append to string
+                        string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
 
         f = open(file_abs, "w")
         f.write(string)
@@ -488,7 +498,7 @@ def create_txtfiles(choice, frs):
     # files that are target
     file_targets = tuple(ply_file.split(".")[0] + ".npz" for ply_file in ply_files)
 
-    cross_matches = 8  # cross matches pr text file
+    
     npz_files = [
         file
         for file in os.listdir(dataset_dir)
@@ -497,12 +507,12 @@ def create_txtfiles(choice, frs):
     npz_files = sorted(npz_files)
     length = len(npz_files)
 
-    for i in range(0, length, cross_matches):
+    for i in range(0, length, cross_match_size):
         if i < length:
-            batch = npz_files[i : i + cross_matches]
+            batch = npz_files[i : i + cross_match_size]
         else:
             batch = npz_files[i:length]
-        process_batch(choice, frs, i, batch, file_targets, cross_matches)
+        process_batch(choice, frs, i, batch, file_targets, cross_match_size)
     
 
 def create_matching_file():
