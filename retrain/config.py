@@ -22,7 +22,7 @@ logging_arg.add_argument('--out_dir', type=str, default=home+"/repos/inspectrone
 trainer_arg = add_argument_group('Trainer')
 trainer_arg.add_argument('--trainer', type=str, default='HardestContrastiveLossTrainer')
 trainer_arg.add_argument('--save_freq_epoch', type=int, default=1)
-trainer_arg.add_argument('--batch_size', type=int, default=1) # should be larger (4), but i'm out of memory :(
+trainer_arg.add_argument('--batch_size', type=int, default=4) # should be larger (4), but i'm out of memory :(
 trainer_arg.add_argument('--val_batch_size', type=int, default=1)
 
 # Hard negative mining
@@ -113,7 +113,7 @@ data_arg = add_argument_group('Data')
 data_arg.add_argument('--dataset', type=str, default='ThreeDMatchPairDataset')
 data_arg.add_argument('--voxel_size', type=float, default=0.025)
 data_arg.add_argument(
-    '--threed_match_dir', type=str, default=home+"repos/inspectrone/catkin_ws/downloads/datasets2/threedmatch/")
+    '--threed_match_dir', type=str, default=home+"repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/")
 data_arg.add_argument(
     '--kitti_root', type=str, default="/home/chrischoy/datasets/FCGF/kitti/")
 data_arg.add_argument(
