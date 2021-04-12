@@ -21,6 +21,7 @@ class Config:
         topic_ply : str
             name of the .ply file inside <inspectrone>/catkin_ws/src/ply_publisher/cfg/
         '''
+
         self.paths = self._Paths(repos_dir)
         self.voxel_size = voxel_size
         self.model_name = model_name
@@ -39,12 +40,10 @@ class Config:
 
     class _Paths:
         def __init__(self, repos_dir):
-            self.home = os.getenv("HOME")+"/"
-            self.repos = self.home + repos_dir
-            self.catkin_ws = self.repos + "catkin_ws/"
+            self.catkin_ws = repos_dir + "catkin_ws/"
             self.downloads = self.catkin_ws + "downloads/"
             self.plys = self.catkin_ws + "src/ply_publisher/cfg/"
-            self._verify_path(self.repos)
+            self._verify_path(repos_dir)
             self._verify_path(self.catkin_ws)
             self._verify_path(self.downloads)
 

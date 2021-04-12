@@ -56,7 +56,7 @@ trainer_arg.add_argument('--val_epoch_freq', type=int, default=1)
 trainer_arg.add_argument(
     '--positive_pair_search_voxel_size_multiplier', type=float, default=1.5)
 
-trainer_arg.add_argument('--hit_ratio_thresh', type=float, default=0.1)
+trainer_arg.add_argument('--hit_ratio_thresh', type=float, default=0.1) # TODO change this to 0.075?
 
 # Triplets
 trainer_arg.add_argument('--triplet_num_pos', type=int, default=256)
@@ -92,8 +92,8 @@ opt_arg.add_argument(
 
 misc_arg = add_argument_group('Misc')
 misc_arg.add_argument('--use_gpu', type=str2bool, default=True)
-misc_arg.add_argument('--weights', type=str, default=home+"repos/inspectrone/catkin_ws/downloads/checkpoints/ResUNetBN2C-32feat-3conv.pth")
-misc_arg.add_argument('--weights_dir', type=str, default=home+"repos/inspectrone/catkin_ws/downloads/checkpoints/")
+misc_arg.add_argument('--weights', type=str, default=home+"repos/inspectrone/catkin_ws/downloads/ResUNetBN2C-32feat-3conv.pth")
+misc_arg.add_argument('--weights_dir', type=str, default=home+"repos/inspectrone/catkin_ws/downloads/")
 misc_arg.add_argument('--resume', type=str, default=None)
 misc_arg.add_argument('--resume_dir', type=str, default=None)
 misc_arg.add_argument('--train_num_thread', type=int, default=2)

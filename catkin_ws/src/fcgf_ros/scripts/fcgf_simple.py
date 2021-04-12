@@ -76,7 +76,7 @@ if __name__ == "__main__":
         model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
         # model_name="retrained_models/checkpoint.pth",
         # model_name="retrained_models/best_val_checkpoint.pth",
-        repos_dir="repos/inspectrone/",
+        repos_dir=os.getenv("HOME")+"/repos/inspectrone/",
         static_ply_name="ballast_tank.ply",
         #static_ply_name="pcl_ballast_tank.ply",
         )
@@ -96,6 +96,7 @@ if __name__ == "__main__":
     setattr(config, "debug", False)  # show matches
     setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
     
+
 
     metrics = extensions.PerformanceMetrics()
     pcd_listener = ros_helper.PCListener(config.topic_in_ply)

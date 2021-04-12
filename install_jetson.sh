@@ -287,3 +287,15 @@ alias python="/usr/bin/python"
 echo "\nOn ubuntu the master branch is broken, on jetson 1.6.5 and 1.7.0 is broken. So change the last part of this script accordingly"
 # some libraires might be missing look at https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e327b9058d57a54d4469ef6baad.diff
 echo "remember to restart"
+
+
+# retraining:
+# base_path=<directory of inspectrone repos>
+base_path="$HOME/repos/inspectrone"
+dw_path="$base_path/catkin_ws/downloads"
+cd $base_path/retrain/
+python3.7 retrain.py --batch_size 4 \
+--out_dir "$dw_path/retrained_models/" \
+--weights "$dw_path/ResUNetBN2C-32feat-3conv.pth" \
+--weights_dir "$dw_path" \
+--hit_ratio 0.075

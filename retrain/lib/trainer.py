@@ -136,6 +136,7 @@ class AlignmentTrainer:
       if self.test_valid and epoch % self.val_epoch_freq == 0:
         with torch.no_grad():
           val_dict = self._valid_epoch()
+          #print(val_dict)
 
         for k, v in val_dict.items():
           self.writer.add_scalar(f'val/{k}', v, epoch)
