@@ -93,3 +93,26 @@ ideas
     once dataset works, give to rune
     once dataset works with kinect try out mynteye
     upload dataset to nas (find guide on teams)
+
+Final Loss: 0.238, RTE: 0.715, RRE: 0.188, Hit Ratio: 0.099, Feat Match Ratio: 0.780
+Final Loss: 0.233, RTE: 1.259, RRE: 0.356, Hit Ratio: 0.204, Feat Match Ratio: 1.000
+Final Loss: 0.170, RTE: 0.987, RRE: 0.289, Hit Ratio: 0.238, Feat Match Ratio: 1.000
+Final Loss: 0.139, RTE: 0.623, RRE: 0.153, Hit Ratio: 0.253, Feat Match Ratio: 1.000
+Final Loss: 0.185, RTE: 0.905, RRE: 0.247, Hit Ratio: 0.236, Feat Match Ratio: 1.000
+Final Loss: 0.244, RTE: 1.325, RRE: 0.380, Hit Ratio: 0.222, Feat Match Ratio: 1.000
+
+# 13 april 
+    epocs vs loss / hit ratio
+    before after training performance (on test set)
+    transfer learning
+    writing report and to testings (video)
+    correspondences
+
+    hit ratio = if transform point == target point within dist hit_thr 
+
+do option for cropping ply's 
+    remove random cloud parts
+    find way to crop smartly
+    cross matching for ballast tank parts too? 
+
+

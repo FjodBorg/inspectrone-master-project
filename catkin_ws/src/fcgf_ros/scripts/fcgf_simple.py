@@ -26,7 +26,7 @@ def demo():
 
     pcd_map_down, map_features = matcher.get_open3d_features(pcd_map)
 
-    pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)    
+    pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)
 
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
     stamp = matcher.publish_pcd(pcd_scan_down, pcd_map_down)
@@ -40,7 +40,7 @@ def demo():
     
     #metrics.print_all_timings()
     # Visualize the registration results
-    if (config.debug is True):
+    if (config.debug or config.super_debug):
         if config.teaser is True:
             
             corrs_A, corrs_B = matcher.find_correspondences(
@@ -73,8 +73,9 @@ if __name__ == "__main__":
     global metrics, matcher, config
     feature_size = 32
     config = essentials.Config(
-        model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
-        # model_name="retrained_models/checkpoint.pth",
+        # model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
+        model_name="/retrained_models/with_cross_scan_matching/checkpoint.pth",
+        # model_name="best_val_checkpoint.pth",
         # model_name="retrained_models/best_val_checkpoint.pth",
         repos_dir=os.getenv("HOME")+"/repos/inspectrone/",
         static_ply_name="ballast_tank.ply",
@@ -85,6 +86,7 @@ if __name__ == "__main__":
     # setattr(config, "voxel_size", 0.06)
     # setattr(config, "voxel_size", 0.08)
     setattr(config, "voxel_size", 0.025)
+    setattr(config, "voxel_size", 0.06)
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
@@ -94,8 +96,8 @@ if __name__ == "__main__":
     setattr(config, "faiss", True) # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
     setattr(config, "debug", False)  # show matches
-    setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
-    
+    setattr(config, "super_debug", True)  # VERY SLOW increase voxel_size for speed up
+
 
 
     metrics = extensions.PerformanceMetrics()

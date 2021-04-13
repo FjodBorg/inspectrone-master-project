@@ -479,7 +479,7 @@ def process_batch(choice, frs, idx, batch, file_targets):
                     #print(i, j)
                     if overlap is not None:
                         # append to string
-                        string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
+                        string = string + "{} {} {:0.6f}\n".format(file, batch[j], overlap)
 
         f = open(file_abs, "w")
         f.write(string)
@@ -528,20 +528,25 @@ def create_overlap_files():
             if float(file.split("-")[-1].split(".txt")[0]) < 1.0:
                 # if overlap file exists
                 continue
+            
+            # write base file with all overlaps
             f = open(os.path.join(dataset_dir, file), "r")
             string = f.read()
             f.close()
-            for overlap_thr in overlaps:
+
+            for overlap_thr in overlaps:  # iterate through overlap thresholds
                 new_string = ""
                 for line in string.split("\n"):
                     try:
                         overlap = float(line.split(" ")[-1])
+                        # only write items that are above the threshold
                         if overlap > overlap_thr:
                             new_string = new_string + line + "\n"
                     except ValueError:
                         pass
                 # print(new_string)
-            
+
+                # write files with valid thresholds
                 file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
                 print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n")), file_overlap, ))
                 f = open(os.path.join(dataset_dir, file_overlap), "w")
