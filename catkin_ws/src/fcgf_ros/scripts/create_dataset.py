@@ -25,6 +25,7 @@ cross_match_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 min_pcd_size = 5000
+random.seed(19)
 
 
 def configure_pcd(pcd):
@@ -269,9 +270,10 @@ def make_transform_from_ros(ros_pose):
     # EDN for cam
     return T_rough
 
-def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb):
+
+def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
     # TODO fix voxel size
-    print(aabb)
+    # print(aabb)
     pcd_croped = copy.deepcopy(pcd_o3d_xyz_trans)
     
     try:
@@ -285,54 +287,63 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb):
         
 
         pcd_np_color = np.array([[0, 0, 0]] * length)
-        # pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
-        #np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
+        pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
+
+
+        x1,y1,z1 = aabb.get_min_bound()
+        x2,y2,z2 = aabb.get_max_bound()
+        
+        new_fname = fname[0:-4] + "[{:0.2f}_{:0.2f}_{:0.2f}][{:0.2f}_{:0.2f}_{:0.2f}].npz"
+        new_fname = new_fname.format(x1, y1, z1, x2, y2, z2)
+
+        print("Wrote file:     " + new_fname)
+        np.savez(dataset_dir + new_fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
+        return True
     except RuntimeError:
         print("error occured, probably tried to crop section without voxels: ")
         return None
 
-    return True
 
-def get_random_samples(sample_ranges, scale):
-    # 2 random numbers for x y and z within range
-    x = random.sample(sample_ranges[0], 2)
-    y = random.sample(sample_ranges[1], 2)
-    z = random.sample(sample_ranges[2], 2)
 
-    # make array
-    bb = np.array([x, y, z])/scale
+    # if something we don't know happend
+    return None
 
-    # first column is min and second is max
-    bb1 = bb.min(axis=1)
-    bb2 = bb.max(axis=1)
+def get_random_samples(min_b, max_b):
+    max_size = max_b - min_b
+    min_size = np.array([2.0, 1.5, 1.5])
+    # find random size
+    size = np.array([
+            random.uniform(min_size[0], max_size[0]),
+            random.uniform(min_size[1], max_size[1]),
+            random.uniform(min_size[2], max_size[2]),
+        ])
+    # print(min_size, size, max_size)
+    
+    # calculated posible position within cloud with given size
+    min_pos = min_b + size/2
+    max_pos = max_b - size/2
+    
+    # generate random center within cloud
+    center = np.array([
+            random.uniform(min_pos[0], max_pos[0]),
+            random.uniform(min_pos[1], max_pos[1]),
+            random.uniform(min_pos[2], max_pos[2]),
+        ])
+    # print(center)
+    # print(min_b, max_b)
 
-    size = abs(bb1-bb2)
-    # TODO make it so you random generate a center point and than 3 sizes
-    min_size = np.array([2.5,2,1.5])
-    selector = size < min_size
-    print(bb1, bb2)
-    bb1[selector] = bb1[selector] - (min_size[selector] - size[selector])/2
-    bb2[selector] = bb2[selector] + (min_size[selector] - size[selector])/2
-    #print(abs(bb1-bb2) < np.array([2,2,1]))
+    bb1 = np.round(center - size/2, 2)
+    bb2 = np.round(center + size/2, 2)
 
-    print(bb1, bb2)
+    # print(bb1, bb2)
     # make allignedbox
     aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
     return aabb
 
 
-def get_sample_range(min_b, max_b):
-    scale = 1/voxel_size
-    min_b_int = np.floor(min_b*scale).astype('int')
-    max_b_int = np.ceil(max_b*scale).astype('int')
-    range_x = range(min_b_int[0], max_b_int[0])
-    range_y = range(min_b_int[1], max_b_int[1])
-    range_z = range(min_b_int[2], max_b_int[2])
-    return (range_x, range_y, range_z), scale
-
-
-def make_crops(fname, pcd_o3d_xyz_trans):
+def make_crops(pcd_o3d_xyz_trans, str_prefix, fname):
     aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(pcd_o3d_xyz_trans.points)
+
     min_b = aabb.get_min_bound()
     max_b = aabb.get_max_bound()
 
@@ -350,16 +361,17 @@ def make_crops(fname, pcd_o3d_xyz_trans):
     b_sets = [b3, b4, b1, b2]
     for bb1, bb2 in b_sets:
         aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
-        crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb)
+        crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, str_prefix, fname)
 
-    random.seed(10)
-    sample_ranges, scale = get_sample_range(min_b, max_b)
+    
     for i in range(max_random_crop_iterations):
-        aabb = get_random_samples(sample_ranges, scale)
-        if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb):
+        aabb = get_random_samples(min_b, max_b)
+        if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, str_prefix, fname):
             # it failed thus try again
             i -= 1
             continue
+        
+        
 
     exit()
 
@@ -388,7 +400,7 @@ def process_ply(ply_file, choice, frs):
         str_prefix = "Wrote file:     "
 
     # if file wasen't skipped
-    if not skip:
+    if not skip or use_cropping:
         pcd_np_xyz, pcd_np_color = ply2xyz(ply_dir + ply_file)
 
         T = np.asarray([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
@@ -402,10 +414,10 @@ def process_ply(ply_file, choice, frs):
         # TODO should these be resampled here???
         # pcd_np_xyz_trans = pcd_np_xyz
 
-        np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
+        np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
 
         if use_cropping:
-            make_crops(fname, pcd_o3d_xyz_trans)
+            make_crops(pcd_o3d_xyz_trans, str_prefix, fname)
 
     print(str_prefix + fname)
 
@@ -451,7 +463,7 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
         pcd_o3d_xyz_trans = to_ref_frame(pcd_np_xyz, T)
         pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
 
-        np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
+        np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
 
     print(str_prefix + fname + "\t", str_suffix)
 
