@@ -18,11 +18,11 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
-use_cross_match_scan = False # not tested yet
-use_cross_match_tank = False # not tested yet
+use_cross_match_scan = False  # not tested yet
+use_cross_match_tank = False  # not tested yet
 use_cropping = True
 max_random_crop_iterations = 10
-match_size = 8
+match_size = 4
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 min_pcd_size = 5000
@@ -514,7 +514,7 @@ def generate_txt_name(batches, idxs):
 
     # full file name:
     #txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
-    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/8), int(idxs[0]/8))
+    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/match_size), int(idxs[0]/match_size))
     #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/match_size))
 
 
@@ -667,7 +667,6 @@ def create_txtfiles(choice, frs):
                 tank_batch = tank_files[i: i + match_size]
             else:
                 tank_batch = tank_files[i: tank_len]
-        
             process_batch(choice, frs, (i, j), (tank_batch, scan_batch))
 
 
