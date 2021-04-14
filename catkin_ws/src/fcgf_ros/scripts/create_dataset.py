@@ -18,7 +18,8 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
-use_cross_match = False
+use_cross_match_scan = False
+use_cross_match_tank = True
 use_cropping = True
 max_random_crop_iterations = 10
 cross_match_size = 8
@@ -278,7 +279,7 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
     
     try:
         pcd_croped = pcd_croped.crop(aabb)
-        o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
+        #o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
 
         length = len(pcd_croped.points)
         if len(pcd_croped.points) < min_pcd_size:
@@ -365,17 +366,12 @@ def make_crops(pcd_o3d_xyz_trans, str_prefix, fname):
         aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
         crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname)
 
-    
     for i in range(max_random_crop_iterations):
         aabb = get_random_samples(min_b, max_b)
         if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
             # it failed thus try again
             i -= 1
             continue
-        
-        
-
-    exit()
 
 
 def process_ply(ply_file, choice, frs):
@@ -419,10 +415,10 @@ def process_ply(ply_file, choice, frs):
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
 
         if use_cropping:
-            for f in os.listdir('.'):
-                if f.startswith(source+"[") and f.endswith('].npz'):
-                    print(f)
-                    #os.remove(f)
+            for file in os.listdir(dataset_dir):
+                if file.startswith(source+"[") and file.endswith('].npz'):
+                    print("Deleting cropped file:", file)
+                    os.remove(dataset_dir + file)
             make_crops(pcd_o3d_xyz_trans, str_prefix, fname)
 
     print(str_prefix + fname)
@@ -593,14 +589,14 @@ def process_batch(choice, frs, idx, batch, file_targets):
                     string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
                 # print("  overlap was:", overlap)
 
-            if use_cross_match:
+            if use_cross_match_scan:
                 for j in range(i+1, len(batch)):
                     overlap = calc_overlap(file, batch[j])
                     #print(i, j)
                     if overlap is not None:
                         # append to string
                         string = string + "{} {} {:0.6f}\n".format(file, batch[j], overlap)
-
+            
         f = open(file_abs, "w")
         f.write(string)
         f.close()
@@ -624,6 +620,7 @@ def create_txtfiles(choice, frs):
         for file in os.listdir(dataset_dir)
         if file.endswith(".npz") and not file.startswith(file_targets)
     ]
+    print(npz_files)
     npz_files = sorted(npz_files)
     length = len(npz_files)
 
