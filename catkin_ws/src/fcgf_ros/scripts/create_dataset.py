@@ -296,9 +296,11 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
         new_fname = fname[0:-4] + "[{:0.2f}_{:0.2f}_{:0.2f}][{:0.2f}_{:0.2f}_{:0.2f}].npz"
         new_fname = new_fname.format(x1, y1, z1, x2, y2, z2)
 
-        print("Wrote file:     " + new_fname)
         np.savez(dataset_dir + new_fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
+        print("Wrote file:     " + new_fname)
+    
         return True
+    
     except RuntimeError:
         print("error occured, probably tried to crop section without voxels: ")
         return None
@@ -361,12 +363,12 @@ def make_crops(pcd_o3d_xyz_trans, str_prefix, fname):
     b_sets = [b3, b4, b1, b2]
     for bb1, bb2 in b_sets:
         aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
-        crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, str_prefix, fname)
+        crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname)
 
     
     for i in range(max_random_crop_iterations):
         aabb = get_random_samples(min_b, max_b)
-        if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, str_prefix, fname):
+        if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
             # it failed thus try again
             i -= 1
             continue
@@ -417,6 +419,10 @@ def process_ply(ply_file, choice, frs):
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
 
         if use_cropping:
+            for f in os.listdir('.'):
+                if f.startswith(source+"[") and f.endswith('].npz'):
+                    print(f)
+                    #os.remove(f)
             make_crops(pcd_o3d_xyz_trans, str_prefix, fname)
 
     print(str_prefix + fname)
