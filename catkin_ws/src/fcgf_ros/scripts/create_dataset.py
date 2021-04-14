@@ -708,7 +708,8 @@ def create_overlap_files():
 
                 # write files with valid thresholds
                 file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
-                print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n")-1), file_overlap, ))
+                print("yee,", file_overlap, len(new_string.split("\n")))
+                print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n"))-1, file_overlap))
                 f = open(os.path.join(dataset_dir, file_overlap), "w")
                 f.write(new_string)
                 f.close()
