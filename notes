@@ -116,3 +116,5 @@ do option for cropping ply's
     cross matching for ballast tank parts too? 
 
 
+make option to delete every file in folder
+cross_scan matching is baaad since it tries to find features to match with the scans and not container
