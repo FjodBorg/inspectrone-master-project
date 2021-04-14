@@ -22,7 +22,7 @@ use_cross_match_scan = False  # not tested yet
 use_cross_match_tank = False  # not tested yet
 use_cropping = True
 max_random_crop_iterations = 10
-match_size = 4
+sample_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 min_pcd_size = 5000
@@ -514,8 +514,8 @@ def generate_txt_name(batches, idxs):
 
     # full file name:
     #txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
-    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/match_size), int(idxs[0]/match_size))
-    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/match_size))
+    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/sample_size), int(idxs[0]/sample_size))
+    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/sample_size))
 
 
     # file to write to:
@@ -533,9 +533,11 @@ def calc_overlap(file, file_target):
     xyz2 = npz_file2['pcd']
     pcd_source.points = o3d.utility.Vector3dVector(xyz1)
     pcd_target.points = o3d.utility.Vector3dVector(xyz2)
-    # pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
-    # pcd_target = pcd_target.voxel_down_sample(voxel_size=voxel_size)
+    pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
+    pcd_target = pcd_target.voxel_down_sample(voxel_size=voxel_size)
+
     pcd_combined = pcd_source + pcd_target
+
     pcd_merged = pcd_combined.voxel_down_sample(voxel_size=voxel_size)
 
     p_source = len(pcd_source.points)
@@ -543,6 +545,10 @@ def calc_overlap(file, file_target):
     p_merged = len(pcd_merged.points)
     p_rest = p_source + p_target - p_merged
     p_overlap = p_rest/(p_merged)
+    if p_overlap > 0.3:
+        print(file, file_target, p_overlap, p_source, p_target, p_merged, p_rest)
+
+        o3d.visualization.draw([pcd_source.paint_uniform_color([0,0,1]), pcd_target])
 
     if p_source < min_pcd_size or p_target < min_pcd_size:
         print("#points: ({} or {}) is less than min_pcd_size: {}".format(p_source, p_target, min_pcd_size))
@@ -568,7 +574,7 @@ def process_batch(choice, frs, idxs, batches):
     # seq = batch[i].split("@")[1]  # sequence + extension
     # idx = int(seq.split("_")[1].split(".")[0]) # idx
 
-    # if (idx % match_size) == 0:
+    # if (idx % sample_size) == 0:
     #     # when x cross_mathces has been found
 
     file_abs = generate_txt_name(scan_batch, idxs)
@@ -576,7 +582,7 @@ def process_batch(choice, frs, idxs, batches):
     # status = "{}/{}".format(idx+1, seq_count)  # remaining files
 
     skip, str_prefix, str_suffix = generate_str_operation(file_abs, choice, frs)
-
+    
     # TODO find overlap for tanks?
 
     # print(txt_path, skip,"\n\n\n")
@@ -655,16 +661,16 @@ def create_txtfiles(choice, frs):
     tank_len = len(tank_files)
 
 
-    for j in range(0, scan_len, match_size):
+    for j in range(0, scan_len, sample_size):
         if j < scan_len:
-            scan_batch = scan_files[j: j + match_size]
+            scan_batch = scan_files[j: j + sample_size]
         else:
             scan_batch = scan_files[j: scan_len]
         
-        for i in range(0, tank_len, match_size):
+        for i in range(0, tank_len, sample_size):
             
             if i < tank_len:
-                tank_batch = tank_files[i: i + match_size]
+                tank_batch = tank_files[i: i + sample_size]
             else:
                 tank_batch = tank_files[i: tank_len]
             process_batch(choice, frs, (i, j), (tank_batch, scan_batch))
@@ -685,7 +691,8 @@ def create_matching_file():
 def create_overlap_files():
     for file in os.listdir(dataset_dir):
         if file.endswith(".txt"):
-            if float(file.split("-")[-1].split(".txt")[0]) < 1.0:
+            number = file.split("-")[-1].split(".txt")[0]
+            if float(number) < 1.0 and number!="00000":
                 # if overlap file exists
                 continue
             
@@ -693,6 +700,8 @@ def create_overlap_files():
             f = open(os.path.join(dataset_dir, file), "r")
             string = f.read()
             f.close()
+
+            
 
             for overlap_thr in overlaps:  # iterate through overlap thresholds
                 new_string = ""
