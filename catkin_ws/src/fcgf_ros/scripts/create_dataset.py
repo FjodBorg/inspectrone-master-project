@@ -7,6 +7,7 @@ import os
 import open3d as o3d
 import tf
 import copy
+import random
 
 
 bag_dir = "/home/fjod/repos/inspectrone/catkin_ws/bags/"
@@ -17,10 +18,13 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
-use_cross_match = True
+use_cross_match = False
+use_cropping = True
+max_random_crop_iterations = 10
 cross_match_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
+min_pcd_size = 5000
 
 
 def configure_pcd(pcd):
@@ -37,10 +41,9 @@ def configure_pcd(pcd):
 
 
 def make_global_variables():
-    global voxel_size, pcd_ref, skip_to_idx, prev_T, min_size
+    global voxel_size, pcd_ref, skip_to_idx, prev_T
 
     prev_T = None
-    min_size = 4000 # pointcloud size
     skip_to_idx = 0
     voxel_size = 0.025  # must be same as config.py
     xyz, _ = ply2xyz(ply_dir + reference)
@@ -219,7 +222,7 @@ def to_ref_frame(xyz_np, T_roughest):
     global prev_T
     prev_T = T_full
 
-    return np.asarray(pcd_source.points)
+    return pcd_source
 
 
 def make_transform_from_ros(ros_pose):
@@ -265,7 +268,101 @@ def make_transform_from_ros(ros_pose):
 
     # EDN for cam
     return T_rough
+
+def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb):
+    # TODO fix voxel size
+    print(aabb)
+    pcd_croped = copy.deepcopy(pcd_o3d_xyz_trans)
     
+    try:
+        pcd_croped = pcd_croped.crop(aabb)
+        o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
+
+        length = len(pcd_croped.points)
+        if len(pcd_croped.points) < min_pcd_size:
+            print("too small pcd: ", pcd_croped)
+            return None
+        
+
+        pcd_np_color = np.array([[0, 0, 0]] * length)
+        # pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
+        #np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
+    except RuntimeError:
+        print("error occured, probably tried to crop section without voxels: ")
+        return None
+
+    return True
+
+def get_random_samples(sample_ranges, scale):
+    # 2 random numbers for x y and z within range
+    x = random.sample(sample_ranges[0], 2)
+    y = random.sample(sample_ranges[1], 2)
+    z = random.sample(sample_ranges[2], 2)
+
+    # make array
+    bb = np.array([x, y, z])/scale
+
+    # first column is min and second is max
+    bb1 = bb.min(axis=1)
+    bb2 = bb.max(axis=1)
+
+    size = abs(bb1-bb2)
+    # TODO make it so you random generate a center point and than 3 sizes
+    min_size = np.array([2.5,2,1.5])
+    selector = size < min_size
+    print(bb1, bb2)
+    bb1[selector] = bb1[selector] - (min_size[selector] - size[selector])/2
+    bb2[selector] = bb2[selector] + (min_size[selector] - size[selector])/2
+    #print(abs(bb1-bb2) < np.array([2,2,1]))
+
+    print(bb1, bb2)
+    # make allignedbox
+    aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
+    return aabb
+
+
+def get_sample_range(min_b, max_b):
+    scale = 1/voxel_size
+    min_b_int = np.floor(min_b*scale).astype('int')
+    max_b_int = np.ceil(max_b*scale).astype('int')
+    range_x = range(min_b_int[0], max_b_int[0])
+    range_y = range(min_b_int[1], max_b_int[1])
+    range_z = range(min_b_int[2], max_b_int[2])
+    return (range_x, range_y, range_z), scale
+
+
+def make_crops(fname, pcd_o3d_xyz_trans):
+    aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(pcd_o3d_xyz_trans.points)
+    min_b = aabb.get_min_bound()
+    max_b = aabb.get_max_bound()
+
+    # just to make it more pretty when making arrays
+    mix, miy, miz = min_b
+    mxx, may, maz = max_b
+
+    # bounding box set
+    b1 = (np.array([mix, miy, miz]), np.array([2.6, may, maz]))
+    b2 = (np.array([2.4, miy, miz]), np.array([mxx, may, maz]))
+    b3 = (np.array([mix, miy, miz]), np.array([mxx, 1.6, maz]))
+    b4 = (np.array([mix, 1.4, miz]), np.array([mxx, may, maz]))
+
+    # # create split crops
+    b_sets = [b3, b4, b1, b2]
+    for bb1, bb2 in b_sets:
+        aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
+        crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb)
+
+    random.seed(10)
+    sample_ranges, scale = get_sample_range(min_b, max_b)
+    for i in range(max_random_crop_iterations):
+        aabb = get_random_samples(sample_ranges, scale)
+        if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb):
+            # it failed thus try again
+            i -= 1
+            continue
+
+    exit()
+
 
 def process_ply(ply_file, choice, frs):
     source = ply_file.split(".")[0]  # remove extension
@@ -300,11 +397,15 @@ def process_ply(ply_file, choice, frs):
         # transform to correct frame
         
         # Add this when other is fixed
-        pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        pcd_o3d_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
         # TODO should these be resampled here???
         # pcd_np_xyz_trans = pcd_np_xyz
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
+
+        if use_cropping:
+            make_crops(fname, pcd_o3d_xyz_trans)
 
     print(str_prefix + fname)
 
@@ -347,7 +448,8 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 
         # TODO should these be resampled here???
         # transform to correct frame
-        pcd_np_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        pcd_o3d_xyz_trans = to_ref_frame(pcd_np_xyz, T)
+        pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
 
         np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_xyz)
 
@@ -426,8 +528,8 @@ def calc_overlap(file, file_target):
     p_rest = p_source + p_target - p_merged
     p_overlap = p_rest/(p_merged)
 
-    if p_source < min_size or p_target < min_size:
-        print("#points: ({} or {}) is less than min_size: {}".format(p_source, p_target, min_size))
+    if p_source < min_pcd_size or p_target < min_pcd_size:
+        print("#points: ({} or {}) is less than min_pcd_size: {}".format(p_source, p_target, min_pcd_size))
         return None
 
 
