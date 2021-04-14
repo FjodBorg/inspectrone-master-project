@@ -18,11 +18,11 @@ dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast
 ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
-use_cross_match_scan = False
-use_cross_match_tank = False
+use_cross_match_scan = False # not tested yet
+use_cross_match_tank = False # not tested yet
 use_cropping = True
 max_random_crop_iterations = 10
-cross_match_size = 8
+match_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 min_pcd_size = 5000
@@ -514,8 +514,8 @@ def generate_txt_name(batches, idxs):
 
     # full file name:
     #txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
-    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, idxs[0], idxs[1])
-    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/cross_match_size))
+    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/8), int(idxs[0]/8))
+    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/match_size))
 
 
     # file to write to:
@@ -564,11 +564,11 @@ def calc_overlap(file, file_target):
 def process_batch(choice, frs, idxs, batches):
     skip = False
 
-    file_targets, scan_batch = batches
+    tank_batch, scan_batch = batches
     # seq = batch[i].split("@")[1]  # sequence + extension
     # idx = int(seq.split("_")[1].split(".")[0]) # idx
 
-    # if (idx % cross_match_size) == 0:
+    # if (idx % match_size) == 0:
     #     # when x cross_mathces has been found
 
     file_abs = generate_txt_name(scan_batch, idxs)
@@ -585,14 +585,22 @@ def process_batch(choice, frs, idxs, batches):
         for i, file in enumerate(scan_batch):
             # print(str_prefix + file + "\t", str_suffix)
 
-            for file_target in file_targets:
+            for file_target in tank_batch:
                 overlap = calc_overlap(file, file_target)
                 if overlap is not None:
                     # append to string
                     string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
                 # print("  overlap was:", overlap)
+                
+                if use_cross_match_tank:  # NOT TESTED
+                    for j in range(i+1, len(tank_batch)):
+                        overlap = calc_overlap(file, tank_batch[j])
+                        #print(i, j)
+                        if overlap is not None:
+                            # append to string
+                            string = string + "{} {} {:0.6f}\n".format(file, tank_batch[j], overlap)
 
-            if use_cross_match_scan:
+            if use_cross_match_scan:  # NOT TESTED
                 for j in range(i+1, len(scan_batch)):
                     overlap = calc_overlap(file, scan_batch[j])
                     #print(i, j)
@@ -600,12 +608,12 @@ def process_batch(choice, frs, idxs, batches):
                         # append to string
                         string = string + "{} {} {:0.6f}\n".format(file, scan_batch[j], overlap)
             
+            
         f = open(file_abs, "w")
         f.write(string)
         f.close()
 
     print(str_prefix + file_abs.split("/")[-1] + "\t", str_suffix)
-    exit()
     return skip
 
     # print("appending", len(file_targets), "matches to", txt_file, "\n")
@@ -636,32 +644,41 @@ def create_txtfiles(choice, frs):
             ]
     else:
         tank_files = [tank_file + ".npz" for tank_file in tank_names]
-
+    
+    # to be sure that it is seeded correctly:
     scan_files = sorted(scan_files)
     tank_files = sorted(tank_files)
+    random.shuffle(tank_files)
+    random.shuffle(scan_files)
 
     scan_len = len(scan_files)
     tank_len = len(tank_files)
 
-    for i in range(0, tank_len, cross_match_size):
-        
-        if i < tank_len:
-            tank_batch = tank_files[i: i + cross_match_size]
-        else:
-            tank_batch = tank_files[i: tank_len]
 
-        for j in range(0, scan_len, cross_match_size):
-            if j < scan_len:
-                scan_batch = scan_files[j: j + cross_match_size]
-            else:
-                scan_batch = scan_files[j: scan_len]
+    for j in range(0, scan_len, match_size):
+        if j < scan_len:
+            scan_batch = scan_files[j: j + match_size]
+        else:
+            scan_batch = scan_files[j: scan_len]
+        
+        for i in range(0, tank_len, match_size):
             
+            if i < tank_len:
+                tank_batch = tank_files[i: i + match_size]
+            else:
+                tank_batch = tank_files[i: tank_len]
+        
             process_batch(choice, frs, (i, j), (tank_batch, scan_batch))
 
 
 def create_matching_file():
     choice, frs = get_choice(extension=".txt")
     if choice != frs[2]:  # if skip was  not selected
+        if choice == frs[1]:
+            for file in os.listdir(dataset_dir):
+                if file.endswith('.txt'):
+                    print("Deleting txt file:", file)
+                    os.remove(dataset_dir + file)
         create_txtfiles(choice, frs)
         print("done with text generation")
 
@@ -692,7 +709,7 @@ def create_overlap_files():
 
                 # write files with valid thresholds
                 file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
-                print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n")), file_overlap, ))
+                print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n")-1), file_overlap, ))
                 f = open(os.path.join(dataset_dir, file_overlap), "w")
                 f.write(new_string)
                 f.close()
