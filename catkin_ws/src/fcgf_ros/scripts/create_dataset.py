@@ -19,7 +19,7 @@ ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
 ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
 reference = ply_files[0]  # use
 use_cross_match_scan = False
-use_cross_match_tank = True
+use_cross_match_tank = False
 use_cropping = True
 max_random_crop_iterations = 10
 cross_match_size = 8
@@ -186,7 +186,7 @@ def local_allignment(source, target, max_iter, threshold, T_rough):
     print("After    Fitness: {:0.5f}  rms: {:0.5f}  threshold: {}".format(reg_p2p.fitness, reg_p2p.inlier_rmse, threshold))
 
     return reg_p2p.transformation
-    
+
 
 def to_ref_frame(xyz_np, T_roughest):
     # method to fix all data samples to be in the same frame
@@ -288,7 +288,7 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
         
 
         pcd_np_color = np.array([[0, 0, 0]] * length)
-        pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
+        pcd_np_croped = np.array(pcd_croped.points)
 
 
         x1,y1,z1 = aabb.get_min_bound()
@@ -297,7 +297,7 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
         new_fname = fname[0:-4] + "[{:0.2f}_{:0.2f}_{:0.2f}][{:0.2f}_{:0.2f}_{:0.2f}].npz"
         new_fname = new_fname.format(x1, y1, z1, x2, y2, z2)
 
-        np.savez(dataset_dir + new_fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
+        np.savez(dataset_dir + new_fname, pcd=pcd_np_croped, color=pcd_np_color)
         print("Wrote file:     " + new_fname)
     
         return True
@@ -310,6 +310,7 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
 
     # if something we don't know happend
     return None
+
 
 def get_random_samples(min_b, max_b):
     max_size = max_b - min_b
@@ -502,17 +503,18 @@ def create_pointcloud_dataset():
         print("Done with dataset generation")
 
 
-def generate_txt_name(batch, idx):
+def generate_txt_name(batches, idxs):
     # get source name
     # print(batch)
-    source_name = batch[idx % cross_match_size].split("@")[0]
+    source_name = batches[0].split("@")[0]
 
     # select correct indecies
-    from_idx = idx
-    to_idx = (from_idx + len(batch) - 1)
+    #from_idx = idx
+    #to_idx = (from_idx + len(batch) - 1)
 
     # full file name:
-    txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
+    #txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
+    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, idxs[0], idxs[1])
     #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/cross_match_size))
 
 
@@ -559,17 +561,18 @@ def calc_overlap(file, file_target):
     return p_overlap
 
 
-def process_batch(choice, frs, idx, batch, file_targets):
+def process_batch(choice, frs, idxs, batches):
     skip = False
 
+    file_targets, scan_batch = batches
     # seq = batch[i].split("@")[1]  # sequence + extension
     # idx = int(seq.split("_")[1].split(".")[0]) # idx
 
     # if (idx % cross_match_size) == 0:
     #     # when x cross_mathces has been found
 
-    file_abs = generate_txt_name(batch, idx)
-
+    file_abs = generate_txt_name(scan_batch, idxs)
+    
     # status = "{}/{}".format(idx+1, seq_count)  # remaining files
 
     skip, str_prefix, str_suffix = generate_str_operation(file_abs, choice, frs)
@@ -579,7 +582,7 @@ def process_batch(choice, frs, idx, batch, file_targets):
     # print(txt_path, skip,"\n\n\n")
     if not skip:
         string = ""
-        for i, file in enumerate(batch):
+        for i, file in enumerate(scan_batch):
             # print(str_prefix + file + "\t", str_suffix)
 
             for file_target in file_targets:
@@ -590,18 +593,19 @@ def process_batch(choice, frs, idx, batch, file_targets):
                 # print("  overlap was:", overlap)
 
             if use_cross_match_scan:
-                for j in range(i+1, len(batch)):
-                    overlap = calc_overlap(file, batch[j])
+                for j in range(i+1, len(scan_batch)):
+                    overlap = calc_overlap(file, scan_batch[j])
                     #print(i, j)
                     if overlap is not None:
                         # append to string
-                        string = string + "{} {} {:0.6f}\n".format(file, batch[j], overlap)
+                        string = string + "{} {} {:0.6f}\n".format(file, scan_batch[j], overlap)
             
         f = open(file_abs, "w")
         f.write(string)
         f.close()
 
     print(str_prefix + file_abs.split("/")[-1] + "\t", str_suffix)
+    exit()
     return skip
 
     # print("appending", len(file_targets), "matches to", txt_file, "\n")
@@ -611,26 +615,49 @@ def process_batch(choice, frs, idx, batch, file_targets):
 
 
 def create_txtfiles(choice, frs):
-    # files that are target
-    file_targets = tuple(ply_file.split(".")[0] + ".npz" for ply_file in ply_files)
+    # tank files without extension
+    tank_names = tuple(ply_file.split(".")[0] for ply_file in ply_files)
 
-    
-    npz_files = [
-        file
-        for file in os.listdir(dataset_dir)
-        if file.endswith(".npz") and not file.startswith(file_targets)
-    ]
-    print(npz_files)
-    npz_files = sorted(npz_files)
-    length = len(npz_files)
+    scan_names = tuple((bag_file.split("/")[-1]).split(".")[0] for bag_file in bag_files)
 
-    for i in range(0, length, cross_match_size):
-        if i < length:
-            batch = npz_files[i : i + cross_match_size]
+    # all scan files
+    scan_files = [
+            file
+            for file in os.listdir(dataset_dir)
+            if file.endswith(".npz") and file.startswith(scan_names)
+        ]
+
+    if use_cropping:
+        # all tank files with and without cropping
+        tank_files = [
+                file
+                for file in os.listdir(dataset_dir)
+                if file.endswith(".npz") and file.startswith(tank_names)
+            ]
+    else:
+        tank_files = [tank_file + ".npz" for tank_file in tank_names]
+
+    scan_files = sorted(scan_files)
+    tank_files = sorted(tank_files)
+
+    scan_len = len(scan_files)
+    tank_len = len(tank_files)
+
+    for i in range(0, tank_len, cross_match_size):
+        
+        if i < tank_len:
+            tank_batch = tank_files[i: i + cross_match_size]
         else:
-            batch = npz_files[i:length]
-        process_batch(choice, frs, i, batch, file_targets)
-    
+            tank_batch = tank_files[i: tank_len]
+
+        for j in range(0, scan_len, cross_match_size):
+            if j < scan_len:
+                scan_batch = scan_files[j: j + cross_match_size]
+            else:
+                scan_batch = scan_files[j: scan_len]
+            
+            process_batch(choice, frs, (i, j), (tank_batch, scan_batch))
+
 
 def create_matching_file():
     choice, frs = get_choice(extension=".txt")
