@@ -279,13 +279,15 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
     
     try:
         pcd_croped = pcd_croped.crop(aabb)
-        #o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
 
         length = len(pcd_croped.points)
-        if len(pcd_croped.points) < min_pcd_size:
+        # print(length, min_pcd_size*2)
+        if length < min_pcd_size * 2: # verify that the cloud is large enough
             print("too small pcd: ", pcd_croped)
+            # o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
             return None
         
+        # o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
 
         pcd_np_color = np.array([[0, 0, 0]] * length)
         pcd_np_croped = np.array(pcd_croped.points)
@@ -311,21 +313,36 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
     # if something we don't know happend
     return None
 
+def get_size(size_array):
+    size = np.sum(size_array)  # sum size
+    # print(size)
+    # size = np.linalg.norm(size_array)  # diagonal size
+    # print(size)
+    return size
 
 def get_random_samples(min_b, max_b):
-    max_size = max_b - min_b
-    min_size = np.array([2.0, 1.5, 1.5])
+    max_size_dim = max_b - min_b
+    min_size_dim = np.array([0.5, 0.5, 0.5])
     # find random size
-    size = np.array([
-            random.uniform(min_size[0], max_size[0]),
-            random.uniform(min_size[1], max_size[1]),
-            random.uniform(min_size[2], max_size[2]),
-        ])
+    min_size = get_size(np.array([2.0, 2, 2]))
+
+    while True:
+        size_dim = np.array([
+                random.uniform(min_size_dim[0], max_size_dim[0]),
+                random.uniform(min_size_dim[1], max_size_dim[1]),
+                random.uniform(min_size_dim[2], max_size_dim[2]),
+            ])
+        # try until a suitable size is found
+        if min_size <= get_size(size_dim):
+            print(size_dim, ":", get_size(size_dim), ">=", min_size)
+            print(get_size(size_dim), min_size)
+            break
+    
     # print(min_size, size, max_size)
     
     # calculated posible position within cloud with given size
-    min_pos = min_b + size/2
-    max_pos = max_b - size/2
+    min_pos = min_b + size_dim/2
+    max_pos = max_b - size_dim/2
     
     # generate random center within cloud
     center = np.array([
@@ -336,8 +353,8 @@ def get_random_samples(min_b, max_b):
     # print(center)
     # print(min_b, max_b)
 
-    bb1 = np.round(center - size/2, 2)
-    bb2 = np.round(center + size/2, 2)
+    bb1 = np.round(center - size_dim/2, 2)
+    bb2 = np.round(center + size_dim/2, 2)
 
     # print(bb1, bb2)
     # make allignedbox
@@ -545,10 +562,11 @@ def calc_overlap(file, file_target):
     p_merged = len(pcd_merged.points)
     p_rest = p_source + p_target - p_merged
     p_overlap = p_rest/(p_merged)
-    if p_overlap > 0.3:
-        print(file, file_target, p_overlap, p_source, p_target, p_merged, p_rest)
+    
+    # if p_overlap > 0.3:
+    #     print(file, file_target, p_overlap, p_source, p_target, p_merged, p_rest)
 
-        o3d.visualization.draw([pcd_source.paint_uniform_color([0,0,1]), pcd_target])
+    #     o3d.visualization.draw([pcd_source.paint_uniform_color([0,0,1]), pcd_target])
 
     if p_source < min_pcd_size or p_target < min_pcd_size:
         print("#points: ({} or {}) is less than min_pcd_size: {}".format(p_source, p_target, min_pcd_size))
@@ -717,7 +735,7 @@ def create_overlap_files():
 
                 # write files with valid thresholds
                 file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
-                print("yee,", file_overlap, len(new_string.split("\n")))
+                #print("yee,", file_overlap, len(new_string.split("\n")))
                 print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n"))-1, file_overlap))
                 f = open(os.path.join(dataset_dir, file_overlap), "w")
                 f.write(new_string)
