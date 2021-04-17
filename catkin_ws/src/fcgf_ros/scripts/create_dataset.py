@@ -207,16 +207,16 @@ def to_ref_frame(xyz_np, T_roughest):
         pcd_source, pcd_ref, threshold, T_full)
     #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
-    global global_counter
-    if global_counter % 200 == 1 or evaluation.fitness < 0.7:
-    #if evaluation.fitness < 0.9:
-        pcd_source_inbetween = copy.deepcopy(pcd_source)
-        pcd_source_inbetween.transform(T_rough)
-        o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
-        pcd_source_inbetween2 = copy.deepcopy(pcd_source)
-        pcd_source_inbetween2.transform(T_full)
-        o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
-        #o3d.visualization.draw([pcd_source, pcd_ref])
+    # global global_counter
+    # if global_counter % 200 == 1 or evaluation.fitness < 0.7:
+    # #if evaluation.fitness < 0.9:
+    #     pcd_source_inbetween = copy.deepcopy(pcd_source)
+    #     pcd_source_inbetween.transform(T_rough)
+    #     o3d.visualization.draw([pcd_source_inbetween, pcd_ref])
+    #     pcd_source_inbetween2 = copy.deepcopy(pcd_source)
+    #     pcd_source_inbetween2.transform(T_full)
+    #     o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
+    #     #o3d.visualization.draw([pcd_source, pcd_ref])
     
     pcd_source.transform(T_full)
 
