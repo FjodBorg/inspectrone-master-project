@@ -118,3 +118,13 @@ do option for cropping ply's
 
 make option to delete every file in folder
 cross_scan matching is baaad since it tries to find features to match with the scans and not container
+
+How is the drone set up ?
+
+plane estimating for cropping?
+add noise to scans 
+
+Cropping has minimum size of length+width+height of 6 to 
+ensure a region is large enough. Other than that the cloud size>=10000
+is checked to ensure that it is picking a region that actually has 
+points in it
