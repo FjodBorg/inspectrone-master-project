@@ -36,12 +36,11 @@ def demo():
     matcher.eval()
     reg_qual = matcher.eval_transform(pcd_scan_down, pcd_map_down, T)
     
-    matcher.feature_distance[len(matcher.feature_distance)-1][0][0] = reg_qual.fitness
-    
     #metrics.print_all_timings()
     # Visualize the registration results
     if (config.debug or config.super_debug):
         if config.teaser is True:
+            matcher.feature_distance[len(matcher.feature_distance)-1][0][0] = reg_qual.fitness
             
             corrs_A, corrs_B = matcher.find_correspondences(
                 scan_features, map_features, mutual_filter=True
@@ -79,8 +78,13 @@ if __name__ == "__main__":
         # model_name="/retrained_models/with_0.025_hit_ratio/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.025_hit_ratio/best_val_checkpoint.pth",
         #model_name="/retrained_models/with_cropping_0.025_hit_ratio/checkpoint.pth",
-        model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
+        # model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio/best_val_checkpoint.pth",
+        # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/checkpoint.pth", # Works well
+        # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/best_val_checkpoint.pth",
+        # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/best_val_checkpoint.pth",
+        model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
+
 
         # model_name="best_val_checkpoint.pth",
         # model_name="/retrained_models/best_val_checkpoint.pth",
@@ -100,8 +104,8 @@ if __name__ == "__main__":
     setattr(config, "topic_ballast_ply", "/ballest_tank")
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
-    setattr(config, "teaser", True)
-    setattr(config, "faiss", True) # teaser false needs add_metrics false
+    setattr(config, "teaser", False)
+    setattr(config, "faiss", False) # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
     setattr(config, "debug", False)  # show matches
     setattr(config, "super_debug", True)  # VERY SLOW increase voxel_size for speed up

@@ -21,11 +21,12 @@ reference = ply_files[0]  # use
 use_cross_match_scan = False  # not tested yet
 use_cross_match_tank = False  # not tested yet
 use_cropping = True
-max_random_crop_iterations = 10
+max_random_crop_iterations = 100
 sample_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
 min_pcd_size = 5000
+use_cubic_crop = True
 random.seed(19)
 
 
@@ -174,13 +175,13 @@ def get_bag_info(bag_file, i):
     return bag, bag_prefix, seq_count
 
 
-def local_allignment(source, target, max_iter, threshold, T_rough):
+def local_allignment(source, target, max_iter, threshold, T):
     loss = o3d.pipelines.registration.TukeyLoss(k=threshold)
     evaluation = o3d.pipelines.registration.evaluate_registration(
-        source, target, voxel_size, T_rough)
+        source, target, voxel_size, T)
     print("Before:  Fitness: {:0.5f}  rms: {:0.5f}  threshold: {}".format(evaluation.fitness, evaluation.inlier_rmse, threshold))
     reg_p2p = o3d.pipelines.registration.registration_icp(
-        source, target, threshold, T_rough,
+        source, target, threshold, T,
         o3d.pipelines.registration.TransformationEstimationPointToPlane(loss),
         o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter, relative_fitness=0.99))
     print("After    Fitness: {:0.5f}  rms: {:0.5f}  threshold: {}".format(reg_p2p.fitness, reg_p2p.inlier_rmse, threshold))
@@ -217,10 +218,10 @@ def to_ref_frame(xyz_np, T_roughest):
     #     pcd_source_inbetween2.transform(T_full)
     #     o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
     #     #o3d.visualization.draw([pcd_source, pcd_ref])
+    # global_counter += 1 
     
     pcd_source.transform(T_full)
 
-    global_counter += 1 
     global prev_T
     prev_T = T_full
 
@@ -321,22 +322,31 @@ def get_size(size_array):
     return size
 
 def get_random_samples(min_b, max_b):
-    max_size_dim = max_b - min_b
-    min_size_dim = np.array([0.5, 0.5, 0.5])
-    # find random size
-    min_size = get_size(np.array([2.0, 2, 2]))
+    if use_cubic_crop:
+        max_size_dim = np.array([3, 3, 3])
+        min_size_dim = np.array([1.5, 1.5, 1.5])
 
-    while True:
         size_dim = np.array([
                 random.uniform(min_size_dim[0], max_size_dim[0]),
-                random.uniform(min_size_dim[1], max_size_dim[1]),
-                random.uniform(min_size_dim[2], max_size_dim[2]),
-            ])
-        # try until a suitable size is found
-        if min_size <= get_size(size_dim):
-            print(size_dim, ":", get_size(size_dim), ">=", min_size)
-            print(get_size(size_dim), min_size)
-            break
+            ]*3)
+            
+    else:
+        max_size_dim = max_b - min_b
+        min_size_dim = np.array([1, 1, 1])
+        # find random size
+        min_size = get_size(np.array([2, 2, 2]))
+
+        while True:
+            size_dim = np.array([
+                    random.uniform(min_size_dim[0], max_size_dim[0]),
+                    random.uniform(min_size_dim[1], max_size_dim[1]),
+                    random.uniform(min_size_dim[2], max_size_dim[2]),
+                ])
+            # try until a suitable size is found
+            if min_size <= get_size(size_dim):
+                print(size_dim, ":", get_size(size_dim), ">=", min_size)
+                print(get_size(size_dim), min_size)
+                break
     
     # print(min_size, size, max_size)
     
