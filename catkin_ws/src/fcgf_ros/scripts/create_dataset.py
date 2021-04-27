@@ -25,9 +25,12 @@ max_random_crop_iterations = 100
 sample_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
-min_pcd_size = 5000
+min_pcd_size = 2400 # 5000 for voxel 0.025
+voxel_size = 0.04
+skip_to_idx = 0
 use_cubic_crop = True
 random.seed(19)
+
 
 
 def configure_pcd(pcd):
@@ -44,11 +47,11 @@ def configure_pcd(pcd):
 
 
 def make_global_variables():
-    global voxel_size, pcd_ref, skip_to_idx, prev_T
+    global pcd_ref, prev_T
 
     prev_T = None
-    skip_to_idx = 0
-    voxel_size = 0.025  # must be same as config.py
+    
+      # must be same as config.py
     xyz, _ = ply2xyz(ply_dir + reference)
 
     pcd_ref = o3d.geometry.PointCloud()
