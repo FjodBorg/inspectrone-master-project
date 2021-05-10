@@ -38,19 +38,7 @@ def demo():
     
     #metrics.print_all_timings()
     # Visualize the registration results
-    if (config.debug or config.super_debug):
-        if config.teaser is True:
-            matcher.feature_distance[len(matcher.feature_distance)-1][0][0] = reg_qual.fitness
-            
-            corrs_A, corrs_B = matcher.find_correspondences(
-                scan_features, map_features, mutual_filter=True
-            )
-
-            np_corrs_A, np_corrs_B = matcher.convert_correspondences(
-                pcd_scan_down, pcd_map_down, corrs_A, corrs_B
-            )
-            line_set = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
-        
+    if (config.debug_viz or config.super_debug or config.debug_calc_feat_dist):
         if config.super_debug is True:
             get_colored_point_cloud_feature(pcd_map_down,
                                             map_features.detach().cpu().numpy(),
@@ -60,11 +48,38 @@ def demo():
                                             scan_features.detach().cpu().numpy(),
                                             config.voxel_size)
             open3d.visualization.draw([pcd_scan_down])
+         
+        if config.teaser and config.debug_calc_feat_dist:
+            matcher.avg_feat_dist[len(matcher.avg_feat_dist)-1][0][0] = reg_qual.fitness
             
-        if config.teaser:
-            open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+            corrs_A, corrs_B = matcher.find_correspondences(
+                scan_features, map_features, mutual_filter=True
+            )
+
+            np_corrs_A, np_corrs_B = matcher.convert_correspondences(
+                pcd_scan_down, pcd_map_down, corrs_A, corrs_B
+            )
+            line_set, feat_dist = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+
+            if config.teaser and config.debug_viz:
+                open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+        
         pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
-        open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
+        
+        if config.teaser and config.debug_calc_feat_dist:
+            np_corrs_A, np_corrs_B = matcher.convert_correspondences(
+                pcd_scan_down_T, pcd_map_down, corrs_A, corrs_B
+            )
+            line_set_T, feat_dist_T = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+
+            if config.debug_viz:
+                open3d.visualization.draw([pcd_map_down, pcd_scan_down_T, line_set_T])
+
+        elif config.teaser and config.debug_viz:
+            open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
+
+
+        
         
 
 if __name__ == "__main__":
@@ -77,13 +92,15 @@ if __name__ == "__main__":
         # model_name="/retrained_models/with_0.025_hit_ratio/checkpoint.pth",
         # model_name="/retrained_models/with_0.025_hit_ratio/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.025_hit_ratio/best_val_checkpoint.pth",
-        #model_name="/retrained_models/with_cropping_0.025_hit_ratio/checkpoint.pth",
+        # model_name="/retrained_models/with_cropping_0.025_hit_ratio/checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/checkpoint.pth", # Works well
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/best_val_checkpoint.pth",
-        model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
+        # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
+        # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops/checkpoint.pth",
+        model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth",
 
 
         # model_name="best_val_checkpoint.pth",
@@ -98,17 +115,18 @@ if __name__ == "__main__":
     # setattr(config, "voxel_size", 0.06)
     # setattr(config, "voxel_size", 0.08)
     setattr(config, "voxel_size", 0.025) # try with this # can't do matching properly
-    # setattr(config, "voxel_size", 0.06) # try with this 
-    setattr(config, "NOISE_BOUND", config.voxel_size)
+    setattr(config, "voxel_size", 0.04) # try with this 
+    setattr(config, "NOISE_BOUND", config.voxel_size*5)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
-    setattr(config, "teaser", False)
-    setattr(config, "faiss", False) # teaser false needs add_metrics false
+    setattr(config, "teaser", True)
+    setattr(config, "faiss", True) # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
-    setattr(config, "debug", False)  # show matches
-    setattr(config, "super_debug", True)  # VERY SLOW increase voxel_size for speed up
+    setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
+    setattr(config, "debug_viz", False)  # visualized the match
+    setattr(config, "debug_calc_feat_dist", True) # calculates the distance of each feature correspondence (Visualized with debug_viz True)
 
 
 
@@ -143,9 +161,9 @@ if __name__ == "__main__":
             prev_time = time.time()
         
         if time.time() - prev_time > 2:
-            if config.debug:
+            if config.debug_calc_feat_dist:
                 with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
-                    print(np.vstack(matcher.feature_distance))
+                    print(np.vstack(matcher.avg_feat_dist))
             rospy.loginfo("No Publsihed Pointclouds, trying again in 0.2 sec")
             rospy.sleep(0.2)
 

@@ -80,8 +80,7 @@ class MatcherBase():
 class MatcherHelper(MatcherBase):
     def __init__(self, config, ros_col):
         super().__init__(config, ros_col)  # init parent attributes
-        self.feature_distance = []  # TODO remove these when done debugging features
-        # init extra attributes for downsampling and features
+        self.avg_feat_dist = []
         
         self._pcd_map_down = open3d.geometry.PointCloud()
         self._pcd_scan_down = open3d.geometry.PointCloud()
@@ -187,11 +186,27 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         #     teaserpp_python.RobustRegistrationSolver.INLIER_SELECTION_MODE.PMC_EXACT
         # solver_params.rotation_tim_graph = \
         #     teaserpp_python.RobustRegistrationSolver.INLIER_GRAPH_FORMULATION.CHAIN
+        
+        # GNC method
+        # was slow so i made some changes
         solver_params.rotation_estimation_algorithm = \
             teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
         solver_params.rotation_gnc_factor = 1.4
-        solver_params.rotation_max_iterations = 10000
-        solver_params.rotation_cost_threshold = 1e-16
+        solver_params.rotation_max_iterations = 100
+        # solver_params.rotation_max_iterations = 10000 #prev
+        solver_params.rotation_cost_threshold = 1e-12
+        # solver_params.rotation_cost_threshold = 1e-16 #prev 
+        
+        ''' # GNC method
+        solver_params.rotation_estimation_algorithm = \
+            teaserpp_python.RobustRegistrationSolver.ROTATION_ESTIMATION_ALGORITHM.GNC_TLS
+        solver_params.rotation_gnc_factor = 1.4
+        solver_params.rotation_max_iterations = 100
+        # solver_params.rotation_max_iterations = 10000 #prev
+        solver_params.rotation_cost_threshold = 1e-12
+        # solver_params.rotation_cost_threshold = 1e-16 #prev 
+        '''
+        
         solver = teaserpp_python.RobustRegistrationSolver(solver_params)
         return solver
 
@@ -250,8 +265,19 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
             points=open3d.utility.Vector3dVector(points),
             lines=open3d.utility.Vector2iVector(lines),
         )
+        
+        with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+            #start = 0
+            #end = 1000
+            #end = len(corres01_idx1)
+            feat_dist =  3  # np.abs(feat0[A_corr[start:end]] - feat1[corres01_idx0[start:end]])
+            print(feat_dist)
+
+
         line_set.colors = open3d.utility.Vector3dVector(colors)
-        return line_set
+        return line_set, feat_dist
+
+
 
     def calc_transform(self, np_corrs_A, np_corrs_B, NOISE_BOUND):
         # robust global registration using TEASER++
@@ -385,17 +411,18 @@ class MatcherWithFaiss(MatcherTeaser):
         # print(corres_idx0.shape, corres_idx1.shape)
 
         # Matches "distance" in each feature
-        with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
-            start = 0
-            #end = 1000
-            end = len(corres01_idx1)
-            feat_dist = np.abs(feat0[corres01_idx1[start:end]] - feat1[corres01_idx0[start:end]])
-            # print(feat_dist)
-            # print the average distance of each feature of all correspondences:
-            avg_feat_dist = np.sum(feat_dist/(end-start), 0)
-            self.feature_distance.append([np.insert(avg_feat_dist, 0, 0)])
-            #print(avg_feat_dist)
-            #print(self.feature_distance)
+        if self._config.debug_calc_feat_dist:
+            with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+                start = 0
+                #end = 1000
+                end = len(corres01_idx1)
+                feat_dist = np.abs(feat0[corres01_idx1[start:end]] - feat1[corres01_idx0[start:end]])
+                # print(feat_dist)
+                # print the average distance of each feature of all correspondences:
+                avg_feat_dist = np.sum(feat_dist/(end-start), 0)
+                self.avg_feat_dist.append([np.insert(avg_feat_dist, 0, 0)])
+                #print(avg_feat_dist)
+                #print(self.avg_feat_dist)
 
         return corres_idx0, corres_idx1
 
