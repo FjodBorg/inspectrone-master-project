@@ -25,8 +25,8 @@ max_random_crop_iterations = 100
 sample_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
-min_pcd_size = 5000 # 5000 for voxel 0.025
-voxel_size = 0.025 # everything except 0.025 doesn't seem to work
+min_pcd_size = 5000  # 5000 for voxel 0.025
+voxel_size = 0.025  # everything except 0.025 doesn't seem to work
 skip_to_idx = 0
 use_cubic_crop = True
 random.seed(19)
@@ -591,10 +591,9 @@ def calc_overlap(file, file_target):
         print("#points: ({} or {}) is less than min_pcd_size: {}".format(p_source, p_target, min_pcd_size))
         return None
 
-    # TODO fix this, i think it generates overlap files 
-    # that are too small for the model to handle
-    if p_rest < min_pcd_size: 
-        print("#points: ({} or {}) is too few overlapping points for model training: {}".format(p_source, p_target, min_pcd_size))
+    # check point cloud 
+    if p_rest < min_pcd_size*0.6:  # 5000 is probably too high
+        print("#points: ({}) is too few overlapping points for model training: {}".format(p_rest, min_pcd_size))
         return None
 
     pcd_source.paint_uniform_color([1,0,0])
