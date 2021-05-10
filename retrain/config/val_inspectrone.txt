@@ -1,4 +1,3 @@
+groundtruth_imu_frame@batch_0003
 groundtruth_imu_frame@batch_0005
 groundtruth_imu_frame@batch_0006
-groundtruth_imu_frame@batch_0000
-

@@ -1,5 +1,5 @@
-groundtruth_imu_frame@batch_0003
+groundtruth_imu_frame@batch_0000
 groundtruth_imu_frame@batch_0004
 groundtruth_imu_frame@batch_0007
 groundtruth_imu_frame@batch_0008
-groundtruth_imu_frame@batch_0009
+groundtruth_imu_frame@batch_001
