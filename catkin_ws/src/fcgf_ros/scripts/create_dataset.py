@@ -25,13 +25,19 @@ max_random_crop_iterations = 100
 sample_size = 8
 overlaps = [0.30, 0.50, 0.70]
 global_counter = 0
-min_pcd_size = 2400 # 5000 for voxel 0.025
-voxel_size = 0.04
+min_pcd_size = 5000 # 5000 for voxel 0.025
+voxel_size = 0.025 # everything except 0.025 doesn't seem to work
 skip_to_idx = 0
 use_cubic_crop = True
 random.seed(19)
 
+# groundtruth_imu_frame@batch_0006
+# groundtruth_imu_frame@batch_0005
+# groundtruth_imu_frame@batch_0000
 
+# groundtruth_imu_frame@batch_00063-00000 is broken (i think it has too little real overlap?)
+# groundtruth_imu_frame@seq_00494.npz
+# groundtruth_imu_frame@seq_00494.npz ballast_tank.npz 0.370985 is easiest
 
 def configure_pcd(pcd):
     # print(pcd)
@@ -181,7 +187,7 @@ def get_bag_info(bag_file, i):
 def local_allignment(source, target, max_iter, threshold, T):
     loss = o3d.pipelines.registration.TukeyLoss(k=threshold)
     evaluation = o3d.pipelines.registration.evaluate_registration(
-        source, target, voxel_size, T)
+        source, target, threshold, T)
     print("Before:  Fitness: {:0.5f}  rms: {:0.5f}  threshold: {}".format(evaluation.fitness, evaluation.inlier_rmse, threshold))
     reg_p2p = o3d.pipelines.registration.registration_icp(
         source, target, threshold, T,
@@ -585,6 +591,11 @@ def calc_overlap(file, file_target):
         print("#points: ({} or {}) is less than min_pcd_size: {}".format(p_source, p_target, min_pcd_size))
         return None
 
+    # TODO fix this, i think it generates overlap files 
+    # that are too small for the model to handle
+    if p_rest < min_pcd_size: 
+        print("#points: ({} or {}) is too few overlapping points for model training: {}".format(p_source, p_target, min_pcd_size))
+        return None
 
     pcd_source.paint_uniform_color([1,0,0])
     pcd_target.paint_uniform_color([0,1,0])
