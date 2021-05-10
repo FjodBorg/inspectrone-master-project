@@ -579,6 +579,8 @@ def calc_overlap(file, file_target):
     p_source = len(pcd_source.points)
     p_target = len(pcd_target.points)
     p_merged = len(pcd_merged.points)
+
+    # p_rest is the number of overlapping points
     p_rest = p_source + p_target - p_merged
     p_overlap = p_rest/(p_merged)
     
