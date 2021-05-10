@@ -24,6 +24,7 @@ use_cropping = True
 max_random_crop_iterations = 100
 sample_size = 8
 overlaps = [0.30, 0.50, 0.70]
+overlaps_count = [0, 0, 0]
 global_counter = 0
 min_pcd_size = 5000  # 5000 for voxel 0.025
 voxel_size = 0.025  # everything except 0.025 doesn't seem to work
@@ -746,7 +747,7 @@ def create_overlap_files():
 
             
 
-            for overlap_thr in overlaps:  # iterate through overlap thresholds
+            for i, overlap_thr in enumerate(overlaps):  # iterate through overlap thresholds
                 new_string = ""
                 for line in string.split("\n"):
                     try:
@@ -765,6 +766,8 @@ def create_overlap_files():
                 f = open(os.path.join(dataset_dir, file_overlap), "w")
                 f.write(new_string)
                 f.close()
+                overlaps_count[i] += 1 
+    print("Overlap percentages {} has these occurences {}".format(overlaps, overlaps_count))
     # for overlap in overlaps:
 
 def main():
