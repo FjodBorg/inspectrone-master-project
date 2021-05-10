@@ -595,8 +595,9 @@ def calc_overlap(file, file_target):
         return None
 
     # check point cloud 
-    if p_rest < min_pcd_size*0.6:  # 5000 is probably too high
-        print("#points: ({}) is too few overlapping points for model training: {}".format(p_rest, min_pcd_size))
+    min_pcd_overlap_size = int(min_pcd_size*0.6)
+    if p_rest < min_pcd_overlap_size:  # 5000 is probably too high
+        print("#points: ({}) is too few overlapping points for model training: {}".format(p_rest, min_pcd_overlap_size))
         return None
 
     pcd_source.paint_uniform_color([1,0,0])
