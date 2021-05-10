@@ -270,12 +270,17 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
             #start = 0
             #end = 1000
             #end = len(corres01_idx1)
-            feat_dist =  3  # np.abs(feat0[A_corr[start:end]] - feat1[corres01_idx0[start:end]])
-            print(feat_dist)
-
+            feat_dists = np.abs(A_corr[:num_corrs] - B_corr[:num_corrs])
+            #print(A_corr[:num_corrs] - B_corr[:num_corrs] )
+            feat_dists  = np.linalg.norm(A_corr - B_corr[:num_corrs], axis=0)
+            # print(feat_dists[0:100])
+            # print(A_corr[:,0:100]-B_corr[:,0:100])
+            # print(A_corr[:,0:100])
+            # print(B_corr[:,0:100])
+            # print("\n\n",".")
 
         line_set.colors = open3d.utility.Vector3dVector(colors)
-        return line_set, feat_dist
+        return line_set, feat_dists
 
 
 

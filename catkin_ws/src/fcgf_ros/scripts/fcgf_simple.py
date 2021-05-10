@@ -3,6 +3,7 @@ import os
 import numpy as np  # NUMPY MUST COME BEFORE open3d
 import open3d
 import time
+import matplotlib.pyplot as plt
 
 import copy
 
@@ -14,6 +15,10 @@ from extra import extensions, ros_helper, matching_helpers, essentials
 from util.visualization import get_colored_point_cloud_feature
 
 os.system("export OMP_NUM_THREADS=12")
+
+def movingaverage(interval, window_size):
+    window = np.ones(int(window_size))/float(window_size)
+    return np.convolve(interval, window, 'same')
 
 def demo():
     matcher.reset_eval()
@@ -59,7 +64,7 @@ def demo():
             np_corrs_A, np_corrs_B = matcher.convert_correspondences(
                 pcd_scan_down, pcd_map_down, corrs_A, corrs_B
             )
-            line_set, feat_dist = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+            line_set, feat_dists = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
 
             if config.teaser and config.debug_viz:
                 open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
@@ -70,7 +75,28 @@ def demo():
             np_corrs_A, np_corrs_B = matcher.convert_correspondences(
                 pcd_scan_down_T, pcd_map_down, corrs_A, corrs_B
             )
-            line_set_T, feat_dist_T = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+            line_set_T, feat_dists_T = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
+
+            plt.figure(1)
+            plt.plot(feat_dists, "r.")
+            plt.plot(feat_dists_T, "b.")
+            x_av = movingaverage(feat_dists, 50)
+            x_av_T = movingaverage(feat_dists_T, 50)
+            plt.plot(x_av, "k-", linewidth=4)
+            plt.plot(x_av_T, "y-", linewidth=4)
+            plt.ylabel('Distance[m]')
+            plt.xlabel('Correspondence Index')
+            plt.legend(["Before", "After", "Avg Before", "Avg After"])
+            
+            plt.figure(2)
+            plt.boxplot([feat_dists, feat_dists_T])
+            plt.ylabel('Distance[m]')
+            # plt.xlabel('Correspondence Index')
+            my_xticks = ['Before','After']
+            x = [1, 2]
+            plt.xticks(x, my_xticks)
+            #plt.legend(["Before", "After"])
+            plt.show()
 
             if config.debug_viz:
                 open3d.visualization.draw([pcd_map_down, pcd_scan_down_T, line_set_T])
