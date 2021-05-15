@@ -9,44 +9,31 @@ import tf
 import copy
 import random
 
+from extra import dataset_helpers
 
-bag_dir = "/home/fjod/repos/inspectrone/catkin_ws/bags/"
-bag_files = ["Kinect/groundtruth_imu_frame.bag"]
-pc2_topics = ["/points2"]
-odom_topics = ["/tagslam/odom/body_rig"]
-dataset_dir = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/"
-ply_dir = "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/"
-ply_files = ["ballast_tank.ply", "pcl_ballast_tank.ply"]
-reference = ply_files[0]  # use
-use_cross_match_scan = False  # not tested yet
-use_cross_match_tank = False  # not tested yet
-use_cropping = True
-max_random_crop_iterations = 100
-sample_size = 8
-overlaps = [0.30, 0.50, 0.70]
-overlaps_count = [0, 0, 0]
-global_counter = 0
-min_pcd_size = 5000  # 5000 for voxel 0.025
-voxel_size = 0.025  # everything except 0.025 doesn't seem to work
-skip_to_idx = 0
-use_cubic_crop = True
-random.seed(19)
 
-# groundtruth_imu_frame@batch_0006
-# groundtruth_imu_frame@batch_0005
-# groundtruth_imu_frame@batch_0000
 
-# groundtruth_imu_frame@batch_00063-00000 is broken (i think it has too little real overlap?)
-# groundtruth_imu_frame@seq_00494.npz
-# groundtruth_imu_frame@seq_00494.npz ballast_tank.npz 0.370985 is easiest
+# new training:
+'''
+base_path="$HOME/repos/inspectrone"
+dw_path="$base_path/catkin_ws/downloads"
+python3.7 retrain.py \
+--threed_match_dir "$dw_path/datasets/ballast_tank/" \
+--out_dir "$dw_path/retrained_models/" \
+--batch_size 4 \
+--weights "" \
+--config.voxel_size 0.04 \
+--hit_ratio 0.075 \
+--max_epoch 200 # kunne evt være større
+'''
 
 def configure_pcd(pcd):
     # print(pcd)
-    pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
+    pcd = pcd.voxel_down_sample(voxel_size=config.voxel_size)
     pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30))
     # print(pcd)
     return pcd
-    #cl, ind = pcd.remove_radius_outlier(nb_points=2, radius=voxel_size*2)
+    #cl, ind = pcd.remove_radius_outlier(nb_points=2, radius=config.voxel_size*2)
     #inliers = pcd.select_by_index(ind)
     # return pcd
     #outlier_cloud = pcd.select_by_index(ind, invert=True)
@@ -59,7 +46,7 @@ def make_global_variables():
     prev_T = None
     
       # must be same as config.py
-    xyz, _ = ply2xyz(ply_dir + reference)
+    xyz, _ = ply2xyz(config.ply_dir + config.reference)
 
     pcd_ref = o3d.geometry.PointCloud()
     pcd_ref.points = o3d.utility.Vector3dVector(xyz)
@@ -127,7 +114,7 @@ def get_choice(extension=".npz"):
     frs = ["f", "r", "s"]
     choice = frs[0]
 
-    if any(File.endswith(extension) for File in os.listdir(dataset_dir)):
+    if any(File.endswith(extension) for File in os.listdir(config.dataset_dir)):
         print("files with extension {} exists".format(extension))
         while True:
             # ask user for what to do
@@ -145,7 +132,7 @@ def get_choice(extension=".npz"):
     else:
         print(
             "No {} files found in {} \nProceeding to {} generation".format(
-                extension, dataset_dir, extension
+                extension, config.dataset_dir, extension
             )
         )
     return choice, frs
@@ -175,12 +162,12 @@ def generate_str_operation(file_path, choice, frs, str_suffix=""):
 
 
 def get_bag_info(bag_file, i):
-    bag = rosbag.Bag(bag_dir + bag_file)  # load bag
+    bag = rosbag.Bag(config.bag_dir + bag_file)  # load bag
     bag_path_split = bag_file.split("/")  # split
     bag_file = bag_path_split[len(bag_path_split) - 1]  # select file only
     bag_prefix = bag_file.split(".")[0]  # remove extension
 
-    seq_count = bag.get_message_count(pc2_topics[i])  # get entry count
+    seq_count = bag.get_message_count(config.pc2_topics[i])  # get entry count
 
     return bag, bag_prefix, seq_count
 
@@ -201,11 +188,11 @@ def local_allignment(source, target, max_iter, threshold, T):
 
 def to_ref_frame(xyz_np, T_roughest):
     # method to fix all data samples to be in the same frame
-    threshold = voxel_size  # TODO define this somewhere nicer
+    threshold = config.voxel_size  # TODO define this somewhere nicer
     max_iter = 100
     pcd_source = o3d.geometry.PointCloud()
     pcd_source.points = o3d.utility.Vector3dVector(xyz_np)
-    pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
+    pcd_source = pcd_source.voxel_down_sample(voxel_size=config.voxel_size)
     pcd_source.paint_uniform_color([1,0,0])
     pcd_source = configure_pcd(pcd_source)
     
@@ -218,8 +205,8 @@ def to_ref_frame(xyz_np, T_roughest):
         pcd_source, pcd_ref, threshold, T_full)
     #print("Fitness, rms before:", evaluation.fitness, evaluation.inlier_rmse)
     
-    # global global_counter
-    # if global_counter % 200 == 1 or evaluation.fitness < 0.7:
+    # global config.global_counter
+    # if config.global_counter % 200 == 1 or evaluation.fitness < 0.7:
     # #if evaluation.fitness < 0.9:
     #     pcd_source_inbetween = copy.deepcopy(pcd_source)
     #     pcd_source_inbetween.transform(T_rough)
@@ -228,7 +215,7 @@ def to_ref_frame(xyz_np, T_roughest):
     #     pcd_source_inbetween2.transform(T_full)
     #     o3d.visualization.draw([pcd_source_inbetween2, pcd_ref])
     #     #o3d.visualization.draw([pcd_source, pcd_ref])
-    # global_counter += 1 
+    # config.global_counter += 1 
     
     pcd_source.transform(T_full)
 
@@ -292,13 +279,13 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
         pcd_croped = pcd_croped.crop(aabb)
 
         length = len(pcd_croped.points)
-        # print(length, min_pcd_size*2)
-        if length < min_pcd_size * 2: # verify that the cloud is large enough
+        # print(length, config.min_pcd_size*2)
+        if length < config.min_pcd_size * 2: # verify that the cloud is large enough
             print("too small pcd: ", pcd_croped)
-            # o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
+            # o3d.visualization.draw([pcd_croped.voxel_down_sample(config.voxel_size=0.05), pcd_ref])
             return None
         
-        # o3d.visualization.draw([pcd_croped.voxel_down_sample(voxel_size=0.05), pcd_ref])
+        # o3d.visualization.draw([pcd_croped.voxel_down_sample(config.voxel_size=0.05), pcd_ref])
 
         pcd_np_color = np.array([[0, 0, 0]] * length)
         pcd_np_croped = np.array(pcd_croped.points)
@@ -310,7 +297,7 @@ def crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
         new_fname = fname[0:-4] + "[{:0.2f}_{:0.2f}_{:0.2f}][{:0.2f}_{:0.2f}_{:0.2f}].npz"
         new_fname = new_fname.format(x1, y1, z1, x2, y2, z2)
 
-        np.savez(dataset_dir + new_fname, pcd=pcd_np_croped, color=pcd_np_color)
+        np.savez(config.dataset_dir + new_fname, pcd=pcd_np_croped, color=pcd_np_color)
         print("Wrote file:     " + new_fname)
     
         return True
@@ -332,7 +319,7 @@ def get_size(size_array):
     return size
 
 def get_random_samples(min_b, max_b):
-    if use_cubic_crop:
+    if config.use_cubic_crop:
         max_size_dim = np.array([3, 3, 3])
         min_size_dim = np.array([1.5, 1.5, 1.5])
 
@@ -404,7 +391,7 @@ def make_crops(pcd_o3d_xyz_trans, str_prefix, fname):
         aabb = o3d.geometry.AxisAlignedBoundingBox(bb1, bb2)
         crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname)
 
-    for i in range(max_random_crop_iterations):
+    for i in range(config.max_random_crop_iterations):
         aabb = get_random_samples(min_b, max_b)
         if not crop_n_saved_pcd(pcd_o3d_xyz_trans, aabb, fname):
             # it failed thus try again
@@ -420,7 +407,7 @@ def process_ply(ply_file, choice, frs):
     skip = False
 
     # check if file is there
-    if os.path.exists(dataset_dir + fname):
+    if os.path.exists(config.dataset_dir + fname):
 
         # if choice was to fill
         if choice == frs[0]:
@@ -436,8 +423,8 @@ def process_ply(ply_file, choice, frs):
         str_prefix = "Wrote file:     "
 
     # if file wasen't skipped
-    if not skip or use_cropping:
-        pcd_np_xyz, pcd_np_color = ply2xyz(ply_dir + ply_file)
+    if not skip or config.use_cropping:
+        pcd_np_xyz, pcd_np_color = ply2xyz(config.ply_dir + ply_file)
 
         T = np.asarray([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0],
                         [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
@@ -450,13 +437,21 @@ def process_ply(ply_file, choice, frs):
         # TODO should these be resampled here???
         # pcd_np_xyz_trans = pcd_np_xyz
 
-        np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
+        # always delete all noisy data
+        for file in os.listdir(config.dataset_dir):
+            if file.startswith("noisy") and source in file:
+                print("Deleting noisy file:", file)
+                os.remove(config.dataset_dir + file)
 
-        if use_cropping:
-            for file in os.listdir(dataset_dir):
-                if file.startswith(source+"[") and file.endswith('].npz'):
-                    print("Deleting cropped file:", file)
-                    os.remove(dataset_dir + file)
+        np.savez(config.dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
+
+        # always delete all crops
+        for file in os.listdir(config.dataset_dir):
+            if file.startswith(source+"[") and file.endswith('].npz'):
+                print("Deleting cropped file:", file)
+                os.remove(config.dataset_dir + file)
+            
+        if config.use_cropping:
             make_crops(pcd_o3d_xyz_trans, str_prefix, fname)
 
     print(str_prefix + fname)
@@ -469,7 +464,7 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
     skip = False
 
     # check if file is there
-    file_path = dataset_dir + fname
+    file_path = config.dataset_dir + fname
     status = "{}/{}".format(idx + 1, seq_count)
     skip, str_prefix, str_suffix = generate_str_operation(
         file_path, choice, frs, status
@@ -503,7 +498,7 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
         pcd_o3d_xyz_trans = to_ref_frame(pcd_np_xyz, T)
         pcd_np_xyz_trans = np.array(pcd_o3d_xyz_trans.points)
 
-        np.savez(dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
+        np.savez(config.dataset_dir + fname, pcd=pcd_np_xyz_trans, color=pcd_np_color)
 
     print(str_prefix + fname + "\t", str_suffix)
 
@@ -516,22 +511,22 @@ def create_pointcloud_dataset():
     if choice != frs[2]:  # if skip was  not selected
 
         # process ply's
-        for i, ply_file in enumerate(ply_files):
+        for i, ply_file in enumerate(config.ply_files):
             prev_T = None
             process_ply(ply_file, choice, frs)
 
         # process bags
-        for i, bag_file in enumerate(bag_files):
+        for i, bag_file in enumerate(config.bag_files):
             prev_T = None
             rosbag, bag_prefix, seq_count = get_bag_info(bag_file, i)
 
-            pc_bag = rosbag.read_messages(topics=[pc2_topics[i]])
-            odom_bag = rosbag.read_messages(topics=[odom_topics[i]])
+            pc_bag = rosbag.read_messages(topics=[config.pc2_topics[i]])
+            odom_bag = rosbag.read_messages(topics=[config.odom_topics[i]])
             
             # process each pc2 entry
             for k, (topic, msg, t) in enumerate(pc_bag):
-                if k < skip_to_idx:
-                    print("skipping", k, "out of", skip_to_idx)
+                if k < config.skip_to_idx:
+                    print("skipping", k, "out of", config.skip_to_idx)
                     continue
                 
                 # TODO find a way to get imu time to the corresponding ply
@@ -551,12 +546,12 @@ def generate_txt_name(batches, idxs):
 
     # full file name:
     #txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
-    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/sample_size), int(idxs[0]/sample_size))
-    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/sample_size))
+    txt_name = "{}@batch_{:05d}-{:05d}.txt".format(source_name, int(idxs[1]/config.sample_size), int(idxs[0]/config.sample_size))
+    #txt_name = "{}@{:05d}.txt".format(source_name, int(idx/config.sample_size))
 
 
     # file to write to:
-    file_abs = dataset_dir + txt_name
+    file_abs = config.dataset_dir + txt_name
 
     return file_abs
 
@@ -564,18 +559,18 @@ def generate_txt_name(batches, idxs):
 def calc_overlap(file, file_target):
     pcd_source = o3d.geometry.PointCloud()
     pcd_target = o3d.geometry.PointCloud()
-    npz_file1 = np.load(dataset_dir + file)
-    npz_file2 = np.load(dataset_dir + file_target)
+    npz_file1 = np.load(config.dataset_dir + file)
+    npz_file2 = np.load(config.dataset_dir + file_target)
     xyz1 = npz_file1['pcd']
     xyz2 = npz_file2['pcd']
     pcd_source.points = o3d.utility.Vector3dVector(xyz1)
     pcd_target.points = o3d.utility.Vector3dVector(xyz2)
-    pcd_source = pcd_source.voxel_down_sample(voxel_size=voxel_size)
-    pcd_target = pcd_target.voxel_down_sample(voxel_size=voxel_size)
+    pcd_source = pcd_source.voxel_down_sample(voxel_size=config.voxel_size)
+    pcd_target = pcd_target.voxel_down_sample(voxel_size=config.voxel_size)
 
     pcd_combined = pcd_source + pcd_target
 
-    pcd_merged = pcd_combined.voxel_down_sample(voxel_size=voxel_size)
+    pcd_merged = pcd_combined.voxel_down_sample(voxel_size=config.voxel_size)
 
     p_source = len(pcd_source.points)
     p_target = len(pcd_target.points)
@@ -590,12 +585,12 @@ def calc_overlap(file, file_target):
 
     #     o3d.visualization.draw([pcd_source.paint_uniform_color([0,0,1]), pcd_target])
 
-    if p_source < min_pcd_size or p_target < min_pcd_size:
-        print("#points: ({} or {}) is less than min_pcd_size: {}".format(p_source, p_target, min_pcd_size))
+    if p_source < config.min_pcd_size or p_target < config.min_pcd_size:
+        print("#points: ({} or {}) is less than config.min_pcd_size: {}".format(p_source, p_target, config.min_pcd_size))
         return None
 
     # check point cloud 
-    min_pcd_overlap_size = int(min_pcd_size*0.6)
+    min_pcd_overlap_size = int(config.min_pcd_size*0.6)
     if p_rest < min_pcd_overlap_size:  # 5000 is probably too high
         print("#points: ({}) is too few overlapping points for model training: {}".format(p_rest, min_pcd_overlap_size))
         return None
@@ -619,7 +614,7 @@ def process_batch(choice, frs, idxs, batches):
     # seq = batch[i].split("@")[1]  # sequence + extension
     # idx = int(seq.split("_")[1].split(".")[0]) # idx
 
-    # if (idx % sample_size) == 0:
+    # if (idx % config.sample_size) == 0:
     #     # when x cross_mathces has been found
 
     file_abs = generate_txt_name(scan_batch, idxs)
@@ -643,7 +638,7 @@ def process_batch(choice, frs, idxs, batches):
                     string = string + "{} {} {:0.6f}\n".format(file, file_target, overlap)
                 # print("  overlap was:", overlap)
                 
-                if use_cross_match_tank:  # NOT TESTED
+                if config.use_cross_match_tank:  # NOT TESTED
                     for j in range(i+1, len(tank_batch)):
                         overlap = calc_overlap(file, tank_batch[j])
                         #print(i, j)
@@ -651,7 +646,7 @@ def process_batch(choice, frs, idxs, batches):
                             # append to string
                             string = string + "{} {} {:0.6f}\n".format(file, tank_batch[j], overlap)
 
-            if use_cross_match_scan:  # NOT TESTED
+            if config.use_cross_match_scan:  # NOT TESTED
                 for j in range(i+1, len(scan_batch)):
                     overlap = calc_overlap(file, scan_batch[j])
                     #print(i, j)
@@ -675,22 +670,22 @@ def process_batch(choice, frs, idxs, batches):
 
 def create_txtfiles(choice, frs):
     # tank files without extension
-    tank_names = tuple(ply_file.split(".")[0] for ply_file in ply_files)
+    tank_names = tuple(ply_file.split(".")[0] for ply_file in config.ply_files)
 
-    scan_names = tuple((bag_file.split("/")[-1]).split(".")[0] for bag_file in bag_files)
+    scan_names = tuple((bag_file.split("/")[-1]).split(".")[0] for bag_file in config.bag_files)
 
     # all scan files
     scan_files = [
             file
-            for file in os.listdir(dataset_dir)
+            for file in os.listdir(config.dataset_dir)
             if file.endswith(".npz") and file.startswith(scan_names)
         ]
 
-    if use_cropping:
+    if config.use_cropping:
         # all tank files with and without cropping
         tank_files = [
                 file
-                for file in os.listdir(dataset_dir)
+                for file in os.listdir(config.dataset_dir)
                 if file.endswith(".npz") and file.startswith(tank_names)
             ]
     else:
@@ -706,16 +701,16 @@ def create_txtfiles(choice, frs):
     tank_len = len(tank_files)
 
 
-    for j in range(0, scan_len, sample_size):
+    for j in range(0, scan_len, config.sample_size):
         if j < scan_len:
-            scan_batch = scan_files[j: j + sample_size]
+            scan_batch = scan_files[j: j + config.sample_size]
         else:
             scan_batch = scan_files[j: scan_len]
         
-        for i in range(0, tank_len, sample_size):
+        for i in range(0, tank_len, config.sample_size):
             
             if i < tank_len:
-                tank_batch = tank_files[i: i + sample_size]
+                tank_batch = tank_files[i: i + config.sample_size]
             else:
                 tank_batch = tank_files[i: tank_len]
             process_batch(choice, frs, (i, j), (tank_batch, scan_batch))
@@ -725,30 +720,30 @@ def create_matching_file():
     choice, frs = get_choice(extension=".txt")
     if choice != frs[2]:  # if skip was  not selected
         if choice == frs[1]:
-            for file in os.listdir(dataset_dir):
+            for file in os.listdir(config.dataset_dir):
                 if file.endswith('.txt'):
                     print("Deleting txt file:", file)
-                    os.remove(dataset_dir + file)
+                    os.remove(config.dataset_dir + file)
         create_txtfiles(choice, frs)
         print("done with text generation")
 
 
 def create_overlap_files():
-    for file in os.listdir(dataset_dir):
+    for file in os.listdir(config.dataset_dir):
         if file.endswith(".txt"):
             number = file.split("-")[-1].split(".txt")[0]
             if float(number) < 1.0 and number!="00000":
                 # if overlap file exists
                 continue
             
-            # write base file with all overlaps
-            f = open(os.path.join(dataset_dir, file), "r")
+            # write base file with all config.overlaps
+            f = open(os.path.join(config.dataset_dir, file), "r")
             string = f.read()
             f.close()
 
             
 
-            for i, overlap_thr in enumerate(overlaps):  # iterate through overlap thresholds
+            for i, overlap_thr in enumerate(config.overlaps):  # iterate through overlap thresholds
                 new_string = ""
                 for line in string.split("\n"):
                     try:
@@ -756,6 +751,7 @@ def create_overlap_files():
                         # only write items that are above the threshold
                         if overlap > overlap_thr:
                             new_string = new_string + line + "\n"
+                            config.overlaps_count[i] += 1 
                     except ValueError:
                         pass
                 # print(new_string)
@@ -764,23 +760,62 @@ def create_overlap_files():
                 file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
                 #print("yee,", file_overlap, len(new_string.split("\n")))
                 print("Generated file with {:03d} entries: {}".format(len(new_string.split("\n"))-1, file_overlap))
-                f = open(os.path.join(dataset_dir, file_overlap), "w")
+                f = open(os.path.join(config.dataset_dir, file_overlap), "w")
                 f.write(new_string)
                 f.close()
-                overlaps_count[i] += 1 
-    print("Overlap percentages {} has these occurences {}".format(overlaps, overlaps_count))
-    # for overlap in overlaps:
+    print("Overlap percentages {} has these occurences {}".format(config.overlaps, config.overlaps_count))
+    # for overlap in config.overlaps:
 
 def main():
+    global config
+    config = dataset_helpers.Config()
+    # basic references, dirs and files
+    setattr(config, "bag_dir", "/home/fjod/repos/inspectrone/catkin_ws/bags/")
+    setattr(config, "bag_files", ["Kinect/groundtruth_imu_frame.bag"])
+    setattr(config, "pc2_topics", ["/points2"])
+    setattr(config, "odom_topics", ["/tagslam/odom/body_rig"])
+    setattr(config, "dataset_dir", "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/")
+    setattr(config, "ply_dir", "/home/fjod/repos/inspectrone/catkin_ws/src/ply_publisher/cfg/")
+    setattr(config, "ply_files", ["ballast_tank.ply", "pcl_ballast_tank.ply"])
+    setattr(config, "reference", config.ply_files[0])  # use
+    
+    # Matching Type
+    setattr(config, "use_cross_match_scan", False)  # not tested yet
+    setattr(config, "use_cross_match_tank", False)  # not tested yet
+    # cropping
+    setattr(config, "use_cropping", True)
+    setattr(config, "use_cubic_crop", True)
+    setattr(config, "max_random_crop_iterations", 100)
+    # noise
+    add_noise = True
+    noise_level = 0.3  # max noise in meters
+    noise_origins = 5  # How many origins (More noise the further away) 
+    only_use_noise = True  # if you don't want noiseless data
 
-    if not os.path.exists(dataset_dir):
-        print("creating path at", dataset_dir)
-        os.mkdir(dataset_dir)
+    # generation
+    setattr(config, "sample_size", 8)
+    setattr(config, "overlaps", [0.30, 0.50, 0.70])
+    setattr(config, "overlaps_count", [0, 0, 0])
+    setattr(config, "min_pcd_size", 5000)  # 5000 for voxel 0.025
+    setattr(config, "voxel_size", 0.025)  # everything except 0.025 doesn't seem to work
+
+    #misc
+    setattr(config, "global_counter", 0)
+    setattr(config, "skip_to_idx", 0)
+    random.seed(19)
+    
+    pcd_gen = Generator_PCD(config)
+   
+
+    if not os.path.exists(config.dataset_dir):
+        print("creating path at", config.dataset_dir)
+        os.mkdir(config.dataset_dir)
   
     make_global_variables()
     create_pointcloud_dataset()
     create_matching_file()
     create_overlap_files()
+    # TODO, add noise to npz function here
 
 if __name__ == "__main__":
     main()
