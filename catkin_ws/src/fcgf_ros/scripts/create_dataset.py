@@ -110,32 +110,7 @@ def ply2xyz(ply):
     return pcd_np_xyz, pcd_np_color
 
 
-def get_choice(extension=".npz"):
-    frs = ["f", "r", "s"]
-    choice = frs[0]
 
-    if any(File.endswith(extension) for File in os.listdir(config.dataset_dir)):
-        print("files with extension {} exists".format(extension))
-        while True:
-            # ask user for what to do
-            print("Do you want to:")
-            print("    {}: Fill out missing [Default]".format(frs[0]))
-            print("    {}: Replace files".format(frs[1]))
-            print("    {}: Skip to next step".format(frs[2]))
-            choice = input().lower().replace(" ", "")
-            if choice == "" or choice == frs[0]:
-                choice = frs[0]
-                break
-            elif choice == frs[1] or choice == frs[2]:
-                break
-        print("[{}] was chosen\n".format(choice))
-    else:
-        print(
-            "No {} files found in {} \nProceeding to {} generation".format(
-                extension, config.dataset_dir, extension
-            )
-        )
-    return choice, frs
 
 
 def generate_str_operation(file_path, choice, frs, str_suffix=""):
@@ -505,7 +480,7 @@ def process_bag(source, msg, t, idx, seq_count, choice, frs, odom_bag):
 
 def create_pointcloud_dataset():
     # check if file exists
-    choice, frs = get_choice(extension=".npz")
+    choice, frs = ios.get_choice(extension=".npz")
     global prev_T
 
     if choice != frs[2]:  # if skip was  not selected
@@ -717,7 +692,7 @@ def create_txtfiles(choice, frs):
 
 
 def create_matching_file():
-    choice, frs = get_choice(extension=".txt")
+    choice, frs = ios.get_choice(extension=".txt")
     if choice != frs[2]:  # if skip was  not selected
         if choice == frs[1]:
             for file in os.listdir(config.dataset_dir):
@@ -767,7 +742,7 @@ def create_overlap_files():
     # for overlap in config.overlaps:
 
 def main():
-    global config
+    global config, ios, pcd_gen
     config = dataset_helpers.Config()
     # basic references, dirs and files
     setattr(config, "bag_dir", "/home/fjod/repos/inspectrone/catkin_ws/bags/")
@@ -804,7 +779,8 @@ def main():
     setattr(config, "skip_to_idx", 0)
     random.seed(19)
     
-    pcd_gen = Generator_PCD(config)
+    pcd_gen = dataset_helpers.Generator_PCD(config)
+    ios = dataset_helpers.IOS(config)
    
 
     if not os.path.exists(config.dataset_dir):
