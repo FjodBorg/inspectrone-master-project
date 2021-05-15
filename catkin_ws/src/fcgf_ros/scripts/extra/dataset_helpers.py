@@ -112,7 +112,7 @@ class IOS(Config):
 class Generator_PCD(IOS):
     def __init__(self, ios):
         self.ios = ios
-        self.config = self.ios.config
+        self.config = ios.config
         self.pcd_ref = o3d.geometry.PointCloud()
         self.load_pcd_ref()
         
@@ -555,3 +555,211 @@ class Generator_PCD(IOS):
         # size = np.linalg.norm(size_array)  # diagonal size
         # print(size)
         return size
+
+
+class Generator_txt(IOS):
+    def __init__(self, ios):
+        self.ios = ios
+        self.config = ios.config
+
+    def create_matching_file(self):
+        choice, frs = self.ios.get_choice(extension=".txt")
+        if choice != frs[2]:  # if skip was  not selected
+            if choice == frs[1]:
+                for file in os.listdir(self.config.dataset_dir):
+                    if file.endswith(".txt"):
+                        print("Deleting txt file:", file)
+                        os.remove(self.config.dataset_dir + file)
+            self.create_txtfiles(choice, frs)
+            print("done with text generation")
+
+    def create_txtfiles(self, choice, frs):
+        # tank files without extension
+        tank_names = tuple(ply_file.split(".")[0] for ply_file in self.config.ply_files)
+
+        scan_names = tuple(
+            (bag_file.split("/")[-1]).split(".")[0] for bag_file in self.config.bag_files
+        )
+
+        # all scan files
+        scan_files = [
+            file
+            for file in os.listdir(self.config.dataset_dir)
+            if file.endswith(".npz") and file.startswith(scan_names)
+        ]
+
+        if self.config.use_cropping:
+            # all tank files with and without cropping
+            tank_files = [
+                file
+                for file in os.listdir(self.config.dataset_dir)
+                if file.endswith(".npz") and file.startswith(tank_names)
+            ]
+        else:
+            tank_files = [tank_file + ".npz" for tank_file in tank_names]
+
+        # to be sure that it is seeded correctly:
+        scan_files = sorted(scan_files)
+        tank_files = sorted(tank_files)
+        random.shuffle(tank_files)
+        random.shuffle(scan_files)
+
+        scan_len = len(scan_files)
+        tank_len = len(tank_files)
+
+        for j in range(0, scan_len, self.config.sample_size):
+            if j < scan_len:
+                scan_batch = scan_files[j : j + self.config.sample_size]
+            else:
+                scan_batch = scan_files[j:scan_len]
+
+            for i in range(0, tank_len, self.config.sample_size):
+
+                if i < tank_len:
+                    tank_batch = tank_files[i : i + self.config.sample_size]
+                else:
+                    tank_batch = tank_files[i:tank_len]
+                self.process_batch(choice, frs, (i, j), (tank_batch, scan_batch))
+
+    def process_batch(self, choice, frs, idxs, batches):
+        skip = False
+
+        tank_batch, scan_batch = batches
+        # seq = batch[i].split("@")[1]  # sequence + extension
+        # idx = int(seq.split("_")[1].split(".")[0]) # idx
+
+        # if (idx % config.sample_size) == 0:
+        #     # when x cross_mathces has been found
+
+        file_abs = self.generate_txt_name(scan_batch, idxs)
+
+        # status = "{}/{}".format(idx+1, seq_count)  # remaining files
+
+        skip, str_prefix, str_suffix = self.ios.generate_str_operation(file_abs, choice, frs)
+
+        # TODO find overlap for tanks?
+
+        # print(txt_path, skip,"\n\n\n")
+        if not skip:
+            string = ""
+            for i, file in enumerate(scan_batch):
+                # print(str_prefix + file + "\t", str_suffix)
+
+                for file_target in tank_batch:
+                    overlap = self.calc_overlap(file, file_target)
+                    if overlap is not None:
+                        # append to string
+                        string = string + "{} {} {:0.6f}\n".format(
+                            file, file_target, overlap
+                        )
+                    # print("  overlap was:", overlap)
+
+                    if self.config.use_cross_match_tank:  # NOT TESTED
+                        for j in range(i + 1, len(tank_batch)):
+                            overlap = self.calc_overlap(file, tank_batch[j])
+                            # print(i, j)
+                            if overlap is not None:
+                                # append to string
+                                string = string + "{} {} {:0.6f}\n".format(
+                                    file, tank_batch[j], overlap
+                                )
+
+                if self.config.use_cross_match_scan:  # NOT TESTED
+                    for j in range(i + 1, len(scan_batch)):
+                        overlap = self.calc_overlap(file, scan_batch[j])
+                        # print(i, j)
+                        if overlap is not None:
+                            # append to string
+                            string = string + "{} {} {:0.6f}\n".format(
+                                file, scan_batch[j], overlap
+                            )
+
+            f = open(file_abs, "w")
+            f.write(string)
+            f.close()
+
+        print(str_prefix + file_abs.split("/")[-1] + "\t", str_suffix)
+        return skip
+
+    def generate_txt_name(self, batches, idxs):
+        # get source name
+        # print(batch)
+        source_name = batches[0].split("@")[0]
+
+        # select correct indecies
+        # from_idx = idx
+        # to_idx = (from_idx + len(batch) - 1)
+
+        # full file name:
+        # txt_name = "{}@{:05d}-{:05d}.txt".format(source_name, from_idx, to_idx)
+        txt_name = "{}@batch_{:05d}-{:05d}.txt".format(
+            source_name,
+            int(idxs[1] / self.config.sample_size),
+            int(idxs[0] / self.config.sample_size),
+        )
+        # txt_name = "{}@{:05d}.txt".format(source_name, int(idx/config.sample_size))
+
+        # file to write to:
+        file_abs = self.config.dataset_dir + txt_name
+
+        return file_abs
+
+    def calc_overlap(self, file, file_target):
+        pcd_source = o3d.geometry.PointCloud()
+        pcd_target = o3d.geometry.PointCloud()
+        npz_file1 = np.load(self.config.dataset_dir + file)
+        npz_file2 = np.load(self.config.dataset_dir + file_target)
+        xyz1 = npz_file1["pcd"]
+        xyz2 = npz_file2["pcd"]
+        pcd_source.points = o3d.utility.Vector3dVector(xyz1)
+        pcd_target.points = o3d.utility.Vector3dVector(xyz2)
+        pcd_source = pcd_source.voxel_down_sample(voxel_size=self.config.voxel_size)
+        pcd_target = pcd_target.voxel_down_sample(voxel_size=self.config.voxel_size)
+
+        pcd_combined = pcd_source + pcd_target
+
+        pcd_merged = pcd_combined.voxel_down_sample(voxel_size=self.config.voxel_size)
+
+        p_source = len(pcd_source.points)
+        p_target = len(pcd_target.points)
+        p_merged = len(pcd_merged.points)
+
+        # p_rest is the number of overlapping points
+        p_rest = p_source + p_target - p_merged
+        p_overlap = p_rest / (p_merged)
+
+        # if p_overlap > 0.3:
+        #     print(file, file_target, p_overlap, p_source, p_target, p_merged, p_rest)
+
+        #     o3d.visualization.draw([pcd_source.paint_uniform_color([0,0,1]), pcd_target])
+
+        if p_source < self.config.min_pcd_size or p_target < self.config.min_pcd_size:
+            print(
+                "#points: ({} or {}) is less than config.min_pcd_size: {}".format(
+                    p_source, p_target, self.config.min_pcd_size
+                )
+            )
+            return None
+
+        # check point cloud
+        min_pcd_overlap_size = int(self.config.min_pcd_size * 0.6)
+        if p_rest < min_pcd_overlap_size:  # 5000 is probably too high
+            print(
+                "#points: ({}) is too few overlapping points for model training: {}".format(
+                    p_rest, min_pcd_overlap_size
+                )
+            )
+            return None
+
+        pcd_source.paint_uniform_color([1, 0, 0])
+        pcd_target.paint_uniform_color([0, 1, 0])
+        # o3d.visualization.draw([pcd_source, pcd_target])
+        # o3d.visualization.draw([pcd_merged])
+
+        # print("{} {} {} {} {:0.5f}".format(p_source, p_target, p_merged, p_rest, p_overlap))
+        # TODO only consider it if tank to scan has a fitness above 10% maybe ?
+        return p_overlap
+
+
+class Generator_matcher(IOS):
+    pass
