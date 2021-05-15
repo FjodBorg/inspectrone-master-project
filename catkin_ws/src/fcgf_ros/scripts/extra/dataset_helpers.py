@@ -9,9 +9,10 @@ import random
 
 
 class Config:
-    def __init__(self):
+    def __init__(self, seed_id=19):
         # every attribute is defined externally
-        pass
+        self.random = random
+        self.random.seed(seed_id)  # set seed for all randoms
 
 
 class IOS(Config):
@@ -108,11 +109,16 @@ class IOS(Config):
 
         return bag, bag_prefix, seq_count
 
+    def check_configured_path(self):
+        if not os.path.exists(self.config.dataset_dir):
+            print("creating path at", self.config.dataset_dir)
+            os.mkdir(self.config.dataset_dir)
 
 class Generator_PCD(IOS):
     def __init__(self, ios):
         self.ios = ios
         self.config = ios.config
+        self.random = self.config.random
         self.pcd_ref = o3d.geometry.PointCloud()
         self.load_pcd_ref()
         
@@ -198,17 +204,17 @@ class Generator_PCD(IOS):
             # TODO should these be resampled here???
             # pcd_np_xyz_trans = pcd_np_xyz
 
-            # always delete all noisy data
-            for file in os.listdir(self.config.dataset_dir):
-                if file.startswith("noisy") and source in file:
-                    print("Deleting noisy file:", file)
-                    os.remove(self.config.dataset_dir + file)
-
             np.savez(
                 self.config.dataset_dir + fname,
                 pcd=pcd_np_xyz_trans,
                 color=pcd_np_color,
             )
+
+            # always delete all noisy data
+            for file in os.listdir(self.config.dataset_dir):
+                if file.startswith("noisy") and source in file:
+                    print("Deleting noisy file:", file)
+                    os.remove(self.config.dataset_dir + file)
 
             # always delete all crops
             for file in os.listdir(self.config.dataset_dir):
@@ -217,7 +223,7 @@ class Generator_PCD(IOS):
                     os.remove(self.config.dataset_dir + file)
 
             if self.config.use_cropping:
-                self.make_crops(pcd_o3d_xyz_trans, str_prefix, fname)
+                self.make_crops(pcd_o3d_xyz_trans, fname)
 
         print(str_prefix + fname)
 
@@ -315,7 +321,7 @@ class Generator_PCD(IOS):
 
         return pcd_source
 
-    def make_crops(self, pcd_o3d_xyz_trans, str_prefix, fname):
+    def make_crops(self, pcd_o3d_xyz_trans, fname):
         aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(
             pcd_o3d_xyz_trans.points
         )
@@ -478,7 +484,7 @@ class Generator_PCD(IOS):
             max_size_dim = np.array([3, 3, 3])
             min_size_dim = np.array([1.5, 1.5, 1.5])
 
-            size_dim = np.array([random.uniform(min_size_dim[0], max_size_dim[0])] * 3)
+            size_dim = np.array([self.random.uniform(min_size_dim[0], max_size_dim[0])] * 3)
 
         else:
             max_size_dim = max_b - min_b
@@ -489,9 +495,9 @@ class Generator_PCD(IOS):
             while True:
                 size_dim = np.array(
                     [
-                        random.uniform(min_size_dim[0], max_size_dim[0]),
-                        random.uniform(min_size_dim[1], max_size_dim[1]),
-                        random.uniform(min_size_dim[2], max_size_dim[2]),
+                        self.random.uniform(min_size_dim[0], max_size_dim[0]),
+                        self.random.uniform(min_size_dim[1], max_size_dim[1]),
+                        self.random.uniform(min_size_dim[2], max_size_dim[2]),
                     ]
                 )
                 # try until a suitable size is found
@@ -509,9 +515,9 @@ class Generator_PCD(IOS):
         # generate random center within cloud
         center = np.array(
             [
-                random.uniform(min_pos[0], max_pos[0]),
-                random.uniform(min_pos[1], max_pos[1]),
-                random.uniform(min_pos[2], max_pos[2]),
+                self.random.uniform(min_pos[0], max_pos[0]),
+                self.random.uniform(min_pos[1], max_pos[1]),
+                self.random.uniform(min_pos[2], max_pos[2]),
             ]
         )
         # print(center)
@@ -561,6 +567,7 @@ class Generator_txt(IOS):
     def __init__(self, ios):
         self.ios = ios
         self.config = ios.config
+        self.random = self.config.random
 
     def create_matching_file(self):
         choice, frs = self.ios.get_choice(extension=".txt")
@@ -601,8 +608,8 @@ class Generator_txt(IOS):
         # to be sure that it is seeded correctly:
         scan_files = sorted(scan_files)
         tank_files = sorted(tank_files)
-        random.shuffle(tank_files)
-        random.shuffle(scan_files)
+        self.random.shuffle(tank_files)
+        self.random.shuffle(scan_files)
 
         scan_len = len(scan_files)
         tank_len = len(tank_files)
@@ -762,4 +769,156 @@ class Generator_txt(IOS):
 
 
 class Generator_matcher(IOS):
-    pass
+
+    
+    def __init__(self, ios):
+        self.ios = ios
+        self.config = ios.config
+
+    def create_overlap_files(self):
+        for file in os.listdir(self.config.dataset_dir):
+            if file.endswith(".txt"):
+                number = file.split("-")[-1].split(".txt")[0]
+                if float(number) < 1.0 and number != "00000":
+                    # if overlap file exists
+                    continue
+
+                # write base file with all config.overlaps
+                f = open(os.path.join(self.config.dataset_dir, file), "r")
+                string = f.read()
+                f.close()
+
+                for i, overlap_thr in enumerate(
+                    self.config.overlaps
+                ):  # iterate through overlap thresholds
+                    new_string = ""
+                    for line in string.split("\n"):
+                        try:
+                            overlap = float(line.split(" ")[-1])
+                            # only write items that are above the threshold
+                            if overlap > overlap_thr:
+                                new_string = new_string + line + "\n"
+                                self.config.overlaps_count[i] += 1
+                        except ValueError:
+                            pass
+                    # print(new_string)
+
+                    # write files with valid thresholds
+                    file_overlap = "{}-{:0.2f}.txt".format(file.split(".")[0], overlap_thr)
+                    # print("yee,", file_overlap, len(new_string.split("\n")))
+                    print(
+                        "Generated file with {:03d} entries: {}".format(
+                            len(new_string.split("\n")) - 1, file_overlap
+                        )
+                    )
+                    f = open(os.path.join(self.config.dataset_dir, file_overlap), "w")
+                    f.write(new_string)
+                    f.close()
+        print(
+            "Overlap percentages {} has these occurences {}".format(
+                self.config.overlaps, self.config.overlaps_count
+            )
+        )
+
+class Generator_noise(IOS):
+    def __init__(self, ios):
+        self.ios = ios
+        self.config = ios.config
+        self.random = self.config.random
+    
+    # def display_inlier_outlier(self, cloud, ind):
+    #     inlier_cloud = cloud.select_by_index(ind)
+    #     outlier_cloud = cloud.select_by_index(ind, invert=True)
+
+    #     print("Showing outliers (red) and inliers (gray): ")
+    #     outlier_cloud.paint_uniform_color([1, 0, 0])
+    #     inlier_cloud.paint_uniform_color([0.8, 0.8, 0.8])
+    #     o3d.visualization.draw_geometries([inlier_cloud, outlier_cloud],
+    #                                     zoom=0.3412,
+    #                                     front=[0.4257, -0.2125, -0.8795],
+    #                                     lookat=[2.6172, 2.0475, 1.532],
+    #                                     up=[-0.0694, -0.9768, 0.2024])
+
+
+
+    def get_origins(self, pcd_source):
+
+        # remove outliers for boundry box only
+        # print("Radius oulier removal")
+        cl, ind = pcd_source.remove_radius_outlier(nb_points=32, radius=0.1)
+        #self.display_inlier_outlier(pcd_source, ind)
+        inlier_cloud = pcd_source.select_by_index(ind)
+
+        # get bounding box
+        aabb = o3d.geometry.AxisAlignedBoundingBox.create_from_points(
+            inlier_cloud.points
+        )
+
+        min_b = aabb.get_min_bound()
+        max_b = aabb.get_max_bound()
+        #print(min_b, max_b)
+        z = (min_b[2] + max_b[2]) / 2
+        all_corners_2d = [np.array([min_b[0], min_b[1]]), np.array([min_b[0], max_b[1]]),
+                            np.array([max_b[0], max_b[1]]), np.array([max_b[0], min_b[1]]),
+                            np.array([min_b[0], min_b[1]])]
+        
+        #print(all_corners_2d)
+        # Currently it's only a square, and a circle would maybe be better
+
+        origins = []
+        #print(all_corners_2d)
+        for i in range(self.config.noise_origins):
+            line_pos = i * 4 / self.config.noise_origins  # 0-3.9 0,1,2,3 is the line currently on
+            line_pos += 0.5  # i want to have the first to be in between points
+            if line_pos >= 4:
+                line_pos -= 4
+            start = int(line_pos)
+            end = start + 1
+            perc = line_pos - start
+            #print(start, end, line_pos, perc)
+            point = (1 - perc) * all_corners_2d[start] + perc * all_corners_2d[end]
+            point = np.append(point, z)
+            #print(point)
+            origins.append(point)
+            
+        return origins
+
+        # for origin in range(self.config.noise_origins):
+        #     # but every axis should have it's own noise size depending on size
+
+        #     # find center of cloud and then find random x-y on an elipse around the point cloud
+
+        #     # boudary ellipse 
+        #     self.random.uniform(0, 1)
+
+
+    def create_noisy_files(self):
+        for file in os.listdir(self.config.dataset_dir):
+            if file.endswith(".txt"):
+                f = open(self.config.dataset_dir + file, "r")
+                string = f.read()
+                f.close()
+
+                if string == "":
+                    continue
+
+                print(string)
+                npz_file1 = np.load(self.config.dataset_dir + string.split(" ")[0])
+                xyz1 = npz_file1["pcd"]
+                pcd_source = o3d.geometry.PointCloud()
+                pcd_source.points = o3d.utility.Vector3dVector(xyz1)
+                
+                origins = self.get_origins(pcd_source)
+                for origin in origins:
+                    self.random.uniform(0, 1)
+                    # calculate noise to each point
+
+                print(string.split(" ")[0])
+                #file = file[:-4] + ".npz"
+                print(self.config.dataset_dir + file)
+                #npz_file = np.load(self.config.dataset_dir + file)
+                #xyz1 = npz_file["pcd"]
+        exit()
+
+    def extend_matching_files(self):
+        pass
