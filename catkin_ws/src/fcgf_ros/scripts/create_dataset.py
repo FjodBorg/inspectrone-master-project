@@ -13,7 +13,7 @@ python3.7 retrain.py \
 --out_dir "$dw_path/retrained_models/" \
 --batch_size 4 \
 --weights "" \
---config.voxel_size 0.04 \
+--voxel_size 0.04 \
 --hit_ratio 0.075 \
 --max_epoch 200 # kunne evt være større
 """
