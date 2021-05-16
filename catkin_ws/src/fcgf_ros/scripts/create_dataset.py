@@ -49,7 +49,7 @@ def main():
     setattr(config, "max_random_crop_iterations", 100)
     # noise
     setattr(config, "use_noise", True)
-    noise_level = 0.3  # max noise in meters
+    setattr(config, "max_noise_level", 0.1)  # max noise level pr meter
     setattr(config, "noise_origins", 4)  # How many origins (More noise the further away)
     only_use_noise = True  # if you don't want noiseless data
 

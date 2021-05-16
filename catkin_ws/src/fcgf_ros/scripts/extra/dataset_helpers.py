@@ -825,6 +825,7 @@ class Generator_noise(IOS):
         self.ios = ios
         self.config = ios.config
         self.random = self.config.random
+        self.max_noise_level = self.config.max_noise_level
     
     # def display_inlier_outlier(self, cloud, ind):
     #     inlier_cloud = cloud.select_by_index(ind)
@@ -891,6 +892,20 @@ class Generator_noise(IOS):
         #     # boudary ellipse 
         #     self.random.uniform(0, 1)
 
+    def noise_function(self, origin, pos):
+        '''
+            uses only one axis aka, only one x, y or z at a time
+        '''
+        dist = np.abs(origin - pos)  # dist in x y z
+
+        # random noise (is in noise pr meter, thus the dx)
+        noise = dist * self.random.uniform(-self.max_noise_level, self.max_noise_level)
+        # noise_vec = dist * np.array([self.random.uniform(-self.max_noise_level, self.max_noise_level),
+        #                         self.random.uniform(-self.max_noise_level, self.max_noise_level),
+        #                         self.random.uniform(-self.max_noise_level, self.max_noise_level)])
+        # print(noise_vec, pos)
+        return pos + noise  # noisy point
+        
 
     def create_noisy_files(self):
         for file in os.listdir(self.config.dataset_dir):
@@ -898,24 +913,43 @@ class Generator_noise(IOS):
                 f = open(self.config.dataset_dir + file, "r")
                 string = f.read()
                 f.close()
-
+                fnames = [] 
                 if string == "":
                     continue
 
                 print(string)
-                npz_file1 = np.load(self.config.dataset_dir + string.split(" ")[0])
-                xyz1 = npz_file1["pcd"]
+                # only use scans since the tank isn't noisy
+                scan_name = string.split(" ")[0]
+                
+                npz_file = np.load(self.config.dataset_dir + scan_name)
+                xyz = npz_file["pcd"]
+                color = npz_file["color"]
                 pcd_source = o3d.geometry.PointCloud()
-                pcd_source.points = o3d.utility.Vector3dVector(xyz1)
+                pcd_source.points = o3d.utility.Vector3dVector(xyz)
+                #print(len(pcd_source.points))
                 
                 origins = self.get_origins(pcd_source)
-                for origin in origins:
-                    self.random.uniform(0, 1)
+                for i, origin in enumerate(origins):
+                    # print(xyz, xyz.shape)
+                    # call noise_function(on every array element):
+                    noisy_xyz = np.vectorize(self.noise_function)(origin, xyz)
+                    fname = "noisy_{}_{}".format(i, scan_name)
+                    # print(fname)
+                    np.savez(
+                        self.config.dataset_dir + fname,
+                        pcd=noisy_xyz,
+                        color=color,
+                    )
+                    fnames.append(fname)
+                    #exit()
                     # calculate noise to each point
 
-                print(string.split(" ")[0])
+
+                for i, origin in enumerate(origins):
+
+                #print(string.split(" ")[0])
                 #file = file[:-4] + ".npz"
-                print(self.config.dataset_dir + file)
+                #print(self.config.dataset_dir + file)
                 #npz_file = np.load(self.config.dataset_dir + file)
                 #xyz1 = npz_file["pcd"]
         exit()
