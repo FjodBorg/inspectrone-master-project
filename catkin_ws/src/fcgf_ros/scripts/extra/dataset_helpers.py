@@ -210,12 +210,6 @@ class Generator_PCD(IOS):
                 color=pcd_np_color,
             )
 
-            # always delete all noisy data
-            for file in os.listdir(self.config.dataset_dir):
-                if file.startswith("noisy") and source in file:
-                    print("Deleting noisy file:", file)
-                    os.remove(self.config.dataset_dir + file)
-
             # always delete all crops
             for file in os.listdir(self.config.dataset_dir):
                 if file.startswith(source + "[") and file.endswith("].npz"):
@@ -233,6 +227,12 @@ class Generator_PCD(IOS):
         global prev_msg_t
         skip = False
 
+        # always delete all noisy data
+        for file in os.listdir(self.config.dataset_dir):
+            if file.startswith("noisy") and source in file:
+                print("Deleting noisy file:", file)
+                os.remove(self.config.dataset_dir + file)
+                
         # check if file is there
         file_path = self.config.dataset_dir + fname
         status = "{}/{}".format(idx + 1, seq_count)
@@ -913,39 +913,59 @@ class Generator_noise(IOS):
                 f = open(self.config.dataset_dir + file, "r")
                 string = f.read()
                 f.close()
-                fnames = [] 
-                if string == "":
+                fnames = []
+                targets = []
+                overlaps = []
+                if string == "" or "noisy_0" in string:
+                    print("file empty or noisy data already exists")
                     continue
+                for line in string.split("\n"):
+                    if line == "":
+                        continue
 
-                print(string)
-                # only use scans since the tank isn't noisy
-                scan_name = string.split(" ")[0]
-                
-                npz_file = np.load(self.config.dataset_dir + scan_name)
-                xyz = npz_file["pcd"]
-                color = npz_file["color"]
-                pcd_source = o3d.geometry.PointCloud()
-                pcd_source.points = o3d.utility.Vector3dVector(xyz)
-                #print(len(pcd_source.points))
-                
-                origins = self.get_origins(pcd_source)
-                for i, origin in enumerate(origins):
-                    # print(xyz, xyz.shape)
-                    # call noise_function(on every array element):
-                    noisy_xyz = np.vectorize(self.noise_function)(origin, xyz)
-                    fname = "noisy_{}_{}".format(i, scan_name)
-                    # print(fname)
-                    np.savez(
-                        self.config.dataset_dir + fname,
-                        pcd=noisy_xyz,
-                        color=color,
-                    )
-                    fnames.append(fname)
-                    #exit()
-                    # calculate noise to each point
+                    # print(line)
+                    # only use scans since the tank isn't noisy
+                    scan_name = line.split(" ")[0]
+                    #print(scan_name)
+                    
+                    npz_file = np.load(self.config.dataset_dir + scan_name)
+                    xyz = npz_file["pcd"]
+                    color = npz_file["color"]
+                    pcd_source = o3d.geometry.PointCloud()
+                    pcd_source.points = o3d.utility.Vector3dVector(xyz)
+                    #print(len(pcd_source.points))
+                    
+                    origins = self.get_origins(pcd_source)
+                    for i, origin in enumerate(origins):
+                        # print(xyz, xyz.shape)
+                        # call noise_function(on every array element):
+                        fname = "noisy_{}_{}".format(i, scan_name)
+                        if not os.path.isfile(self.config.dataset_dir + fname):
+                            noisy_xyz = np.vectorize(self.noise_function)(origin, xyz)
+                            # print(fname)
+                            np.savez(
+                                self.config.dataset_dir + fname,
+                                pcd=noisy_xyz,
+                                color=color,
+                            )
+                            print("wrote file  {}".format(fname))
+                        else:
+                            print("file exists {}".format(fname))
+                        fnames.append(fname)
+                        targets.append(line.split(" ")[1])
+                        overlaps.append(line.split(" ")[2])
+                        #exit()
+                        # calculate noise to each point
+                f = open(self.config.dataset_dir + file, "a")
+                added_string = ""
+                for i, source in enumerate(fnames):
+                    added_string = added_string + "{} {} {}\n".format(source, targets[i], overlaps[i])
+                # print(added_string)
+                string = f.write(added_string)
+                f.close()
+                print("appended noisy files to {}".format(file))
 
-
-                for i, origin in enumerate(origins):
+                # for i, origin in enumerate(origins):
 
                 #print(string.split(" ")[0])
                 #file = file[:-4] + ".npz"
