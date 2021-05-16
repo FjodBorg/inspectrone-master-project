@@ -77,9 +77,8 @@ def main():
     txt_gen.create_matching_file()
     if config.use_noise:
         noise_gen.create_noisy_files()
-        #noise_gen.extend_matching_files()
+    
     match_gen.create_overlap_files()
-    # TODO, add noise to npz function here
 
 
 if __name__ == "__main__":

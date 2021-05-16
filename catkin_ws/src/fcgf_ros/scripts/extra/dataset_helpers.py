@@ -776,6 +776,7 @@ class Generator_matcher(IOS):
         self.config = ios.config
 
     def create_overlap_files(self):
+        print("sdfgsdfsd")
         for file in os.listdir(self.config.dataset_dir):
             if file.endswith(".txt"):
                 number = file.split("-")[-1].split(".txt")[0]
@@ -964,15 +965,6 @@ class Generator_noise(IOS):
                 string = f.write(added_string)
                 f.close()
                 print("appended noisy files to {}".format(file))
-
-                # for i, origin in enumerate(origins):
-
-                #print(string.split(" ")[0])
-                #file = file[:-4] + ".npz"
-                #print(self.config.dataset_dir + file)
-                #npz_file = np.load(self.config.dataset_dir + file)
-                #xyz1 = npz_file["pcd"]
-        exit()
 
     def extend_matching_files(self):
         pass
