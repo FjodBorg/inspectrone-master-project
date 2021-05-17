@@ -414,8 +414,6 @@ class MatcherWithFaiss(MatcherTeaser):
         # print(feat1[corres01_idx0[0:6]])
         # print(abs(feat0[corres01_idx1[0:6]] - feat1[corres01_idx0[0:6]]))
         # print(corres_idx0.shape, corres_idx1.shape)
-
-        # Matches "distance" in each feature
         if self._config.debug_calc_feat_dist:
             with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
                 start = 0
@@ -426,6 +424,37 @@ class MatcherWithFaiss(MatcherTeaser):
                 # print the average distance of each feature of all correspondences:
                 avg_feat_dist = np.sum(feat_dist/(end-start), 0)
                 self.avg_feat_dist.append([np.insert(avg_feat_dist, 0, 0)])
+                #print(avg_feat_dist)
+                #print(self.avg_feat_dist)
+
+        if len(corres01_idx1) >= self._config.limit_max_correspondences and self._config.limit_max_correspondences >= 0:
+            # Matches "distance" in each feature
+            max_feats = self._config.limit_max_correspondences
+            # TODO make a upper limit for correspondences
+            # corres_idx0 = [idx for i, idx in enumerate(corres_idx0) if i % 3] 
+            # corres_idx1 = [idx for i, idx in enumerate(corres_idx1) if i % 3]
+            # TODO select the x best correspondences (aka shortest feature dist)
+            with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+                start = 0
+                end = len(corres01_idx1)
+                # TODO find faster way to do this!
+                feat_dist = np.linalg.norm(feat0[corres01_idx1[start:end]] - feat1[corres01_idx0[start:end]], axis=1)
+                sorted_feat_indicies = np.argsort(feat_dist)
+                # select the n best feature indices
+                #print("\n\n\n\n\n\n", len(sorted_feat_indicies), sorted_feat_indicies.shape)
+                worst_feat_indicies = sorted_feat_indicies[max_feats:]
+                #print(len(worst_feat_indicies))
+                #print(len(corres01_idx0))
+                # delete the worst
+                corres01_idx0 = np.delete(corres01_idx0, worst_feat_indicies)
+                corres01_idx1 = np.delete(corres01_idx1, worst_feat_indicies)
+                #print(max_feats)
+                ##print(len(corres01_idx0))
+                #print(worst_feat_indicies)
+                # print(feat_dist)
+                # print the average distance of each feature of all correspondences:
+                # avg_feat_dist = np.sum(feat_dist/(end-start), 0)
+                # self.avg_feat_dist.append([np.insert(avg_feat_dist, 0, 0)])
                 #print(avg_feat_dist)
                 #print(self.avg_feat_dist)
 
