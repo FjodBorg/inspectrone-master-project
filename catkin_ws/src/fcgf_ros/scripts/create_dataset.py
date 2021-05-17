@@ -9,13 +9,13 @@ from extra import dataset_helpers
 base_path="$HOME/repos/inspectrone"
 dw_path="$base_path/catkin_ws/downloads"
 python3.7 retrain.py \
---threed_match_dir "$dw_path/datasets/ballast_tank/" \
---out_dir "$dw_path/retrained_models/" \
 --batch_size 4 \
 --weights "" \
 --voxel_size 0.04 \
 --hit_ratio 0.075 \
---max_epoch 200 # kunne evt være større
+--max_epoch 200 \
+--threed_match_dir "$dw_path/datasets/ballast_tank/" \
+--out_dir "$dw_path/retrained_models/" 
 """
 
 
