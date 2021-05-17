@@ -119,7 +119,7 @@ if __name__ == "__main__":
         # model_name="/retrained_models/with_0.025_hit_ratio/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.025_hit_ratio/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.025_hit_ratio/checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
+        #model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio/best_val_checkpoint.pth",
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/checkpoint.pth", # Works well
         # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/best_val_checkpoint.pth",
@@ -142,18 +142,18 @@ if __name__ == "__main__":
     # setattr(config, "voxel_size", 0.08)
     setattr(config, "voxel_size", 0.025) # try with this # can't do matching properly
     setattr(config, "voxel_size", 0.04) # try with this 
-    setattr(config, "NOISE_BOUND", config.voxel_size*5)
+    setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
     setattr(config, "teaser", True)
-    setattr(config, "faiss", True) # teaser false needs add_metrics false
+    setattr(config, "faiss", True)  # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
     setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
     setattr(config, "debug_viz", False)  # visualized the match
-    setattr(config, "debug_calc_feat_dist", True) # calculates the distance of each feature correspondence (Visualized with debug_viz True)
-
+    setattr(config, "debug_calc_feat_dist", False)  # calculates the distance of each feature correspondence (Visualized with debug_viz True)
+    setattr(config, "limit_max_correspondences", 1000) # <= 0 means don't limit
 
 
     metrics = extensions.PerformanceMetrics()

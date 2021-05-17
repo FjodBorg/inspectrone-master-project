@@ -437,7 +437,7 @@ class MatcherWithFaiss(MatcherTeaser):
             #with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
             end = len(corres01_idx1)
             # TODO find faster way to do this!
-            feat_dist = np.linalg.norm(feat0[corres01_idx1[0:end]] - feat1[corres01_idx0[0:end]], axis=1)
+            feat_dist = np.linalg.norm(feat0[corres_idx1[0:end]] - feat1[corres_idx0[0:end]], axis=1)
             sorted_feat_indicies = np.argsort(feat_dist)
             # select the n best feature indices
             #print("\n\n\n\n\n\n", len(sorted_feat_indicies), sorted_feat_indicies.shape)
@@ -445,10 +445,10 @@ class MatcherWithFaiss(MatcherTeaser):
             #print(len(worst_feat_indicies))
             #print(len(corres01_idx0))
             # delete the worst
-            corres01_idx0 = np.delete(corres01_idx0, worst_feat_indicies)
-            corres01_idx1 = np.delete(corres01_idx1, worst_feat_indicies)
+            corres_idx0 = np.delete(corres_idx0, worst_feat_indicies)
+            corres_idx1 = np.delete(corres_idx1, worst_feat_indicies)
             #print(max_feats)
-            ##print(len(corres01_idx0))
+            print(len(corres_idx0))
             #print(worst_feat_indicies)
             # print(feat_dist)
             # print the average distance of each feature of all correspondences:
