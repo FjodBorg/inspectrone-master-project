@@ -13,7 +13,7 @@ echo "Directory of called script: $DIR"
 echo "Name of container: $container_name"
 
 
-docker build -t $container_name . && 
+docker build -t $container_name . 
 	# ${DISPLAY} Returns newline, find fix
 #docker build --build-arg DISPLAY=${DISPLAY} -t $container_name $repo_DIR/. && 
 #docker build --build-arg HOME=${HOME} --build-arg repo_DIR="/${repo_DIR}" -t $container_name $repo_DIR/.
