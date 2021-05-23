@@ -12,6 +12,7 @@ source $HOME/.bashrc
 # echo "yee"
 
 find $HOME/catkin_ws/src/rovio_extras/launch/ -maxdepth 1 -mindepth 1 -type f -exec ln -s '{}' $HOME/catkin_ws/src/rovio/launch/ \;
+find $HOME/catkin_ws/src/rovio_extras/cfg/ -maxdepth 1 -mindepth 1 -type f -exec ln -s '{}' $HOME/catkin_ws/src/rovio/cfg/ \;
 
 cmd_array=$EXTRA_OPTIONS
 
