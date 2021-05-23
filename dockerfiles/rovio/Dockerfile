@@ -73,9 +73,6 @@ RUN . /opt/ros/melodic/setup.sh && mkdir ceres-bin && cd ceres-bin && cmake ../c
 RUN apt-get install rviz gedit ros-melodic-image-pipeline ros-melodic-image-transport-plugins  -y
 
 RUN echo "source $HOME/catkin_ws/devel/setup.bash" >> $HOME/.bashrc
-# RUN echo "roslaunch rovio" >> $HOME/.bashrc
-
-
 
 # with nvidia/cuda drivers
 ENV NVIDIA_VISIBLE_DEVICES \
@@ -84,9 +81,10 @@ ENV NVIDIA_DRIVER_CAPABILITIES \
     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
 WORKDIR "$HOME/catkin_ws"
+RUN catkin build  --cmake-args -DCMAKE_BUILD_TYPE=Release
 
 # setup entrypoint
-COPY ./ros_entrypoint.sh /
+COPY .	/ros_entrypoint.sh /
 
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bash"]
