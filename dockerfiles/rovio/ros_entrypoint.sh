@@ -16,7 +16,7 @@ find $HOME/catkin_ws/src/rovio_extras/launch/ -maxdepth 1 -mindepth 1 -type f -e
 cmd_array=$EXTRA_OPTIONS
 
 success=true
-IFS='...' read -ra ADDR <<< "$cmd_array"
+IFS=';' read -ra ADDR <<< "$cmd_array"
 for i in "${ADDR[@]}"; do
   if [ ! -z "$i" ]; then # check if not empty string
     echo "Running command: $i"
