@@ -26,7 +26,7 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
 ENV ROS_DISTRO melodic
-
+ENV HOME /home/docker
 
 # install ros packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -46,13 +46,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgoogle-glog-dev libgflags-dev libatlas-base-dev libeigen3-dev \
     libsuitesparse-dev
 
-# environment setup
-RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
-
 # setup inspectrone files
-RUN mkdir -p ~/catkin_ws/src
+RUN mkdir -p $HOME/catkin_ws/src
 
-WORKDIR "~/catkin_ws/src"
+# environment setup
+RUN echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> $HOME/.bashrc
+
+
+WORKDIR "$HOME/catkin_ws/src"
 RUN git clone https://github.com/ethz-asl/kindr 
 RUN git clone https://github.com/ethz-asl/rovio
 RUN git clone https://github.com/catkin/catkin_simple
@@ -60,7 +61,7 @@ RUN cd rovio && git submodule update --init --recursive
 RUN git clone https://ceres-solver.googlesource.com/ceres-solver
 
 RUN . /opt/ros/melodic/setup.sh && mkdir ceres-bin && cd ceres-bin && cmake ../ceres-solver && make -j4 && make test -j4 && make install -j4 \ 
-&& catkin build -w /~/catkin_ws kindr \
+&& catkin build -w $HOME/catkin_ws kindr \
 && catkin build catkin_simple \
 && catkin build rovio --cmake-args -DCMAKE_BUILD_TYPE=Release
 
@@ -71,13 +72,18 @@ RUN . /opt/ros/melodic/setup.sh && mkdir ceres-bin && cd ceres-bin && cmake ../c
 
 RUN apt-get install rviz gedit ros-melodic-image-pipeline ros-melodic-image-transport-plugins  -y
 
+RUN echo "source $HOME/catkin_ws/devel/setup.bash" >> $HOME/.bashrc
+# RUN echo "roslaunch rovio" >> $HOME/.bashrc
+
+
 
 # with nvidia/cuda drivers
 ENV NVIDIA_VISIBLE_DEVICES \
     ${NVIDIA_VISIBLE_DEVICES:-all}
 ENV NVIDIA_DRIVER_CAPABILITIES \
     ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
-    
+
+WORKDIR "$HOME/catkin_ws"
 
 # setup entrypoint
 COPY ./ros_entrypoint.sh /

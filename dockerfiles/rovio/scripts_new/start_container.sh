@@ -9,13 +9,15 @@ DIR="${return_info[1]}"
 
 
 echo "Directory of called script: $DIR"
-echo "Name of container: $container_name"
+echo "Name of container: $container_name, should be something like rovio, if not try and call it from the rovio folder"
 echo ""
 echo "The new start container runs it and then deletes it, so no need to use stop or remove container"
 echo ""
 
+echo $DIR/../src_extra/
+
 xhost +local:"docker inspect --format='{{ .Config.Hostname }}' $container_name" 
-docker run -it --net=host --rm --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --name=$container_name -v $HOME/repos/$container_name/src/:"/home/docker/catkin_ws/src_extern/" --gpus all $container_name bash
+docker run -it --net=host --rm --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --name=$container_name -v $DIR/../src_extra/rovio_extras:"/home/docker/catkin_ws/src/rovio_extras" --gpus all $container_name bash
 #docker start $container_name 
 #docker exec --user docker -it $container_name bash
 docker exec -it $container_name bash
