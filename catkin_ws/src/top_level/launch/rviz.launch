@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find fcgf_ros)/launch/rviz.launch">
+    </include>
+
+</launch>

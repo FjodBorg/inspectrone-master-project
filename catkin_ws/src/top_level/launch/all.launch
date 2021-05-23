@@ -1,0 +1,12 @@
+<launch>
+    <!-- Add delay on start to mathcer, otherwise it crashes -->
+    <arg name="node_start_delay" default="1.0" />
+
+    <include file="$(find top_level)/launch/rviz.launch">
+    </include>
+    <include file="$(find top_level)/launch/localization.launch">
+    </include>
+    <include file="$(find top_level)/launch/matcher.launch">
+        <arg name="node_start_delay" value="$(arg node_start_delay)"/>
+    </include>
+</launch>
