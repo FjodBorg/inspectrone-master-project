@@ -1,0 +1,5 @@
+<launch>
+    <include file="$(find fcgf_ros)/launch/create_dataset.launch">
+    </include>
+
+</launch>
