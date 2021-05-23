@@ -147,15 +147,24 @@ class MatcherHelper(MatcherBase):
         pass
         #self.metrics.reset()
 
-    def publish_pcd(self, *args):
-        stamp = self._pcd_broadcaster.publish_pcd(*args)
+    def publish_pcds(self, *args):
+        stamp = self._pcd_broadcaster.publish_pcds(*args)
         return stamp
 
-    def publish_pose(self, T, stamp):
+    def publish_inital_map(self):
+        pcd_map = self.get_map()
+        pcd_map_down, _ = self.get_open3d_features(pcd_map)
+    
+        self._pcd_broadcaster.publish_inital_map(pcd_map_down)
+
+        
+
+    def publish_transform(self, T, stamp):
         self._pose_broadcaster.publish_transform(T, stamp)
         pass
         #self._pose_broadcaster.publish_transform(T)
-        #self._pose_broadcaster.publish_pose()
+        #self._pose_broadcaster.publish_transform()
+
 
     # TODO raise errors if functions aren't defined
 
@@ -534,15 +543,15 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
         self.metrics.stop_time(timer_name)
         return pcd
 
-    def publish_pcd(self, *args, timer_name="publishing pcd's"):
+    def publish_pcds(self, *args, timer_name="publishing pcd's"):
         self.metrics.start_time(timer_name)
-        stamp = self.matcher.publish_pcd(self, *args)
+        stamp = self.matcher.publish_pcds(self, *args)
         self.metrics.stop_time(timer_name)
         return stamp
 
-    def publish_pose(self, *args, timer_name="publishing pose"):
+    def publish_transform(self, *args, timer_name="publishing pose"):
         self.metrics.start_time(timer_name)
-        self.matcher.publish_pose(self, *args)
+        self.matcher.publish_transform(self, *args)
         self.metrics.stop_time(timer_name)
 
 

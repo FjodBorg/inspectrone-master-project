@@ -20,7 +20,7 @@ def movingaverage(interval, window_size):
     window = np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
 
-def demo():
+def demo_func():
     matcher.reset_eval()
 
     pcd_map = matcher.get_map()
@@ -34,12 +34,13 @@ def demo():
     pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)
 
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
-    stamp = matcher.publish_pcd(pcd_scan_down, pcd_map_down)
-    matcher.publish_pose(T, stamp)  # TODO add correct stamp 
-
+    reg_qual = matcher.eval_transform(pcd_scan_down, pcd_map_down, T)
+    # if cloud is fit enough
+    if rospy.get_param("/fcgf/fitness_thr") < reg_qual.fitness:
+        stamp = matcher.publish_pcds(pcd_scan_down, pcd_map_down)
+        matcher.publish_transform(T, stamp)  # TODO add correct stamp 
 
     matcher.eval()
-    reg_qual = matcher.eval_transform(pcd_scan_down, pcd_map_down, T)
     
     #metrics.print_all_timings()
     # Visualize the registration results
@@ -153,22 +154,23 @@ if __name__ == "__main__":
     setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
     setattr(config, "debug_viz", False)  # visualized the match
     setattr(config, "debug_calc_feat_dist", False)  # calculates the distance of each feature correspondence (Visualized with debug_viz True)
-    setattr(config, "limit_max_correspondences", 1000) # <= 0 means don't limit
-
+    setattr(config, "limit_max_correspondences", 1000)  # <= 0 means don't limit
 
     metrics = extensions.PerformanceMetrics()
+    ros_helper.Inits()
     pcd_listener = ros_helper.PCListener(config.topic_in_ply)
     pcd_broadcaster = ros_helper.PCBroadcaster(config.topic_ballast_ply, config.topic_scan_ply)
-    # pcd_scan_broadcaster = ros_helper.PCBroadcaster(config.topic_ply)
     pose_broadcaster = ros_helper.PoseBroadcaster(config.topic_pose, frame_id="scan")
-    #pose_broadcaster = ros_helper.PoseBroadcaster(config.topic_pose, frame_id="camera_base")
     ros_col = ros_helper.Collect(pcd_listener, pcd_broadcaster, pose_broadcaster)
     #ros_col = ros_helper.Collect(pcd_listener, pcd_broadcaster, pose_broadcaster)
 
     matcher = matching_helpers.Matcher(config, ros_col)
+    
 
     #  updater = Main(listener)
     rospy.loginfo("start")
+    
+    matcher.publish_inital_map()
     while pcd_listener.pc is None:
         rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
         rospy.sleep(0.2)
@@ -177,13 +179,13 @@ if __name__ == "__main__":
 
     rospy.loginfo("rendering pointcloud #{}".format(prev_red_n))
 
-    demo()
+    demo_func()
 
     prev_time = time.time()
     while not rospy.is_shutdown():
         if prev_red_n != pcd_listener.n:
             prev_red_n = pcd_listener.n
-            demo()
+            demo_func()
             prev_time = time.time()
         
         if time.time() - prev_time > 2:

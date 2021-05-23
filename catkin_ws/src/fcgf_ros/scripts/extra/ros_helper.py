@@ -19,7 +19,6 @@ class PCListener:
         self.init_listener(topic_in_ply)
 
     def init_listener(self, topic_in_ply):
-        rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()
         # rospy.Subscriber("/ballast_tank_ply", PointCloud2, self.callback)
         rospy.Subscriber(topic_in_ply, sensor_msgs.msg.PointCloud2, self.callback)
 
@@ -35,7 +34,7 @@ class PCBroadcaster:
         self.pub_scan = rospy.Publisher(topic_scan_ply, sensor_msgs.msg.PointCloud2, queue_size=1, latch=True)
         self.stamp = 0
 
-    def publish_pcd(self, pcd_scan, pcd_map):
+    def publish_pcds(self, pcd_scan, pcd_map):
         self.stamp = rospy.Time.now()
         ros_pcd_scan = self.open3d_to_ros(pcd_scan, frame_id="scan")
         ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
@@ -44,6 +43,12 @@ class PCBroadcaster:
         self.pub_scan.publish(ros_pcd_scan)
         self.pub_map.publish(ros_pcd_map)
         return self.stamp
+
+    def publish_inital_map(self, pcd_map):
+        self.stamp = rospy.Time.now()
+        ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
+        self.pub_map.publish(ros_pcd_map)
+        
 
     # Convert the datatype of point cloud from Open3D to ROS PointCloud2 (XYZRGB only)
     def open3d_to_ros(self, open3d_cloud, frame_id="map"):
@@ -114,3 +119,10 @@ class Collect:
         self.pcd_listener = pcd_listener
         self.pose_broadcaster = pose_broadcaster
         self.pcd_broadcaster = pcd_broadcaster
+
+class Inits:
+    def __init__(self):
+        rospy.init_node("fcgf", anonymous=True, disable_signals=True) #TODO find a better solution for keyboard events not working with rospy.sleep()
+        if not rospy.has_param('/fcgf/fitness_thr'):
+            rospy.set_param('/fcgf/fitness_thr', 0.85)
+        
