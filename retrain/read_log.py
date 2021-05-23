@@ -15,12 +15,15 @@ def is_float(string):
 
 docs_path = "/home/fjod/repos/inspectrone/docs/"
 path = "/home/fjod/repos/inspectrone/catkin_ws/downloads/retrained_models/"
+
+
 log_dirs = [["with_cropping_0.025_hit_ratio",
             "with_cropping_0.075_hit_ratio"],
             ["with_cross_matching_0.025_hit_ratio",
-            "with_cross_matching_0.075_hit_ratio"]]
-log_names = ["cropping.txt", "crossmatch.txt"]
-titles = ["Using Cropping", "Using Cross-matching"]
+            "with_cross_matching_0.075_hit_ratio"],
+            ["with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel"]]
+log_names = ["cropping.txt", "crossmatch.txt", "termnial-log5-fjordor.txt"]
+titles = ["Using Cropping", "Using Cross-matching", "new"]
 metric_names = ["loss", "RTE", "RRE", "hit_ratio", "match_ratio"]
 
 

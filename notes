@@ -128,3 +128,203 @@ Cropping has minimum size of length+width+height of 6 to
 ensure a region is large enough. Other than that the cloud size>=10000
 is checked to ensure that it is picking a region that actually has 
 points in it
+
+
+
+
+# 20 april
+    Add noise to training (estimate how much?)
+    maybe increase the crop smaples even further?
+    add plan for skeleton for thesis next week\ (Responsible: Evan)
+        contents, chapters ect.
+        get an example?
+
+    Rune needs to put pressure on me for the training part on thesis
+
+    perhaps try cross_matching tanks?
+
+    quility value for match:
+        penetalize points outside of current map
+        define bounding box of map, if outside -> bad voxel
+    how does evaluate_registration work (o3d)???
+
+    0.125 hit ratio makes it hard to match, since many features can be close
+
+    Teaser makes it slower or impossible for matching when it's retrained with high hit ratio
+    Træn algoritmen med en anden matcher aka teaser???
+
+
+
+
+# 27 april
+    discuess visual intertai odometry with rune (we alreadyt have it)
+
+    intro duction is small
+        motivation, why and why is it import, why did i choose it and so forth
+            Why did i choose, it build around 3d spaces and point clouds
+            lack of gps, why use camera, low light
+            Applications, that have been used before and can be used for. 
+            Use title
+            absolute is good because we need to know exactrly where it is
+            Visual inertia inbetween absolute point feature matching
+            in what body frame relative to map (absolute)
+            cant solve navigation without positions
+            make it the most important thing in the world (make it sound so)
+        
+        Objective, nummerical requiremens is needed ( add them from project plan )
+            use thrust vector for intruduction
+            seconds or less or why for update rate for matching why?(have reference, from paper, rune, force etc)
+
+
+        hidden related work (citing and so on) in intro 
+
+        related work (dont use analysis as title) (where to put it)
+            confined space localization
+                name issue
+            Object matching 
+                FCGF
+
+            vio (rovio)
+
+            my task is transfer FCGF to make it work for localization (localization instaead of objects)
+            Here in related work and conclusion
+                (called contribution of this thesis)
+            
+    System description
+        how it works
+        diferrent approaches (make analysis of how it could be done)
+            (alternatives? or how it could be done) 
+                discirbe how fcgf and smoothnet works
+        With timing (high level)
+        one for point cloud
+        one for rovio
+        one for data creation
+
+    different tests
+        testins sub systems 
+        testing as a whole system
+        1000 matches and check how good 
+        accurecy of localization over time
+        (good choice for philip anasasia)
+        remeber to the final test
+
+    conclusion 
+        concluded i succeeded doing everything i need (feel confident)
+        thrust over did it (mention every thing)'
+        comeback to the requirements and how they are solved (more fluently)
+        What is to be achieved (use motivation). Now it's done the system is able to do x,y,z how good it is
+        Say what i made 
+
+    
+
+
+
+
+voxel size needs to be same for data and training config! 
+Spartical convolution (the same distance between voxels for FCGF (xyz/voxel_size))
+FCGF paper spacial convolution
+Make plots with different ICP steps
+
+When correspondence set is above 4000 V we get 10mil eges which takes forever for teaser, 1 mil edges (2000 V) seems fine
+increasing noise bound makes teaser faster
+find k max and decrease it
+mutual filters
+teaser vs ransac 
+
+teaser noise bound (estimates it to 0.8)
+noise bound 0.04 is slow at times but almost all estimates are good
+noise bound 0.2 good balance between speed and quality (some poor estimates)
+noise bound 0.4 is more consistant speed but poorer estimates
+noise bound 0.8 poor estimates
+noise bound 1.2 is super slow
+
+
+# todo for next week or plot the distance afterwards
+
+Limit the correspondences (random)
+
+calculate distance between correspondences
+draw correspondence lines after match
+
+# next week decide where to go absolute or training, try out on jetson
+
+For next week work on absolute
+graph slam for absolute (g2o)
+graph relaxsation (g2o might not support it) (might not work if conflicting)
+
+try out fitness instaed of overlap ?
+
+
+the model is better
+make the box plot 
+before after
+timings 
+accurecy
+fitness 
+localization 
+
+# MAY now
+retrain the model
+
+decrease features helped the performance ( find a smart way )
+look at dimensional space and find the shortest in 32d
+randomly choose points
+
+just add noise to npz, (it's easier that way), but not super generalized
+
+Priority list
+
+0. Finalized noise? if it takes a lot of time 
+1. Localization?
+    a. Slam
+        - Pose-landmark graph optimization (prior map or not) 
+            - pose from vi-odom (rovio) (constraint) (~10Hz)
+            - Landmarks generated by FCGF (feature discriptors 32D)  (~1Hz)
+            - Framework for saving features
+                - only the one that has correspondences
+            - Constraints between landmark and pose (Teaser)
+            - Landmarks mapping realtime or prior (easy) 
+    b. graph optimization with relaxation (g2o or ceres and examples) (i have the landmarks and pose)
+    compare methods 
+    start with assume we have the full map (No relaxation, so no post processing)
+
+    perhaps go to bags of words
+2. 
+
+# minimum ellipse enclosing a set of points
+noise depends on distance and the source of noise is always on the boundtry since hte camera cant look back
+only add noise to scans and not tank
+try out different noise types
+
+
+
+# TODO make graph from execution time vs fitness?
+# correspondences over fitness 
+# correspondences over execution time
+
+# make correspondence selecting  algorithm for choosing diverse matches
+# bag of words with correspondence http://doriangalvez.com/papers/GalvezTRO12.pdf
+
+
+
+# maybe start with robot_localization and then slam
+# graph optimization without relaxation its the same as kalamn (identical for simple optimziation (bundle adjustment))
+    # TODO Convert fitness to covariance in some way
+    # TODO maybe use information aobut the not matched points in x y z
+
+
+# https://ieeexplore.ieee.org/document/8954799 
+# i dont think ^ is good
+
+publish transform from matching and calculate uncertainty in each direction between rovio and fcgf?
+
+
+Questions:
+    Do i need many references? Since most of my doing is implementation and ros specific
+    PhD vs work experience in robotics
+    Research  and development, with and without phd 
+    Erhvers phd vs academic phd
+    phd in another danish city / in another country
+    Starting buissness,
+
+./scripts_new/start_container.sh "roslaunch rovio rovio_node_mynteye.launch"
