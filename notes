@@ -317,7 +317,23 @@ try out different noise types
 # i dont think ^ is good
 
 publish transform from matching and calculate uncertainty in each direction between rovio and fcgf?
+    calculate all pixels outside of the map and use that as estimation for x y z? 
 
+    threshold for fitness and just throwaway everything less and use the covariance distance
+
+icp covariance
+
+distance between matcher and rovio transform as covariance
+
+Orientation (maybe not needed) and pose covariance (from outlier)
+
+
+# TODO read this paper and look into it for maybe next time
+https://arxiv.org/pdf/1909.05722.pdf
+
+
+a lot of implementation not so much theory from other papers?
+    maybe add the bounding box thing
 
 Questions:
     Do i need many references? Since most of my doing is implementation and ros specific
