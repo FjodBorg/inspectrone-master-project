@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?> 
+
+
+
 <launch>
 	<node pkg="rovio" type="rovio_node" name="rovio" output="screen">
 		<remap from="/cam0/image_raw" to="rgb/image_mono" />
@@ -8,10 +11,10 @@
 		<param name="camera0_config" value="$(find rovio)/cfg/kinect_cam0.yaml"/>
 		<param name="camera1_config" value="$(find rovio)/cfg/kinect_cam0.yaml"/>
 
-		<param name="world_frame" value="abs_correction"/>
+		<param name="world_frame" value="world_offset"/>
 	</node>
-	<!-- <node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 world map 100" /> -->
-	<node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0 0 0 0 map abs_correction 100" />
+	<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 world map 100" />
+	<!-- <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0 0 0 0 world abs_correction 100" /> -->
 
 	<node name="image_proc" type="image_proc" pkg="image_proc" output="screen" ns="rgb">
 		<!-- <remap from="/kinect/camera_info" to="/rgb/camera_info"/> -->
