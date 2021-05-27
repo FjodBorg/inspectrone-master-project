@@ -1,7 +1,8 @@
 <launch>
     <arg name="node_start_delay" default="0"></arg>
     <arg name="use_sim_time" default="false"/>
-    
+    <param name="use_sim_time" value="$(arg use_sim_time)"/>
+
     <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen"  launch-prefix="bash -c 'sleep $(arg node_start_delay); export OMP_NUM_THREADS=12; $0 $@'">
         <param name="/fitness_thr" type="double" value="0.1"/>
     </node>
@@ -15,5 +16,4 @@
          <param name="rate" value="1.0" />
     </node> -->
     
-    <param name="use_sim_time" value="$(arg use_sim_time)"/>
 </launch>
