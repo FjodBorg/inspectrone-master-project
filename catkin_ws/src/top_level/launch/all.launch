@@ -4,7 +4,7 @@
 
     <include file="$(find top_level)/launch/rviz.launch">
     </include>
-    <include file="$(find top_level)/launch/localization.launch">
+    <include file="$(find top_level)/launch/localization_kinect.launch">
     </include>
     <include file="$(find top_level)/launch/matcher.launch">
         <arg name="node_start_delay" value="$(arg node_start_delay)"/>
