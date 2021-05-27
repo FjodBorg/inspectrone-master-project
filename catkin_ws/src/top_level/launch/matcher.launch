@@ -1,7 +1,0 @@
-<launch>
-    <arg name="node_start_delay" default="1.0" />
-    <include file="$(find fcgf_ros)/launch/matcher.launch">
-        <arg name="node_start_delay" value="$(arg node_start_delay)"/>
-    </include>
-
-</launch>
