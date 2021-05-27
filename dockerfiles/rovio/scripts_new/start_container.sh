@@ -19,7 +19,7 @@ input_array=("$@")
 printf -v joined_array '%s;' "${input_array[@]}"
 
 xhost +local:"docker inspect --format='{{ .Config.Hostname }}' $container_name" 
-docker run -it --net=host --rm --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --env="EXTRA_OPTIONS=$joined_array"  --name=$container_name -v $DIR/../src_extra/rovio_extras:"/home/docker/catkin_ws/src/rovio_extras" --gpus all $container_name bash #  && bash #/ros_entrypoint.sh
+docker run -it --net=host --rm --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --env="EXTRA_OPTIONS=$joined_array" -v $DIR/../src_extra/rovio_extras:"/home/docker/catkin_ws/src/rovio_extras" --gpus all $container_name bash #  && bash #/ros_entrypoint.sh
 #docker start $container_name 
 #docker exec --user docker -it $container_name bash
 # docker exec -it $container_name bash
