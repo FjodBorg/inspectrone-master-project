@@ -18,7 +18,6 @@ if __name__ == '__main__':
     broadcaster = tf2_ros.StaticTransformBroadcaster()
     static_transformStamped = geometry_msgs.msg.TransformStamped()
 
-    static_transformStamped.header.stamp = rospy.Time.now()
     static_transformStamped.header.frame_id = "world"
     static_transformStamped.child_frame_id = "world_offset"
 
@@ -28,9 +27,9 @@ if __name__ == '__main__':
         rospy.loginfo("waiting for transform...")
         try:
             now = rospy.Time.now()
-            listener.waitForTransform("/world", "/cam0", now, rospy.Duration(1.0))
+            listener.waitForTransform("/world", "/rig", now, rospy.Duration(1.0))
             # listener.waitForTransform("/turtle2", "/carrot1", now, rospy.Duration(4.0))
-            (trans, rot) = listener.lookupTransform("/world", "/cam0", now)
+            (trans, rot) = listener.lookupTransform("/world", "/rig", now)
             rospy.loginfo("got transform")
             break
         except:
@@ -38,6 +37,7 @@ if __name__ == '__main__':
 
     #print(trans, rot)
     rospy.loginfo("got transform")
+    static_transformStamped.header.stamp = now
     static_transformStamped.transform.translation = geometry_msgs.msg.Vector3(*trans)
     # static_transformStamped.transform.rotation = geometry_msgs.msg.Quaternion(*rot)
     static_transformStamped.transform.rotation = geometry_msgs.msg.Quaternion(0,0,0,1)

@@ -38,6 +38,8 @@ class PCBroadcaster:
         self.stamp = rospy.Time.now()
         ros_pcd_scan = self.open3d_to_ros(pcd_scan, frame_id="scan")
         ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
+        ros_pcd_map.header.stamp = self.stamp
+        ros_pcd_scan.header.stamp = self.stamp
         # print(ros_pcd_map.header)
         # print(ros_pcd_scan.header)
         self.pub_scan.publish(ros_pcd_scan)
@@ -72,8 +74,8 @@ class PoseBroadcaster:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.frame_id = frame_id
 
-    def publish_transform(self, T, stamp):   
-        if stamp == 0:
+    def publish_transform(self, T, stamp=None):   
+        if stamp is None:
             stamp = rospy.Time.now()
         # print(stamp)
         self.t.header.stamp = stamp  # data.header.stamp
@@ -84,11 +86,12 @@ class PoseBroadcaster:
         self.t.transform.translation.z = T[2, 3]
         
         q = tf.transformations.quaternion_from_matrix(T)
+        # tran = tf.transformations.translation_from_matruix
 
-        self.t.transform.rotation.x = q[0]
-        self.t.transform.rotation.y = q[1]
-        self.t.transform.rotation.z = q[2]
-        self.t.transform.rotation.w = q[3]
+        self.t.transform.rotation = geometry_msgs.msg.Quaternion(*q)
+        # self.t.transform.rotation.y = q[1]
+        # self.t.transform.rotation.z = q[2]
+        # self.t.transform.rotation.w = q[3]
         
         self.br.sendTransform(self.t)
 
@@ -101,7 +104,7 @@ class PoseBroadcaster:
             print("tf Exception..")
             return 0
 
-        self.p.header.stamp = self.t.header
+        self.p.header.stamp = self.t.header.stamp
         self.p.header.frame_id = 'map'
         self.p.pose.position.x = trans.transform.translation.x
         self.p.pose.position.y = trans.transform.translation.y
