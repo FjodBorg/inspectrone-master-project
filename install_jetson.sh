@@ -240,10 +240,11 @@ rosdep install --from-paths src --ignore-src -y -r
 
 # build ros packages
 cd $HOME/repos/inspectrone/catkin_ws/
-catkin build -DCMAKE_BUILD_TYPE=Release \
+catkin config -DCMAKE_BUILD_TYPE=Release \
             -DPYTHON_EXECUTABLE=/usr/bin/python3.7
-            #-DPYTHON_INCLUDE_DIR=/usr/include/python3.7m \
-            #-DPYTHON_LIBRARY=/usr/lib/x86_64-linux-gnu/libpython3.7m.so
+            
+catkin build 
+
 
 
 sudo apt install -y swig libatlas-base-dev libatlas3-base g++-8
@@ -291,11 +292,11 @@ echo "remember to restart"
 
 # retraining:
 # base_path=<directory of inspectrone repos>
-base_path="$HOME/repos/inspectrone"
-dw_path="$base_path/catkin_ws/downloads"
-cd $base_path/retrain/
-python3.7 retrain.py --batch_size 4 \
---out_dir "$dw_path/retrained_models/" \
---weights "$dw_path/ResUNetBN2C-32feat-3conv.pth" \
---weights_dir "$dw_path" \
---hit_ratio 0.075
+# base_path="$HOME/repos/inspectrone"
+# dw_path="$base_path/catkin_ws/downloads"
+# cd $base_path/retrain/
+# python3.7 retrain.py --batch_size 4 \
+# --out_dir "$dw_path/retrained_models/" \
+# --weights "$dw_path/ResUNetBN2C-32feat-3conv.pth" \
+# --weights_dir "$dw_path" \
+# --hit_ratio 0.075
