@@ -155,6 +155,7 @@ if __name__ == "__main__":
     setattr(config, "debug_viz", False)  # visualized the match
     setattr(config, "debug_calc_feat_dist", False)  # calculates the distance of each feature correspondence (Visualized with debug_viz True)
     setattr(config, "limit_max_correspondences", 1000)  # <= 0 means don't limit
+    setattr(config, "covariance_type", 0)  # 0 means don't limit
 
     metrics = extensions.PerformanceMetrics()
     ros_helper.Inits()

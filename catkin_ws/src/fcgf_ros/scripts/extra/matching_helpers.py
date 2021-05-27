@@ -76,7 +76,6 @@ class MatcherBase():
         #self.pcd_scan_stamp = self._pcd_listener.pc.header.stamp # TODO add stamp 
         return pcd_scan
 
-
 class MatcherHelper(MatcherBase):
     def __init__(self, config, ros_col):
         super().__init__(config, ros_col)  # init parent attributes
@@ -85,6 +84,11 @@ class MatcherHelper(MatcherBase):
         self._pcd_map_down = open3d.geometry.PointCloud()
         self._pcd_scan_down = open3d.geometry.PointCloud()
         self._pcd_map_features = None
+
+        if config.covariance_type == 0:
+            self.covariance = self.OutlierBasedCovariance()
+        else:
+            self.covariance = self.OutlierBasedCovariance()
 
     def pcd2xyz(self, pcd):
         return np.asarray(pcd.points).T
@@ -161,6 +165,7 @@ class MatcherHelper(MatcherBase):
 
     def publish_transform(self, T, stamp):
         self._pose_broadcaster.publish_transform(T, stamp)
+        self.covariance.estimate()
         pass
         #self._pose_broadcaster.publish_transform(T)
         #self._pose_broadcaster.publish_transform()
@@ -174,6 +179,14 @@ class MatcherHelper(MatcherBase):
         reg_quality = open3d.pipelines.registration.evaluate_registration(source, target, threshold, T)
         print(reg_quality)
         return reg_quality
+
+    class OutlierBasedCovariance():
+        def __init__(self):
+            pass
+        
+        def estimate(self,):
+            print("estimated covariance:", "not implemented yet")
+            
 
 # defines functions for TEASER
 class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited

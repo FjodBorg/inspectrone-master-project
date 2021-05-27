@@ -7,10 +7,10 @@ Panels:
         - /Global Options1
         - /Status1
         - /PC2 - Scan1
-        - /TF1
         - /TF1/Frames1
+        - /Image1
       Splitter Ratio: 0.5
-    Tree Height: 755
+    Tree Height: 513
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -117,150 +117,158 @@ Visualization Manager:
       Value: true
     - Class: rviz/TF
       Enabled: true
-      Frame Timeout: 200
+      Frame Timeout: 2000
       Frames:
         All Enabled: false
         cam0:
           Value: true
+        camera0:
+          Value: false
         camera_base:
-          Value: true
+          Value: false
         camera_body:
-          Value: true
+          Value: false
         camera_visor:
-          Value: true
+          Value: false
         depth_camera_link:
-          Value: true
+          Value: false
         grasp_lab:
+          Value: false
+        imu:
           Value: true
         imu_link:
-          Value: true
+          Value: false
         map:
           Value: true
         rgb_camera_link:
           Value: true
         rig:
-          Value: true
+          Value: false
         scan:
           Value: true
         tag_0:
-          Value: true
+          Value: false
         tag_1:
-          Value: true
+          Value: false
         tag_10:
-          Value: true
+          Value: false
         tag_11:
-          Value: true
+          Value: false
         tag_12:
-          Value: true
+          Value: false
         tag_13:
-          Value: true
+          Value: false
         tag_14:
-          Value: true
+          Value: false
         tag_15:
-          Value: true
+          Value: false
         tag_16:
-          Value: true
+          Value: false
         tag_17:
-          Value: true
+          Value: false
         tag_18:
-          Value: true
+          Value: false
         tag_19:
-          Value: true
+          Value: false
         tag_2:
-          Value: true
+          Value: false
         tag_20:
-          Value: true
+          Value: false
         tag_21:
-          Value: true
+          Value: false
         tag_22:
-          Value: true
+          Value: false
         tag_23:
-          Value: true
+          Value: false
         tag_24:
-          Value: true
+          Value: false
         tag_25:
-          Value: true
+          Value: false
         tag_26:
-          Value: true
+          Value: false
         tag_27:
-          Value: true
+          Value: false
         tag_28:
-          Value: true
+          Value: false
         tag_29:
-          Value: true
+          Value: false
         tag_3:
-          Value: true
+          Value: false
         tag_30:
-          Value: true
+          Value: false
         tag_32:
-          Value: true
+          Value: false
         tag_33:
-          Value: true
+          Value: false
         tag_34:
-          Value: true
+          Value: false
         tag_35:
-          Value: true
+          Value: false
         tag_36:
-          Value: true
+          Value: false
         tag_37:
-          Value: true
+          Value: false
         tag_38:
-          Value: true
+          Value: false
         tag_39:
-          Value: true
+          Value: false
         tag_4:
-          Value: true
+          Value: false
         tag_40:
-          Value: true
+          Value: false
         tag_41:
-          Value: true
+          Value: false
         tag_42:
-          Value: true
+          Value: false
         tag_43:
-          Value: true
+          Value: false
         tag_44:
-          Value: true
+          Value: false
         tag_45:
-          Value: true
+          Value: false
         tag_46:
-          Value: true
+          Value: false
         tag_47:
-          Value: true
+          Value: false
         tag_48:
-          Value: true
+          Value: false
         tag_49:
-          Value: true
+          Value: false
         tag_5:
-          Value: true
+          Value: false
         tag_50:
-          Value: true
+          Value: false
         tag_51:
-          Value: true
+          Value: false
         tag_52:
-          Value: true
+          Value: false
         tag_53:
-          Value: true
+          Value: false
         tag_54:
-          Value: true
+          Value: false
         tag_55:
-          Value: true
+          Value: false
         tag_56:
-          Value: true
+          Value: false
         tag_57:
-          Value: true
+          Value: false
         tag_58:
-          Value: true
+          Value: false
         tag_59:
-          Value: true
+          Value: false
         tag_6:
-          Value: true
+          Value: false
         tag_60:
-          Value: true
+          Value: false
         tag_7:
-          Value: true
+          Value: false
         tag_8:
-          Value: true
+          Value: false
         tag_9:
+          Value: false
+        world:
+          Value: true
+        world_offset:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -268,134 +276,181 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          grasp_lab:
-            tag_0:
+        world:
+          map:
+            grasp_lab:
+              tag_0:
+                {}
+              tag_1:
+                {}
+              tag_10:
+                {}
+              tag_11:
+                {}
+              tag_12:
+                {}
+              tag_13:
+                {}
+              tag_14:
+                {}
+              tag_15:
+                {}
+              tag_16:
+                {}
+              tag_17:
+                {}
+              tag_18:
+                {}
+              tag_19:
+                {}
+              tag_2:
+                {}
+              tag_20:
+                {}
+              tag_21:
+                {}
+              tag_22:
+                {}
+              tag_23:
+                {}
+              tag_24:
+                {}
+              tag_25:
+                {}
+              tag_26:
+                {}
+              tag_27:
+                {}
+              tag_28:
+                {}
+              tag_29:
+                {}
+              tag_3:
+                {}
+              tag_30:
+                {}
+              tag_32:
+                {}
+              tag_33:
+                {}
+              tag_34:
+                {}
+              tag_35:
+                {}
+              tag_36:
+                {}
+              tag_37:
+                {}
+              tag_38:
+                {}
+              tag_39:
+                {}
+              tag_4:
+                {}
+              tag_40:
+                {}
+              tag_41:
+                {}
+              tag_42:
+                {}
+              tag_43:
+                {}
+              tag_44:
+                {}
+              tag_45:
+                {}
+              tag_46:
+                {}
+              tag_47:
+                {}
+              tag_48:
+                {}
+              tag_49:
+                {}
+              tag_5:
+                {}
+              tag_50:
+                {}
+              tag_51:
+                {}
+              tag_52:
+                {}
+              tag_53:
+                {}
+              tag_54:
+                {}
+              tag_55:
+                {}
+              tag_56:
+                {}
+              tag_57:
+                {}
+              tag_58:
+                {}
+              tag_59:
+                {}
+              tag_6:
+                {}
+              tag_60:
+                {}
+              tag_7:
+                {}
+              tag_8:
+                {}
+              tag_9:
+                {}
+            rig:
+              cam0:
+                {}
+            scan:
               {}
-            tag_1:
-              {}
-            tag_10:
-              {}
-            tag_11:
-              {}
-            tag_12:
-              {}
-            tag_13:
-              {}
-            tag_14:
-              {}
-            tag_15:
-              {}
-            tag_16:
-              {}
-            tag_17:
-              {}
-            tag_18:
-              {}
-            tag_19:
-              {}
-            tag_2:
-              {}
-            tag_20:
-              {}
-            tag_21:
-              {}
-            tag_22:
-              {}
-            tag_23:
-              {}
-            tag_24:
-              {}
-            tag_25:
-              {}
-            tag_26:
-              {}
-            tag_27:
-              {}
-            tag_28:
-              {}
-            tag_29:
-              {}
-            tag_3:
-              {}
-            tag_30:
-              {}
-            tag_32:
-              {}
-            tag_33:
-              {}
-            tag_34:
-              {}
-            tag_35:
-              {}
-            tag_36:
-              {}
-            tag_37:
-              {}
-            tag_38:
-              {}
-            tag_39:
-              {}
-            tag_4:
-              {}
-            tag_40:
-              {}
-            tag_41:
-              {}
-            tag_42:
-              {}
-            tag_43:
-              {}
-            tag_44:
-              {}
-            tag_45:
-              {}
-            tag_46:
-              {}
-            tag_47:
-              {}
-            tag_48:
-              {}
-            tag_49:
-              {}
-            tag_5:
-              {}
-            tag_50:
-              {}
-            tag_51:
-              {}
-            tag_52:
-              {}
-            tag_53:
-              {}
-            tag_54:
-              {}
-            tag_55:
-              {}
-            tag_56:
-              {}
-            tag_57:
-              {}
-            tag_58:
-              {}
-            tag_59:
-              {}
-            tag_6:
-              {}
-            tag_60:
-              {}
-            tag_7:
-              {}
-            tag_8:
-              {}
-            tag_9:
-              {}
-          rig:
-            cam0:
-              {}
-          scan:
-            {}
+          world_offset:
+            imu:
+              camera0:
+                {}
       Update Interval: 0
+      Value: true
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/PoseWithCovariance
+      Color: 255; 25; 0
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Head Length: 0.30000001192092896
+      Head Radius: 0.10000000149011612
+      Name: PoseWithCovariance
+      Shaft Length: 1
+      Shaft Radius: 0.05000000074505806
+      Shape: Axes
+      Topic: /rovio/extrinsics0
+      Unreliable: false
+      Value: true
+    - Class: rviz/Image
+      Enabled: true
+      Image Topic: /rgb/image_mono
+      Max Value: 1
+      Median window: 5
+      Min Value: 0
+      Name: Image
+      Normalize Range: true
+      Queue Size: 2
+      Transport Hint: raw
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
@@ -425,25 +480,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.622694969177246
+      Distance: 6.023743152618408
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.264414072036743
-        Y: -1.1737176179885864
-        Z: 2.2205159664154053
+        X: 0.9723336696624756
+        Y: 0.34934231638908386
+        Z: 1.4118149280548096
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2497977316379547
+      Pitch: 0.5747976303100586
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.643528461456299
+      Yaw: 4.053524494171143
     Saved: ~
 Window Geometry:
   Displays:
@@ -451,7 +506,9 @@ Window Geometry:
   Height: 1052
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd0000000400000000000001560000037efc0200000008fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d0000037e000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261000000010000010f0000037efc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d0000037e000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d0065010000000000000780000002eb00fffffffb0000000800540069006d006501000000000000045000000000000000000000050f0000037e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  Image:
+    collapsed: false
+  QMainWindow State: 000000ff00000000fd0000000400000000000001560000037efc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003d0000028c000000c900fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000a0049006d00610067006501000002cf000000ec0000001600ffffff000000010000010f0000037efc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003d0000037e000000a400fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000007800000003efc0100000002fb0000000800540069006d0065010000000000000780000002eb00fffffffb0000000800540069006d006501000000000000045000000000000000000000050f0000037e00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
