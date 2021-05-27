@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<launch>
+	<node pkg="rovio" type="rovio_node" name="rovio" output="screen">
+		<remap from="/cam0/image_raw" to="rgb/image_mono" />
+		<remap from="/cam0/camera_info" to="rgb/camera_info"/>
+		<remap from="/imu0" to="/imu" />
+		<param name="filter_config" value="$(find rovio)/cfg/kinect.info"/>
+		<param name="camera0_config" value="$(find rovio)/cfg/kinect_cam0.yaml"/>
+		<param name="camera1_config" value="$(find rovio)/cfg/kinect_cam0.yaml"/>
+	</node>
+
+
+	<node name="image_proc" type="image_proc" pkg="image_proc" output="screen" ns="rgb">
+		<!-- <remap from="/kinect/camera_info" to="/rgb/camera_info"/> -->
+		<!-- <remap from="/kinect/camera_info" to="/mynteye/right/camera_info"/> -->
+	</node>
+
+
+
+</launch>
