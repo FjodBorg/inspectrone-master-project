@@ -1,6 +1,6 @@
 <launch>
     <arg name="node_start_delay" default="0"></arg>
-    <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen"  launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+    <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen"  launch-prefix="bash -c 'sleep $(arg node_start_delay); export OMP_NUM_THREADS=12; $0 $@'">
         <param name="/fitness_thr" type="double" value="0.1"/>
     </node>
 
