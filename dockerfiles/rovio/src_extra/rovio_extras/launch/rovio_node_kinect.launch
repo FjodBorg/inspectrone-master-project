@@ -7,8 +7,11 @@
 		<param name="filter_config" value="$(find rovio)/cfg/kinect.info"/>
 		<param name="camera0_config" value="$(find rovio)/cfg/kinect_cam0.yaml"/>
 		<param name="camera1_config" value="$(find rovio)/cfg/kinect_cam0.yaml"/>
-	</node>
 
+		<param name="world_frame" value="map"/>
+	</node>
+	<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 world map 100" />
+	<!-- <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0 0 0 0 world abs_correction 100" /> -->
 
 	<node name="image_proc" type="image_proc" pkg="image_proc" output="screen" ns="rgb">
 		<!-- <remap from="/kinect/camera_info" to="/rgb/camera_info"/> -->
