@@ -84,7 +84,8 @@ class MatcherHelper(MatcherBase):
         self._pcd_map_down = open3d.geometry.PointCloud()
         self._pcd_scan_down = open3d.geometry.PointCloud()
         self._pcd_map_features = None
-        self._got_scan_time_stamp = None
+        self._pose_time_stamp = None
+        self._time_stamp = None
 
         if config.covariance_type == 0:
             self.covariance = self.OutlierBasedCovariance()
@@ -107,7 +108,7 @@ class MatcherHelper(MatcherBase):
         return self._pcd_map
 
     def get_scan(self):
-        self._pcd_scan.points, self._got_scan_time_stamp = self._load_topic_ply_points()
+        self._pcd_scan.points, self._pose_time_stamp = self._load_topic_ply_points()
         return self._pcd_scan
 
     def get_xyz_features(self, point_cloud):
@@ -162,7 +163,7 @@ class MatcherHelper(MatcherBase):
         self._pcd_broadcaster.publish_inital_map(pcd_map_down)
 
     def publish_transform(self, T):
-        self._pose_broadcaster.publish_transform(T, self._time_stamp)
+        self._pose_broadcaster.publish_transform(T, self._time_stamp, self._pose_time_stamp)
         self.covariance.estimate()
         pass
         #self._pose_broadcaster.publish_transform(T)

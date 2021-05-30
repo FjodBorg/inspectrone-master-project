@@ -50,7 +50,6 @@ class PCBroadcaster:
         self.stamp = rospy.Time.now()
         ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
         self.pub_map.publish(ros_pcd_map)
-        
 
     # Convert the datatype of point cloud from Open3D to ROS PointCloud2 (XYZRGB only)
     def open3d_to_ros(self, open3d_cloud, frame_id="map"):
@@ -63,7 +62,6 @@ class PCBroadcaster:
 
         return pc2.create_cloud_xyz32(header, points_xyz)
 
-  
 class PoseBroadcaster:
     def __init__(self, topic_pose, frame_id="scan"):
         self.p = geometry_msgs.msg.PoseWithCovarianceStamped()
@@ -74,9 +72,11 @@ class PoseBroadcaster:
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.frame_id = frame_id
 
-    def publish_transform(self, T, stamp=None):   
+    def publish_transform(self, T, stamp=None, pose_stamp=None):   
         if stamp is None:
             stamp = rospy.Time.now()
+        #if pose_stamp is None:
+        pose_stamp = rospy.Time.now()
         # print(stamp)
         self.t.header.stamp = stamp  # data.header.stamp
         self.t.header.frame_id = "map"
@@ -104,7 +104,7 @@ class PoseBroadcaster:
             print("tf Exception..")
             return 0
 
-        self.p.header.stamp = rospy.Time(10)
+        self.p.header.stamp = pose_stamp
         self.p.header.frame_id = 'map'
         self.p.pose.pose.position.x = trans.transform.translation.x
         self.p.pose.pose.position.y = trans.transform.translation.y
