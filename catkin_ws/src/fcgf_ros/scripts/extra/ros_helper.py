@@ -66,10 +66,10 @@ class PCBroadcaster:
   
 class PoseBroadcaster:
     def __init__(self, topic_pose, frame_id="scan"):
-        self.p = geometry_msgs.msg.PoseStamped()
+        self.p = geometry_msgs.msg.PoseWithCovarianceStamped()
         self.t = geometry_msgs.msg.TransformStamped()
         self.br = tf2_ros.TransformBroadcaster()
-        self.pub = rospy.Publisher(topic_pose, geometry_msgs.msg.PoseStamped, queue_size=10)
+        self.pub = rospy.Publisher(topic_pose, geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.frame_id = frame_id
@@ -104,16 +104,16 @@ class PoseBroadcaster:
             print("tf Exception..")
             return 0
 
-        self.p.header.stamp = self.t.header.stamp
+        self.p.header.stamp = rospy.Time(10)
         self.p.header.frame_id = 'map'
-        self.p.pose.position.x = trans.transform.translation.x
-        self.p.pose.position.y = trans.transform.translation.y
-        self.p.pose.position.z = trans.transform.translation.z
+        self.p.pose.pose.position.x = trans.transform.translation.x
+        self.p.pose.pose.position.y = trans.transform.translation.y
+        self.p.pose.pose.position.z = trans.transform.translation.z
         # Make sure the quaternion is valid and normalized
-        self.p.pose.orientation.x = trans.transform.rotation.x
-        self.p.pose.orientation.y = trans.transform.rotation.y
-        self.p.pose.orientation.z = trans.transform.rotation.z
-        self.p.pose.orientation.w = trans.transform.rotation.w
+        self.p.pose.pose.orientation.x = trans.transform.rotation.x
+        self.p.pose.pose.orientation.y = trans.transform.rotation.y
+        self.p.pose.pose.orientation.z = trans.transform.rotation.z
+        self.p.pose.pose.orientation.w = trans.transform.rotation.w
         self.pub.publish(self.p)
 
 

@@ -74,7 +74,7 @@ class MatcherBase():
     def _load_topic_ply_points(self):
         pcd_scan = self.ros_to_open3d(self._pcd_listener.pc)       
         #self.pcd_scan_stamp = self._pcd_listener.pc.header.stamp # TODO add stamp 
-        return pcd_scan
+        return pcd_scan, self._pcd_listener.stamp
 
 class MatcherHelper(MatcherBase):
     def __init__(self, config, ros_col):
@@ -84,6 +84,7 @@ class MatcherHelper(MatcherBase):
         self._pcd_map_down = open3d.geometry.PointCloud()
         self._pcd_scan_down = open3d.geometry.PointCloud()
         self._pcd_map_features = None
+        self._got_scan_time_stamp = None
 
         if config.covariance_type == 0:
             self.covariance = self.OutlierBasedCovariance()
@@ -106,7 +107,7 @@ class MatcherHelper(MatcherBase):
         return self._pcd_map
 
     def get_scan(self):
-        self._pcd_scan.points = self._load_topic_ply_points()
+        self._pcd_scan.points, self._got_scan_time_stamp = self._load_topic_ply_points()
         return self._pcd_scan
 
     def get_xyz_features(self, point_cloud):
@@ -152,8 +153,7 @@ class MatcherHelper(MatcherBase):
         #self.metrics.reset()
 
     def publish_pcds(self, *args):
-        stamp = self._pcd_broadcaster.publish_pcds(*args)
-        return stamp
+        self._time_stamp = self._pcd_broadcaster.publish_pcds(*args)
 
     def publish_inital_map(self):
         pcd_map = self.get_map()
@@ -161,10 +161,8 @@ class MatcherHelper(MatcherBase):
     
         self._pcd_broadcaster.publish_inital_map(pcd_map_down)
 
-        
-
-    def publish_transform(self, T, stamp):
-        self._pose_broadcaster.publish_transform(T, stamp)
+    def publish_transform(self, T):
+        self._pose_broadcaster.publish_transform(T, self._time_stamp)
         self.covariance.estimate()
         pass
         #self._pose_broadcaster.publish_transform(T)
@@ -558,9 +556,8 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
 
     def publish_pcds(self, *args, timer_name="publishing pcd's"):
         self.metrics.start_time(timer_name)
-        stamp = self.matcher.publish_pcds(self, *args)
+        self.matcher.publish_pcds(self, *args)
         self.metrics.stop_time(timer_name)
-        return stamp
 
     def publish_transform(self, *args, timer_name="publishing pose"):
         self.metrics.start_time(timer_name)

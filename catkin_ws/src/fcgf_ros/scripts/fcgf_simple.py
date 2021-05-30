@@ -37,8 +37,8 @@ def demo_func():
     reg_qual = matcher.eval_transform(pcd_scan_down, pcd_map_down, T)
     # if cloud is fit enough
     if rospy.get_param("/fcgf/fitness_thr") < reg_qual.fitness:
-        stamp = matcher.publish_pcds(pcd_scan_down, pcd_map_down)
-        matcher.publish_transform(T, stamp)  # TODO add correct stamp 
+        matcher.publish_pcds(pcd_scan_down, pcd_map_down)
+        matcher.publish_transform(T)  # TODO add correct stamp 
 
     matcher.eval()
     
