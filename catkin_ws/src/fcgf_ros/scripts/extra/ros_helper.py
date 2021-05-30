@@ -71,6 +71,8 @@ class PoseBroadcaster:
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.frame_id = frame_id
+        self._covariance = self.init_covariance()
+        
 
     def publish_transform(self, T, stamp=None, pose_stamp=None):   
         if stamp is None:
@@ -114,8 +116,16 @@ class PoseBroadcaster:
         self.p.pose.pose.orientation.y = trans.transform.rotation.y
         self.p.pose.pose.orientation.z = trans.transform.rotation.z
         self.p.pose.pose.orientation.w = trans.transform.rotation.w
+        # print(self.p.pose.covariance)
+        self.p.pose.covariance = self._covariance
+        # print(self._covariance)
         self.pub.publish(self.p)
 
+    def init_covariance(self):
+        return [0.0] * 36
+
+    def set_covariance(self, covariance):
+        self._covariance = covariance
 
 class Collect:
     def __init__(self, pcd_listener=None, pcd_broadcaster=None, pose_broadcaster=None):

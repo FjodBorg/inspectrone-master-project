@@ -86,11 +86,14 @@ class MatcherHelper(MatcherBase):
         self._pcd_map_features = None
         self._pose_time_stamp = None
         self._time_stamp = None
+        self._reg_quality = 0
 
         if config.covariance_type == 0:
-            self.covariance = self.OutlierBasedCovariance()
+            self.covariance = self.OutlierBasedCovariance(self)
+        elif config.covariance_type == 1:
+            self.covariance = self.FitnessBasedCovariance(self)
         else:
-            self.covariance = self.OutlierBasedCovariance()
+            self.covariance = self.FitnessBasedCovariance(self)
 
     def pcd2xyz(self, pcd):
         return np.asarray(pcd.points).T
@@ -163,8 +166,9 @@ class MatcherHelper(MatcherBase):
         self._pcd_broadcaster.publish_inital_map(pcd_map_down)
 
     def publish_transform(self, T):
+        covariance = self.covariance.estimate()
+        self._pose_broadcaster.set_covariance(covariance)
         self._pose_broadcaster.publish_transform(T, self._time_stamp, self._pose_time_stamp)
-        self.covariance.estimate()
         pass
         #self._pose_broadcaster.publish_transform(T)
         #self._pose_broadcaster.publish_transform()
@@ -175,17 +179,28 @@ class MatcherHelper(MatcherBase):
     def eval_transform(self, source, target, T, threshold=None):
         if threshold is None:
             threshold = self._config.voxel_size
-        reg_quality = open3d.pipelines.registration.evaluate_registration(source, target, threshold, T)
-        print(reg_quality)
-        return reg_quality
+        self._reg_quality = open3d.pipelines.registration.evaluate_registration(source, target, threshold, T)
+        return self._reg_quality
+
 
     class OutlierBasedCovariance():
-        def __init__(self):
-            pass
+        def __init__(self, outer_instance):
+            self.parent = outer_instance
+            print("\n\nusing outlier based covariance estimation\n\n")
         
         def estimate(self,):
-            print("estimated covariance:", "not implemented yet")
-            
+            # print("estimated covariance:", "not implemented yet")
+            return [1.0] * 36
+
+    class FitnessBasedCovariance():
+        def __init__(self, outer_instance):
+            self.parent = outer_instance
+            print("\n\nusing fitness based covariance estimation\n\n")
+        
+        def estimate(self):
+            fitness = self.parent._reg_quality.fitness
+            # print("estimated covariance:", "not implemented yet")
+            return [1.0] * 36
 
 # defines functions for TEASER
 class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
