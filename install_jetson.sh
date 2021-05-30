@@ -247,7 +247,7 @@ catkin build
 
 
 
-sudo apt install -y swig libatlas-base-dev libatlas3-base g++-8
+sudo apt install -y swig libatlas-base-dev libatlas3-base g++-8 xterm
 cd $HOME/repos
 git clone https://github.com/facebookresearch/faiss
 cd faiss/faiss
