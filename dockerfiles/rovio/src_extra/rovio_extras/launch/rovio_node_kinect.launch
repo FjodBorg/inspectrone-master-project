@@ -3,7 +3,7 @@
 
 
 <launch>
-	<node pkg="rovio" type="rovio_node" name="rovio" output="screen">
+	<node pkg="rovio" type="rovio_node" name="rovio" output="log">
 		<remap from="/cam0/image_raw" to="rgb/image_mono" />
 		<remap from="/cam0/camera_info" to="rgb/camera_info"/>
 		<remap from="/imu0" to="/imu" />
@@ -13,10 +13,10 @@
 
 		<param name="world_frame" value="world_offset"/>
 	</node>
-	<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" args="0 0 0 0 0 0 world map 100" />
+	<node pkg="tf" type="static_transform_publisher" name="link1_broadcaster" output="log" args="0 0 0 0 0 0 world map 100" />
 	<!-- <node pkg="tf" type="static_transform_publisher" name="link2_broadcaster" args="0 0 0 0 0 0 world abs_correction 100" /> -->
 
-	<node name="image_proc" type="image_proc" pkg="image_proc" output="screen" ns="rgb">
+	<node name="image_proc" type="image_proc" pkg="image_proc" output="log" ns="rgb">
 		<!-- <remap from="/kinect/camera_info" to="/rgb/camera_info"/> -->
 		<!-- <remap from="/kinect/camera_info" to="/mynteye/right/camera_info"/> -->
 	</node>

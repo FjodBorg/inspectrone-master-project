@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 inspectrone_folder="$HOME/repos/inspectrone"
-echo $inspectrone_folder
+# echo $inspectrone_folder
 rovio="$inspectrone_folder/dockerfiles/rovio/"
 
-echo $rovio
+# echo $rovio
 
-echo "bag file can be launched with: "
-echo "rosbag play bags/Kinect/groundtruth_imu_frame.bag /points2:=/points_in --clock"
+# echo "bag file can be launched with: "
+# echo "rosbag play bags/Kinect/groundtruth_imu_frame.bag /points2:=/points_in --clock"
 
 # run in subscript so we don't change the directory
 (

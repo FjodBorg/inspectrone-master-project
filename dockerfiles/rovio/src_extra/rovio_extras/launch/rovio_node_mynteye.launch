@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <launch>
-	<node pkg="rovio" type="rovio_node" name="rovio" output="screen">
+	<node pkg="rovio" type="rovio_node" name="rovio" output="log">
 		<param name="filter_config" value="$(find rovio)/cfg/rovio_mynteye.info"/>
 		<param name="camera0_config" value="$(find rovio)/cfg/mynteye_cam0.yaml"/>
 		<param name="camera1_config" value="$(find rovio)/cfg/mynteye_cam1.yaml"/>
@@ -16,13 +16,13 @@
 
 		<param name="world_frame" value="abs_correction"/>
 	</node>
-
 	
-	<node name="republish_left" type="republish" pkg="image_transport" output="screen" args="compressed in:=/mynteye/left/image_color/ raw out:=/mynteye2/left/image_raw" />
-	<node name="republish_right" type="republish" pkg="image_transport" output="screen" args="compressed in:=/mynteye/right/image_color/ raw out:=/mynteye2/right/image_raw/" />
+	
+	<node name="republish_left" type="republish" pkg="image_transport" output="log" args="compressed in:=/mynteye/left/image_color/ raw out:=/mynteye2/left/image_raw" />
+	<node name="republish_right" type="republish" pkg="image_transport" output="log" args="compressed in:=/mynteye/right/image_color/ raw out:=/mynteye2/right/image_raw/" />
 	
 
-	<node name="image_proc" type="stereo_image_proc" pkg="stereo_image_proc" output="screen" ns="mynteye2">
+	<node name="image_proc" type="stereo_image_proc" pkg="stereo_image_proc" output="log" ns="mynteye2">
 
 		<remap from="/mynteye2/left/camera_info" to="/mynteye/left/camera_info"/>
 		<remap from="/mynteye2/right/camera_info" to="/mynteye/right/camera_info"/>

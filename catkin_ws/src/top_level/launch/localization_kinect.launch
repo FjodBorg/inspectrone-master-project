@@ -2,7 +2,7 @@
     <arg name="use_sim_time" default="true"/>
     <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
-	<node name="rovio" pkg="top_level" type="rovio_kinect.sh" output="screen" />
+	<node name="rovio" pkg="top_level" type="rovio_kinect.sh" output="log" launch-prefix="xterm -e" />
     <!-- <node pkg="ply_publisher" type="ply_publisher" name="ply_publisher" output="screen">
          <param name="file_path" value="$(find ply_publisher)/cfg/ballast_tank.ply" />
          <param name="topic" value="/ballast_tank_ply" />
