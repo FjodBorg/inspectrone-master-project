@@ -60,6 +60,11 @@ RUN git clone https://github.com/catkin/catkin_simple
 RUN cd rovio && git submodule update --init --recursive
 RUN git clone https://ceres-solver.googlesource.com/ceres-solver
 
+# fix imu_frame to imu instead of /imu
+RUN sudo apt-get install -y sed
+RUN cd rovio/include/rovio/ && sed -i 's@imu_frame_ = "/imu"@imu_frame_ = "imu_new"@g' RovioNode.hpp
+RUN cd rovio/include/rovio/ && grep -iRn -e "imu_frame_"
+
 RUN . /opt/ros/melodic/setup.sh && mkdir ceres-bin && cd ceres-bin && cmake ../ceres-solver && make -j4 && make test -j4 && make install -j4 \ 
 && catkin build -w $HOME/catkin_ws kindr \
 && catkin build catkin_simple \
@@ -70,7 +75,7 @@ RUN . /opt/ros/melodic/setup.sh && mkdir ceres-bin && cd ceres-bin && cmake ../c
 
 # RUN sudo /bin/bash -c /opt/ros/melodic/setup.bash && 
 
-RUN apt-get install rviz gedit ros-melodic-image-pipeline ros-melodic-image-transport-plugins  -y
+RUN apt-get update && apt-get install rviz gedit ros-melodic-image-pipeline ros-melodic-image-transport-plugins  -y
 
 RUN echo "source $HOME/catkin_ws/devel/setup.bash" >> $HOME/.bashrc
 
