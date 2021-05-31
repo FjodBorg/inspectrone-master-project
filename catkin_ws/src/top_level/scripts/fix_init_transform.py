@@ -37,10 +37,10 @@ if __name__ == '__main__':
 
     #print(trans, rot)
     rospy.loginfo("got transform")
-    static_transformStamped.header.stamp = now
     static_transformStamped.transform.translation = geometry_msgs.msg.Vector3(*trans)
     # static_transformStamped.transform.rotation = geometry_msgs.msg.Quaternion(*rot)
     static_transformStamped.transform.rotation = geometry_msgs.msg.Quaternion(0,0,0,1)
+    static_transformStamped.header.stamp = now
     rospy.loginfo(static_transformStamped)
     broadcaster.sendTransform(static_transformStamped)
     rospy.spin()
