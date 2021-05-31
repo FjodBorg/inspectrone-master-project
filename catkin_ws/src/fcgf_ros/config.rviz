@@ -6,9 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /PC2 - Scan1
         - /TF1/Frames1
-        - /PoseWithCovariance2
+        - /Odometry1
       Splitter Ratio: 0.5
     Tree Height: 513
   - Class: rviz/Selection
@@ -120,290 +119,13 @@ Visualization Manager:
       Frame Timeout: 2000
       Frames:
         All Enabled: false
-        cam0:
-          Value: true
-        camera0:
-          Value: true
-        camera_base:
-          Value: true
-        depth_camera_link:
-          Value: true
-        grasp_lab:
-          Value: true
-        imu:
-          Value: true
-        imu_link:
-          Value: true
-        map:
-          Value: true
-        rgb_camera_link:
-          Value: true
-        rig:
-          Value: true
-        scan:
-          Value: true
-        tag_0:
-          Value: true
-        tag_1:
-          Value: true
-        tag_10:
-          Value: true
-        tag_11:
-          Value: true
-        tag_12:
-          Value: true
-        tag_13:
-          Value: true
-        tag_14:
-          Value: true
-        tag_15:
-          Value: true
-        tag_16:
-          Value: true
-        tag_17:
-          Value: true
-        tag_18:
-          Value: true
-        tag_19:
-          Value: true
-        tag_2:
-          Value: true
-        tag_20:
-          Value: true
-        tag_21:
-          Value: true
-        tag_22:
-          Value: true
-        tag_23:
-          Value: true
-        tag_24:
-          Value: true
-        tag_25:
-          Value: true
-        tag_26:
-          Value: true
-        tag_27:
-          Value: true
-        tag_28:
-          Value: true
-        tag_29:
-          Value: true
-        tag_3:
-          Value: true
-        tag_30:
-          Value: true
-        tag_32:
-          Value: true
-        tag_33:
-          Value: true
-        tag_34:
-          Value: true
-        tag_35:
-          Value: true
-        tag_36:
-          Value: true
-        tag_37:
-          Value: true
-        tag_38:
-          Value: true
-        tag_39:
-          Value: true
-        tag_4:
-          Value: true
-        tag_40:
-          Value: true
-        tag_41:
-          Value: true
-        tag_42:
-          Value: true
-        tag_43:
-          Value: true
-        tag_44:
-          Value: true
-        tag_45:
-          Value: true
-        tag_46:
-          Value: true
-        tag_47:
-          Value: true
-        tag_48:
-          Value: true
-        tag_49:
-          Value: true
-        tag_5:
-          Value: true
-        tag_50:
-          Value: true
-        tag_51:
-          Value: true
-        tag_52:
-          Value: true
-        tag_53:
-          Value: true
-        tag_54:
-          Value: true
-        tag_55:
-          Value: true
-        tag_56:
-          Value: true
-        tag_57:
-          Value: true
-        tag_58:
-          Value: true
-        tag_59:
-          Value: true
-        tag_6:
-          Value: true
-        tag_60:
-          Value: true
-        tag_7:
-          Value: true
-        tag_8:
-          Value: true
-        tag_9:
-          Value: true
-        world:
-          Value: true
-        world_offset:
-          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: true
       Tree:
-        map:
-          grasp_lab:
-            tag_0:
-              {}
-            tag_1:
-              {}
-            tag_10:
-              {}
-            tag_11:
-              {}
-            tag_12:
-              {}
-            tag_13:
-              {}
-            tag_14:
-              {}
-            tag_15:
-              {}
-            tag_16:
-              {}
-            tag_17:
-              {}
-            tag_18:
-              {}
-            tag_19:
-              {}
-            tag_2:
-              {}
-            tag_20:
-              {}
-            tag_21:
-              {}
-            tag_22:
-              {}
-            tag_23:
-              {}
-            tag_24:
-              {}
-            tag_25:
-              {}
-            tag_26:
-              {}
-            tag_27:
-              {}
-            tag_28:
-              {}
-            tag_29:
-              {}
-            tag_3:
-              {}
-            tag_30:
-              {}
-            tag_32:
-              {}
-            tag_33:
-              {}
-            tag_34:
-              {}
-            tag_35:
-              {}
-            tag_36:
-              {}
-            tag_37:
-              {}
-            tag_38:
-              {}
-            tag_39:
-              {}
-            tag_4:
-              {}
-            tag_40:
-              {}
-            tag_41:
-              {}
-            tag_42:
-              {}
-            tag_43:
-              {}
-            tag_44:
-              {}
-            tag_45:
-              {}
-            tag_46:
-              {}
-            tag_47:
-              {}
-            tag_48:
-              {}
-            tag_49:
-              {}
-            tag_5:
-              {}
-            tag_50:
-              {}
-            tag_51:
-              {}
-            tag_52:
-              {}
-            tag_53:
-              {}
-            tag_54:
-              {}
-            tag_55:
-              {}
-            tag_56:
-              {}
-            tag_57:
-              {}
-            tag_58:
-              {}
-            tag_59:
-              {}
-            tag_6:
-              {}
-            tag_60:
-              {}
-            tag_7:
-              {}
-            tag_8:
-              {}
-            tag_9:
-              {}
-          rig:
-            cam0:
-              {}
-          scan:
-            {}
-        world:
-          world_offset:
-            imu:
-              camera0:
-                {}
+        {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -426,7 +148,7 @@ Visualization Manager:
           Scale: 1
           Value: true
         Value: true
-      Enabled: true
+      Enabled: false
       Head Length: 0.30000001192092896
       Head Radius: 0.10000000149011612
       Name: PoseWithCovariance
@@ -435,7 +157,7 @@ Visualization Manager:
       Shape: Axes
       Topic: /rovio/extrinsics0
       Unreliable: false
-      Value: true
+      Value: false
     - Class: rviz/Image
       Enabled: true
       Image Topic: /rgb/image_mono
@@ -478,6 +200,40 @@ Visualization Manager:
       Topic: /matcher_pose
       Unreliable: false
       Value: true
+    - Angle Tolerance: 0.10000000149011612
+      Class: rviz/Odometry
+      Covariance:
+        Orientation:
+          Alpha: 0.5
+          Color: 255; 255; 127
+          Color Style: Unique
+          Frame: Local
+          Offset: 1
+          Scale: 1
+          Value: true
+        Position:
+          Alpha: 0.30000001192092896
+          Color: 204; 51; 204
+          Scale: 1
+          Value: true
+        Value: true
+      Enabled: true
+      Keep: 1
+      Name: Odometry
+      Position Tolerance: 0.10000000149011612
+      Shape:
+        Alpha: 1
+        Axes Length: 1
+        Axes Radius: 0.10000000149011612
+        Color: 255; 25; 0
+        Head Length: 0.30000001192092896
+        Head Radius: 0.10000000149011612
+        Shaft Length: 1
+        Shaft Radius: 0.05000000074505806
+        Value: Axes
+      Topic: /rovio/odometry
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -506,7 +262,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 7.556183815002441
+      Distance: 7.645843505859375
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -521,10 +277,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.28979790210723877
+      Pitch: 0.4997977614402771
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.798527240753174
+      Yaw: 3.9335200786590576
     Saved: ~
 Window Geometry:
   Displays:
