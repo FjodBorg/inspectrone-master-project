@@ -1,0 +1,24 @@
+<launch>
+
+    <!-- Add delay on start to mathcer, otherwise it crashes -->
+    <arg name="node_start_delay" default="1.0" />
+    <arg name="use_sim_time" default="true" />
+    <param name="use_sim_time" value="$(arg use_sim_time)" />
+
+    <!-- <rosparam param="use_sim_time" subst_value="$(arg use_sim_time)"/> -->
+    <include file="$(find fcgf_ros)/launch/matcher.launch">
+        <arg name="node_start_delay" value="$(arg node_start_delay)"/>
+        <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    </include>
+
+    <include file="$(find top_level)/launch/rviz.launch">
+    </include>
+
+    <include file="$(find top_level)/launch/localization_kinect.launch">
+        <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    </include>
+
+    <!-- <include file="$(find top_level)/launch/ekf.launch">
+    </include> -->
+
+</launch>
