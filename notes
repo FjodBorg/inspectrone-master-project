@@ -274,6 +274,7 @@ just add noise to npz, (it's easier that way), but not super generalized
 
 Priority list
 
+https://github.com/SilenceOverflow/Awesome-SLAM#3DVision
 0. Finalized noise? if it takes a lot of time 
 1. Localization?
     a. Slam
@@ -341,6 +342,9 @@ A lot of implementation not so much theory from other papers?
         # reference papers they reference
 
 
+write about covariance
+
+
 Questions:
     Do i need many references? Since most of my doing is implementation and ros specific
     PhD vs work experience in robotics
@@ -350,3 +354,16 @@ Questions:
     Starting buissness,
 
 ./scripts_new/start_container.sh "roslaunch rovio rovio_node_mynteye.launch"
+
+
+scripts for fixing frames
+scripts for creating data
+docker file for actually working rovio...
+rovio has no settings for frame_id for pose_With_covariance
+
+rovio jumps back in time randomly
+rovio and teaser canøt be used in kalman since the time stamp vs when it was publsihed is too far away
+https://github.com/uoip/stereo_ptam
+
+# future work
+# make code more dynamic, e.g make topics a parameter rather than hardcoded

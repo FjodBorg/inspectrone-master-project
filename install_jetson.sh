@@ -289,16 +289,29 @@ echo "\nOn ubuntu the master branch is broken, on jetson 1.6.5 and 1.7.0 is brok
 # some libraires might be missing look at https://github.com/facebookresearch/faiss/pull/1245/commits/5efe1a97323a3e327b9058d57a54d4469ef6baad.diff
 echo "remember to restart"
 
+sudo apt -y install libcholmod3 libsuitesparse-dev
+# probably not needed, but probably nice to have if you want to use cpp
+cd $HOME/repos/
+git clone https://github.com/RainerKuemmerle/g2o.git
+cd g2o
+mkdir build
+cd build
+cmake ..
+make -j8
+sudo make install 
 
-# retraining:
-# base_path=<directory of inspectrone repos>
-# base_path="$HOME/repos/inspectrone"
-# dw_path="$base_path/catkin_ws/downloads"
-# cd $base_path/retrain/
-# python3.7 retrain.py --batch_size 4 \
-# --out_dir "$dw_path/retrained_models/" \
-# --weights "$dw_path/ResUNetBN2C-32feat-3conv.pth" \
-# --weights_dir "$dw_path" \
-# --hit_ratio 0.075
+python3.7 -m pip install pybind11
+cd $HOME/repos/
+git clone https://github.com/uoip/g2opy.git
+cd g2opy
+PYTHON_VER=$(python3.7 -c "import platform; print(platform.python_version())")
+cmake -B build . -DPYBIND11_PYTHON_VERSION=$PYTHON_VER
+cd build
+sudo make -j8
+cd ..
+# insert python version in start
+PYTHON_BIN=$(which python3.7)
+sed -i "s/get_python_lib()/get_python_lib(True, True)/g" setup.py
+sudo $PYTHON_BIN setup.py install
 
 echo "now build the dockerfile in /dockerfiles/rovio/. You can use the script in ./scripts_new/create_dockerfile executed from the rovio folder."
