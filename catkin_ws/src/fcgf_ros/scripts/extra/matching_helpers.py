@@ -88,6 +88,7 @@ class MatcherHelper(MatcherBase):
         self._time_stamp = None
         self._reg_quality = 0
 
+        # select the method to use
         if config.covariance_type == 0:
             self.covariance = self.OutlierBasedCovariance(self)
         elif config.covariance_type == 1:
@@ -157,6 +158,7 @@ class MatcherHelper(MatcherBase):
         #self.metrics.reset()
 
     def publish_pcds(self, *args):
+        # TODO INSERT STATEMENT TO only publsih if fitness is above threshold
         self._time_stamp = self._pcd_broadcaster.publish_pcds(*args)
 
     def publish_inital_map(self):
@@ -166,22 +168,20 @@ class MatcherHelper(MatcherBase):
         self._pcd_broadcaster.publish_inital_map(pcd_map_down)
 
     def publish_transform(self, T):
-        covariance = self.covariance.estimate()
+        # TODO INSERT STATEMENT TO only publsih if fitness is above threshold
+        covariance = self.covariance.estimate(T)
         self._pose_broadcaster.set_covariance(covariance)
         self._pose_broadcaster.publish_transform(T, self._time_stamp, self._pose_time_stamp)
         pass
         #self._pose_broadcaster.publish_transform(T)
         #self._pose_broadcaster.publish_transform()
 
-
-    # TODO raise errors if functions aren't defined
-
     def eval_transform(self, source, target, T, threshold=None):
         if threshold is None:
             threshold = self._config.voxel_size
         self._reg_quality = open3d.pipelines.registration.evaluate_registration(source, target, threshold, T)
+        print(self._reg_quality)
         return self._reg_quality
-
 
     class OutlierBasedCovariance():
         def __init__(self, outer_instance):
@@ -197,10 +197,24 @@ class MatcherHelper(MatcherBase):
             self.parent = outer_instance
             print("\n\nusing fitness based covariance estimation\n\n")
         
-        def estimate(self):
+        def estimate(self, T):
+            # TODO apply transform beforehand
+            # Recalculate fitness to be less strict
+            self.parent.eval_transform(self.parent._pcd_scan_down, self.parent._pcd_map_down, T, threshold=self.parent._config.voxel_size * 2)
             fitness = self.parent._reg_quality.fitness
-            # print("estimated covariance:", "not implemented yet")
-            return [1.0] * 36
+            # VERY Bold assumptions are done
+            # First we assume that fitness is correlated to an equal error in x,y,z, yaw, roll and pitch
+            variance = (1 - fitness)**2 * 6  # container is ~6 meters in total
+            covariance = [0.0] * 36
+            covariance[0] = variance
+            covariance[7] = variance
+            covariance[14] = variance
+            covariance[21] = variance
+            covariance[28] = variance
+            covariance[35] = variance
+            
+            # print(covariance)
+            return covariance
 
 # defines functions for TEASER
 class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
@@ -584,7 +598,8 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
 # Link to the correct Matcher class
 class Matcher():
     def __new__(self, config, ros_col):
-        
+        # TODO, make new structure, with first base,
+        # then use the instance to make the child and so forth
         # select current registration type:
         if config.teaser is True:
             if config.faiss is True:
