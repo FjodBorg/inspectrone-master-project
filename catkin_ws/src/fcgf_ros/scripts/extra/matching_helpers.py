@@ -74,7 +74,7 @@ class MatcherBase():
     def _load_topic_ply_points(self):
         pcd_scan = self.ros_to_open3d(self._pcd_listener.pc)       
         #self.pcd_scan_stamp = self._pcd_listener.pc.header.stamp # TODO add stamp 
-        return pcd_scan, self._pcd_listener.stamp
+        return pcd_scan, self._pcd_listener.stamp.stamp
 
 class MatcherHelper(MatcherBase):
     def __init__(self, config, ros_col):

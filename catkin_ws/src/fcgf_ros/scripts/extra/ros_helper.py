@@ -77,8 +77,8 @@ class PoseBroadcaster:
     def publish_transform(self, T, stamp=None, pose_stamp=None):   
         if stamp is None:
             stamp = rospy.Time.now()
-        #if pose_stamp is None:
-        pose_stamp = rospy.Time.now()
+        if pose_stamp is None:
+            pose_stamp = rospy.Time.now()
         # print(stamp)
         self.t.header.stamp = stamp  # data.header.stamp
         self.t.header.frame_id = "map"
@@ -97,7 +97,9 @@ class PoseBroadcaster:
         
         self.br.sendTransform(self.t)
 
-        rospy.sleep(rospy.Duration(0.1)) # Wait a bit before trying for the lookup
+        # TODO find another approach to get the correct transform
+        # maybe lookup the unknown parts and calculate it yourself?
+        rospy.sleep(rospy.Duration(0.1))  # Wait a bit before trying for the lookup
         # print(self.t.header)
         #self.tf_buffer.waitForTransform("map", self.t.child_frame_id, rospy.Time(), rospy.Duration(4.0))
         try:
