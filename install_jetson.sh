@@ -300,3 +300,5 @@ echo "remember to restart"
 # --weights "$dw_path/ResUNetBN2C-32feat-3conv.pth" \
 # --weights_dir "$dw_path" \
 # --hit_ratio 0.075
+
+echo "now build the dockerfile in /dockerfiles/rovio/. You can use the script in ./scripts_new/create_dockerfile executed from the rovio folder."
