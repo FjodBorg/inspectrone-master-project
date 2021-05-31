@@ -309,9 +309,9 @@ cmake -B build . -DPYBIND11_PYTHON_VERSION=$PYTHON_VER
 cd build
 sudo make -j8
 cd ..
-# insert python version in start
-PYTHON_BIN=$(which python3.7)
+
+# fix get_python_lib to acutally find the correct python version
 sed -i "s/get_python_lib()/get_python_lib(True, True)/g" setup.py
-sudo $PYTHON_BIN setup.py install
+sudo python3.7 setup.py install
 
 echo "now build the dockerfile in /dockerfiles/rovio/. You can use the script in ./scripts_new/create_dockerfile executed from the rovio folder."
