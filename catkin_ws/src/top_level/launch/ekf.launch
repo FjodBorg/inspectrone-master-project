@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="robot_localization" type="ekf_localization_node" name="ekf_localization_odom" clear_params="true"> 
+        <rosparam command="load" file="$(find top_level)/cfg/ekf.yaml" />
+    </node>
+</launch>
