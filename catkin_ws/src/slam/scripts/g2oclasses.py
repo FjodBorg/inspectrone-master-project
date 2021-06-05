@@ -62,16 +62,23 @@ class PoseGraphOptimization(g2o.SparseOptimizer):
         super().initialize_optimization()
         super().optimize(max_iterations)
 
-    def add_vertex(self, id, pose, fixed=False):
+    # def add_landmark(self, i, pose, fixed=False):
+    #     v_se3 = g2o.VertexSE3Expmap()
+    #     v_se3.set_id(i)
+    #     v_se3.set_estimate(pose)
+    #     if i < 2:
+    #         v_se3.set_fixed(True)
+    #     super().add_vertex(v_se3)
+
+    def add_pose(self, i, pose, fixed=False):
+        # v_se3 = g2o.VertexSE3Expmap()
         v_se3 = g2o.VertexSE3()
-        v_se3.set_id(id)
-        v_se3.set_estimate(pose)
         v_se3.set_fixed(fixed)
+        v_se3.set_id(i)
+        v_se3.set_estimate(pose)
         super().add_vertex(v_se3)
 
-    def add_edge(self, vertices, measurement, 
-            information=np.identity(6),
-            robust_kernel=None):
+    def add_edge(self, vertices, measurement, information=np.identity(6), robust_kernel=None):
 
         edge = g2o.EdgeSE3()
         for i, v in enumerate(vertices):
@@ -80,7 +87,7 @@ class PoseGraphOptimization(g2o.SparseOptimizer):
             edge.set_vertex(i, v)
 
         edge.set_measurement(measurement)  # relative pose
-        edge.set_information(information)
+        edge.set_information(information)   # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/examples/plane_slam/simulator_3d_plane.cpp
         if robust_kernel is not None:
             edge.set_robust_kernel(robust_kernel)
         super().add_edge(edge)
