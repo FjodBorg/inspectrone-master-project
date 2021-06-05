@@ -11,7 +11,6 @@ import sensor_msgs.point_cloud2 as pc2
 
 
 class PCListener:
-    # TODO make dem all depend on config
     def __init__(self, topic_in_ply):
         self.pc = None
         self.stamp = 0
@@ -23,6 +22,7 @@ class PCListener:
         rospy.Subscriber(topic_in_ply, sensor_msgs.msg.PointCloud2, self.callback)
 
     def callback(self, points):
+        # TODO, make sure that these variables doesn't get read and written at the same time. 
         self.pc = points
         self.stamp = points.header
         self.n = self.n + 1
@@ -74,11 +74,11 @@ class PoseBroadcaster:
         self._covariance = self.init_covariance()
         
 
-    def publish_transform(self, T, stamp=None, pose_stamp=None):   
+    def publish_transform(self, T, stamp=None, pcd_read_time=None):   
         if stamp is None:
             stamp = rospy.Time.now()
-        if pose_stamp is None:
-            pose_stamp = rospy.Time.now()
+        if pcd_read_time is None:
+            pcd_read_time = rospy.Time.now()
         # print(stamp)
         self.t.header.stamp = stamp  # data.header.stamp
         self.t.header.frame_id = "map"
@@ -100,6 +100,15 @@ class PoseBroadcaster:
         # TODO find another approach to get the correct transform
         # maybe lookup the unknown parts and calculate it yourself?
         rospy.sleep(rospy.Duration(0.1))  # Wait a bit before trying for the lookup
+        while(True):
+            try:
+                rospy.sleep(0.1)
+                break
+            except rospy.ROSTimeMovedBackwardsException:
+                pass
+            except rospy.ROSInterruptException:
+                # if e.g ctrl + c
+                break
         # print(self.t.header)
         #self.tf_buffer.waitForTransform("map", self.t.child_frame_id, rospy.Time(), rospy.Duration(4.0))
         try:
@@ -108,7 +117,7 @@ class PoseBroadcaster:
             print("tf Exception..")
             return 0
 
-        self.p.header.stamp = pose_stamp
+        self.p.header.stamp = pcd_read_time
         self.p.header.frame_id = 'map'
         self.p.pose.pose.position.x = trans.transform.translation.x
         self.p.pose.pose.position.y = trans.transform.translation.y
