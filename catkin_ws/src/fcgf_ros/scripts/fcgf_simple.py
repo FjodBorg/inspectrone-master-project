@@ -174,7 +174,15 @@ if __name__ == "__main__":
     matcher.publish_inital_map()
     while pcd_listener.pc is None:
         rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
-        rospy.sleep(0.2)
+        while(True):
+            try:
+                rospy.sleep(0.2)
+                break
+            except rospy.ROSTimeMovedBackwardsException:
+                pass
+            except rospy.ROSInterruptException:
+                # if e.g ctrl + c
+                break
 
     prev_red_n = pcd_listener.n
 
@@ -194,6 +202,14 @@ if __name__ == "__main__":
                 with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
                     print(np.vstack(matcher.avg_feat_dist))
             rospy.loginfo("No Publsihed Pointclouds, trying again in 0.2 sec")
-            rospy.sleep(0.2)
+            while(True):
+                try:
+                    rospy.sleep(0.2)
+                    break
+                except rospy.ROSTimeMovedBackwardsException:
+                    pass
+                except rospy.ROSInterruptException:
+                    # if e.g ctrl + c
+                    break
 
     rospy.spin()
