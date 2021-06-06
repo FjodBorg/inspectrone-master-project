@@ -4,7 +4,7 @@
     <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
     <node pkg="fcgf_ros" type="fcgf_simple.py" name="fcgf" output="screen"  launch-prefix="bash -c 'sleep $(arg node_start_delay); export OMP_NUM_THREADS=12; $0 $@'">
-        <param name="/fitness_thr" type="double" value="0.1"/>
+        <param name="/fitness_thr" type="double" value="0"/>
     </node>
 
 	<node pkg="topic_tools" type="throttle" name="pointcloud_throttler" args="messages /mynteye/points/downsampled_xyz 1.0 /points_throttle" />
