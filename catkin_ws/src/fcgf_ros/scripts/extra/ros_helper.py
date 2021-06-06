@@ -99,7 +99,7 @@ class PoseBroadcaster:
 
         # TODO find another approach to get the correct transform
         # maybe lookup the unknown parts and calculate it yourself?
-        rospy.sleep(rospy.Duration(0.1))  # Wait a bit before trying for the lookup
+        # rospy.sleep(rospy.Duration(0.1))  # Wait a bit before trying for the lookup
         while(True):
             try:
                 rospy.sleep(0.1)
