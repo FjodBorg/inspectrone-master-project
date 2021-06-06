@@ -7,6 +7,7 @@ import geometry_msgs.msg
 import tf2_ros
 import tf
 import sensor_msgs.point_cloud2 as pc2
+import math
 #import tf_conversions
 
 
@@ -86,7 +87,6 @@ class PoseBroadcaster:
         self.t.transform.translation.x = T[0, 3]
         self.t.transform.translation.y = T[1, 3]
         self.t.transform.translation.z = T[2, 3]
-        
         q = tf.transformations.quaternion_from_matrix(T)
         # tran = tf.transformations.translation_from_matruix
 
@@ -119,14 +119,23 @@ class PoseBroadcaster:
 
         self.p.header.stamp = pcd_read_time
         self.p.header.frame_id = 'map'
-        self.p.pose.pose.position.x = trans.transform.translation.x
-        self.p.pose.pose.position.y = trans.transform.translation.y
-        self.p.pose.pose.position.z = trans.transform.translation.z
+        self.p.pose.pose.position = trans.transform.translation
+        # self.p.pose.pose.position.y = trans.transform.translation.y
+        # self.p.pose.pose.position.z = trans.transform.translation.z
         # Make sure the quaternion is valid and normalized
-        self.p.pose.pose.orientation.x = trans.transform.rotation.x
-        self.p.pose.pose.orientation.y = trans.transform.rotation.y
-        self.p.pose.pose.orientation.z = trans.transform.rotation.z
-        self.p.pose.pose.orientation.w = trans.transform.rotation.w
+        
+        q_rot = tf.transformations.quaternion_from_euler(0, math.pi / 2.0, math.pi / 2.0)
+        q_now = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w]
+        q_fix = tf.transformations.quaternion_multiply(q_now, q_rot)
+        print("\n\n\n",q_rot, q_now, q_fix )
+
+        self.p.pose.pose.orientation = geometry_msgs.msg.Quaternion(*q_fix)
+        # self.p.pose.pose.orientation.y = trans.transform.rotation.y
+        # self.p.pose.pose.orientation.z = trans.transform.rotation.z
+        # self.p.pose.pose.orientation.w = trans.transform.rotation.w
+
+        # rot_fix = tf.transformations.euler_matrix(0, math.pi / 2.0, math.pi / 2.0)
+        # T = np.matmul(T, rot_fix)
         # print(self.p.pose.covariance)
         self.p.pose.covariance = self._covariance
         # print(self._covariance)
