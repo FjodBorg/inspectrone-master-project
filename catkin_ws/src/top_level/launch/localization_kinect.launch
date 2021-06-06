@@ -1,5 +1,6 @@
 <launch>
     <arg name="use_sim_time" default="true"/>
+    <arg name="use_initial_imu_pose" default="no"/>
     <param name="use_sim_time" value="$(arg use_sim_time)"/>
 
 	<node name="rovio" pkg="top_level" type="rovio_kinect.sh" output="log" launch-prefix="xterm -e" />
@@ -9,6 +10,15 @@
          <param name="frame" value="/map" />
          <param name="rate" value="1.0" />
     </node> -->
-    <node name="rovio_init_fix" pkg="top_level" type="fix_init_transform.py" />
+
+    <!-- This is if you only care about relative rovio pose -->
+    <group if="$(eval arg('use_initial_imu_pose') =='no')">
+        <node pkg="tf" type="static_transform_publisher" name="link4_broadcaster" output="log" args="0 0 0 0 0 0 world world_offset 100" />
+    </group>
+
+    <!-- This is if you want to offset to imu origin -->
+    <group if="$(eval arg('use_initial_imu_pose') == 'yes')">
+        <node name="rovio_init_fix" pkg="top_level" type="fix_init_transform.py" />
+    </group>
 
 </launch>
