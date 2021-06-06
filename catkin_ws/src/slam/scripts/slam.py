@@ -130,8 +130,8 @@ class Slam():
             elif dif_time < 0:  # we passed pose_time
                 break
 
-        meas_eig = np.identity(4)  
-        infomation = np.linalg.pinv(np.identity(6))
+        meas_eig = np.identity(4)
+        infomation = np.zeros((6,6))
         meas = g2o.Isometry3d(meas_eig)
 
         odom_vertex = self.graph.vertex(best_index)
@@ -148,9 +148,12 @@ class Slam():
         print("New Pose", time_stamp)
         self.ids.append(time_stamp)
             
+        # -90 degrees in roll 90 degs in yaw
+        # rot_fix = tf.transformations.euler_matrix([-math.pi / 2.0, 0, math.pi / 2.0])
         rot = tf.transformations.quaternion_matrix(quad)
         tran = tf.transformations.translation_matrix(pos)
         T = np.matmul(tran, rot)
+        # T = np.matmul(T, rot_fix)
         pose = g2o.Isometry3d(T)
         # print(pose.to_vector())
         self.graph.add_pose(time_stamp, pose, True)
@@ -158,7 +161,7 @@ class Slam():
         # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/types/slam3d/isometry3d_mappings.h
         print(time_stamp, self.graph.get_pose(time_stamp).translation()) # eigen type
 
-        # add vertex 
+        # add edge
         if len(self.graph.vertices()) > 1:
             if any(self.pose.covar[0] > 0.5):
                 print("covariance was too large")
@@ -168,14 +171,14 @@ class Slam():
         
             # we have o->ver_prev and o->ver
             # we want ver_prev->ver:
+            # see line 86 on:
+            # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/examples/line_slam/simulator_3d_line.cpp 
             meas_eig = ver_prev.estimate().inverse() * ver.estimate()
 
             meas = g2o.Isometry3d(meas_eig)
             self.graph.add_edge([ver, ver_prev], meas, infomation)
+            # add edge between teaser and rovio
             self.add_edge_to_best_odom(ver, time_stamp)
-            
-        
-
 
     def process_odom(self):
         time_stamp = self.odom.time_stamp
