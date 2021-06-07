@@ -12,8 +12,8 @@ python3.7 retrain.py \
 --batch_size 4 \
 --weights "" \
 --voxel_size 0.04 \
---hit_ratio 0.075 \
---max_epoch 200 \
+--hit_ratio 0.1 \
+--max_epoch 300 \
 --threed_match_dir "$dw_path/datasets/ballast_tank/" \
 --out_dir "$dw_path/retrained_models/" 
 """
@@ -48,7 +48,7 @@ def main():
     setattr(config, "use_cubic_crop", True)
     setattr(config, "max_random_crop_iterations", 100)
     # noise
-    setattr(config, "use_noise", True)
+    setattr(config, "use_noise", False)
     setattr(config, "max_noise_level", 0.1)  # max noise level pr meter
     setattr(config, "noise_origins", 4)  # How many origins (More noise the further away)
     only_use_noise = True  # if you don't want noiseless data
