@@ -296,7 +296,7 @@ git clone https://github.com/RainerKuemmerle/g2o.git
 cd g2o
 mkdir build
 cd build
-cmake ..
+cmake .. -DG2O_BUILD_APPS=1
 make -j8
 sudo make install 
 
