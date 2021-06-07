@@ -2,6 +2,7 @@
 import numpy as np 
 # import g2oclasses
 import g2o
+from numpy.core.arrayprint import IntegerFormat
 import tf 
 
 from g2oclasses import PoseGraphOptimization
@@ -96,10 +97,10 @@ class Markers():
         p2 = geometry_msgs.msg.Point()
         p2.x, p2.y, p2.z = pos_to
         
-        if rgb[0] == 1 and rgb[1] == 0:
-            print("breaking news")
-            print(p1, p2)
-            print(idx_from, idx_to)
+        # if rgb[0] == 1 and rgb[1] == 0:
+        #     print("breaking news")
+        #     print(p1, p2)
+        #     print(idx_from, idx_to)
         
         marker2.points.append(p1)
         marker2.points.append(p2)
@@ -164,6 +165,8 @@ class PoseInfo():
         self.position = None
         self.orientation = None
         self.infomation = None
+        self.prev_infomation = None
+        self.first_fixed = False
         self.start_time = None
         self.time_stamp = None
         self.lock = False
@@ -248,7 +251,7 @@ class Slam():
 
         # print(start_time)
 
-    def add_edge_to_best_odom(self, pose_vertex, pose_time):
+    def add_edge_to_best_odom(self, pose_vertex, pose_time, infomation_now):
         best_dif_time = math.inf
         best_id = math.inf
         
@@ -268,7 +271,9 @@ class Slam():
                 break
 
         meas_eig = np.identity(4)
-        infomation = np.zeros((6,6))
+        infomation = infomation_now
+        # TODO, this might break the optimization e.g. if pose pose is wrong and it has 0 info to odom pose, what would happen? Perhaps use info_in  instead?
+        # infomation = np.zeros((6, 6))
         meas = g2o.Isometry3d(meas_eig)
 
         odom_vertex = self.graph.vertex(best_id)
@@ -281,14 +286,14 @@ class Slam():
 
         pos = [self.pose.position.x, self.pose.position.y, self.pose.position.z]
         quad = [self.pose.orientation.x, self.pose.orientation.y, self.pose.orientation.z, self.pose.orientation.w]
-        infomation = self.pose.infomation
-  
+
 
         print("\nNew Pose", time_stamp)
         if any(self.pose.covar[0] > 0.1):
             print("covariance was too large, no edge added")
             return -1
 
+        
         self.ids.append(time_stamp)
 
 
@@ -300,7 +305,11 @@ class Slam():
         # T = np.matmul(T, rot_fix)
         pose = g2o.Isometry3d(T)
         # print(pose.to_vector())
-        self.graph.add_pose(time_stamp, pose, True)
+        # TODO try with 1 fixed and with all fixed (infomation is now fixed)
+        if not self.pose.first_fixed:
+            self.graph.add_pose(time_stamp, pose, True)
+        else:
+            self.graph.add_pose(time_stamp, pose)
         self.markerArray.add_marker(self.pose)
             
         # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/types/slam3d/isometry3d_mappings.h
@@ -327,10 +336,40 @@ class Slam():
             meas_eig = ver_prev.estimate().inverse() * ver.estimate()
 
             meas = g2o.Isometry3d(meas_eig)
+            # Use the largest covariance from the current and last pose
+                
+            if self.pose.prev_infomation is not None and np.sum(self.pose.prev_infomation) < np.sum(self.pose.infomation):
+                # covariance: prev > now    
+                # infomation: prev < now
+                # if last last pose was the worst:
+                infomation = self.pose.prev_infomation
+            else:
+                # if the current pose is the worst
+                infomation = self.pose.infomation
+
             self.graph.add_edge([ver_prev, ver], meas, infomation)
             self.markerArray.add_marker_edge(self.graph, self.ids[self.index - i], self.ids[self.index], [1,0,0])
+
+            # print(self.graph.edges())
+            # print(dir(self.graph.edges()))
+            # print(type(self.graph.edges()))
+            # # print(dir(self.graph))
+            # print(dir(list(self.graph.edges())[0]))
+            # print(list(self.graph.edges())[0].id())
+            # print(list(self.graph.edges())[0].vertices())
+            # # print(dir(list(self.graph.edges())))
+            # print(list(self.graph.edges())[0].information())
+            # print(dir((self.graph)))
+            # print(dir(list(self.graph.edges())))
+            # print(locals(self.graph.edges()))
+            # print(globals(self.graph.edges()))
+
             # add edge between teaser and rovio
-            self.add_edge_to_best_odom(ver, time_stamp)
+            # use self.pose.infomation, since we're link from the current pose to the matching odom and not the previous pose 
+            self.add_edge_to_best_odom(ver, time_stamp, self.pose.infomation)
+
+        self.pose.prev_infomation = self.pose.infomation
+
         return 0
 
     def process_odom(self):
@@ -339,6 +378,8 @@ class Slam():
         pos = [self.odom.position.x, self.odom.position.y, self.odom.position.z]
         quad = [self.odom.orientation.x, self.odom.orientation.y, self.odom.orientation.z, self.odom.orientation.w]
         infomation = self.odom.infomation
+
+        # TODO maybe add multiplication to odom infomation
 
         print("New Odom", time_stamp)
         self.ids.append(time_stamp) 
@@ -365,7 +406,7 @@ class Slam():
             ver = self.graph.vertices()[self.ids[self.index]]
 
             i = 1 
-            while True:
+            while True :
                 id = self.ids[self.index - i]
                 # make sure it is another odom measurement
                 if id % 2 == 0:
