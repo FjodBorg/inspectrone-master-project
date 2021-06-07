@@ -380,6 +380,7 @@ class Slam():
         infomation = self.odom.infomation
 
         # TODO maybe add multiplication to odom infomation
+        infomation *= 100000.0
 
         print("New Odom", time_stamp)
         self.ids.append(time_stamp) 
