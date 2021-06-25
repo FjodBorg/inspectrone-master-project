@@ -16,7 +16,7 @@ def is_float(string):
 
 log_dir = "/home/fjod/repos/inspectrone/docs/performance"
 log_names = ["0.025_timings.txt", "0.040_timings.txt"]
-legends = ["0.025m voxels", "0.040m voxels"]
+legends = ["0.025m", "0.040m"]
 
 # Remeber to clean the file so only one log is present in the log files
 all_lists = []
@@ -39,24 +39,55 @@ for i, log_name in enumerate(log_names):
 # print(all_lists)
 all_lists = (list(zip(*all_lists)))
 all_labels = ["processing time", "transform time", "publish point cloud time", "publish pose time", "fitness"]
-all_lists
+figsize = (10, 5)
+pltratio = [6,2]
+box_label_range = range(len(legends))
+linewidth=4
+
 for k, sets in enumerate(all_lists):
+    data = list(zip(*sets))
     plt.rcParams.update({'font.size': 18,
                         'axes.titlesize': 22})
-    fig, ax = plt.subplots() # ?
+    fig, axs = plt.subplots(1, 2, gridspec_kw={'width_ratios': pltratio}, figsize=figsize)
     # print(data)
     # for data in sets :
         # print(data_1)
-    plt.plot(list(zip(*sets)), linewidth=4)
+    for ax in axs:
+        ax.grid()
+
+    axs[0].plot(data, linewidth=linewidth)
+    axs[0].set(xlabel='pcd id', ylabel=all_labels[k])
+    axs[0].legend(legends)
     # plt.legend(["hr="+hit_ratio for hit_ratio in hit_ratio_group])
-    plt.ylabel(all_labels[k])
+    # plt.ylabel(all_labels[k])
     # plt.yticks(np.arange(0, max_met+0.01, step=max_met/8))
-    plt.xlabel("pcd id")
+    # plt.xlabel("")
     # plt.xticks(np.arange(0, len(metrics_group[j]), step=10))
     # plt.title(titles[i])
-    plt.grid()
+    bp = axs[1].boxplot(sets, widths=(0.75), positions=box_label_range,
+        # color=dict(boxes='r', whiskers='r', medians='r', caps='r'),
+        boxprops=dict(linestyle='-', linewidth=linewidth),
+        flierprops=dict(linestyle='-', linewidth=linewidth, marker="o",  markerfacecolor='k'),
+        medianprops=dict(linestyle='-', linewidth=linewidth),
+        meanprops=dict(linestyle='-', linewidth=linewidth),
+        whiskerprops=dict(linestyle='-', linewidth=linewidth),
+        capprops=dict(linestyle='-', linewidth=linewidth),
+    )
+    # bp.set_linewidth(4)
+    # [[item.set_linewidth(4) for item in bp[key]['boxes']] for key in bp.keys()]
+    # [[item.set_linewidth(linewidth) for item in bp[key]['boxes']] for key in bp.keys()]
+    # [[item.set_linewidth(linewidth) for item in bp[key]['fliers']] for key in bp.keys()]
+    # [[item.set_linewidth(linewidth) for item in bp[key]['medians']] for key in bp.keys()]
+    # [[item.set_linewidth(linewidth) for item in bp[key]['means']] for key in bp.keys()]
+    # [[item.set_linewidth(linewidth) for item in bp[key]['whiskers']] for key in bp.keys()]
+    # [[item.set_linewidth(linewidth) for item in bp[key]['caps']] for key in bp.keys()]
+
+    # axs[1].set(xlabel="model", ylabel=all_labels[k])
+    axs[1].set(ylabel=all_labels[k])
+    # axs[1].set(xticks=([0,1], legends))
+    axs[1].set_xticks(box_label_range)
+    axs[1].set_xticklabels(legends, rotation=40)
     
-    plt.legend(legends)
     
     plt.tight_layout()
     plt.show()
