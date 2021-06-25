@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/best_val_checkpoint.pth",
     # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
     model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops/checkpoint.pth"
-    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth"
+    model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth"
     # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs/checkpoint.pth",
     config = essentials.Config(
         repos_dir=os.getenv("HOME")+"/repos/inspectrone/",
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     # setattr(config, "voxel_size", 0.06)
     # setattr(config, "voxel_size", 0.08)
     setattr(config, "voxel_size", 0.025) # try with this # can't do matching properly
-    # setattr(config, "voxel_size", 0.04) # try with this 
+    setattr(config, "voxel_size", 0.04) # try with this 
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
