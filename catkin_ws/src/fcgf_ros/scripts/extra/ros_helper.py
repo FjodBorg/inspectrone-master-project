@@ -127,7 +127,7 @@ class PoseBroadcaster:
         q_rot = tf.transformations.quaternion_from_euler(0, math.pi / 2.0, math.pi / 2.0)
         q_now = [trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w]
         q_fix = tf.transformations.quaternion_multiply(q_now, q_rot)
-        print("\n\n\n",q_rot, q_now, q_fix )
+        # print("\n\n\n",q_rot, q_now, q_fix )
 
         self.p.pose.pose.orientation = geometry_msgs.msg.Quaternion(*q_fix)
         # self.p.pose.pose.orientation.y = trans.transform.rotation.y

@@ -956,7 +956,7 @@ class Generator_noise(IOS):
                         targets.append(line.split(" ")[1])
                         overlaps.append(line.split(" ")[2])
                         #exit()
-                        # calculate noise to each point
+                # append new files to previous overlap. txt file
                 f = open(self.config.dataset_dir + file, "a")
                 added_string = ""
                 for i, source in enumerate(fnames):

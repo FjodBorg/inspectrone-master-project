@@ -57,6 +57,8 @@ def demo_func():
          
         if config.teaser and config.debug_calc_feat_dist:
             matcher.avg_feat_dist[len(matcher.avg_feat_dist)-1][0][0] = reg_qual.fitness
+
+        if config.teaser and config.debug_viz:
             
             corrs_A, corrs_B = matcher.find_correspondences(
                 scan_features, map_features, mutual_filter=True
@@ -66,17 +68,12 @@ def demo_func():
                 pcd_scan_down, pcd_map_down, corrs_A, corrs_B
             )
             line_set, feat_dists = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
-
-            if config.teaser and config.debug_viz:
-                open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
-        
+            open3d.visualization.draw([pcd_map_down, pcd_scan_down])
+            open3d.visualization.draw([pcd_map_down, pcd_scan_down, line_set])
+                
         pcd_scan_down_T = matcher.apply_transform(copy.deepcopy(pcd_scan_down), T)
         
         if config.teaser and config.debug_calc_feat_dist:
-            np_corrs_A, np_corrs_B = matcher.convert_correspondences(
-                pcd_scan_down_T, pcd_map_down, corrs_A, corrs_B
-            )
-            line_set_T, feat_dists_T = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
 
             plt.figure(1)
             plt.plot(feat_dists, "r.")
@@ -99,11 +96,14 @@ def demo_func():
             #plt.legend(["Before", "After"])
             plt.show()
 
-            if config.debug_viz:
-                open3d.visualization.draw([pcd_map_down, pcd_scan_down_T, line_set_T])
+        if config.teaser and config.debug_viz:
+            np_corrs_A, np_corrs_B = matcher.convert_correspondences(
+                pcd_scan_down_T, pcd_map_down, corrs_A, corrs_B
+            )
+            line_set_T, feat_dists_T = matcher.draw_correspondences(np_corrs_A, np_corrs_B)
 
-        elif config.teaser and config.debug_viz:
             open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
+            open3d.visualization.draw([pcd_map_down, pcd_scan_down_T, line_set_T])
 
 
         
@@ -113,27 +113,26 @@ if __name__ == "__main__":
 
     global metrics, matcher, config
     feature_size = 32
+    # model_name="best_val_checkpoint.pth",
+    # model_name="/retrained_models/best_val_checkpoint.pth",
+    # model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
+    # model_name="/retrained_models/with_cross_scan_matching/checkpoint.pth",
+    # model_name="/retrained_models/with_0.025_hit_ratio/checkpoint.pth",
+    # model_name="/retrained_models/with_0.025_hit_ratio/best_val_checkpoint.pth"
+    # model_name = "/retrained_models/with_cropping_0.025_hit_ratio/best_val_checkpoint.pth"
+    # model_name = "/retrained_models/with_cropping_0.025_hit_ratio/checkpoint.pth"
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio/best_val_checkpoint.pth",
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/checkpoint.pth" # Works well
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/best_val_checkpoint.pth",
+    # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/best_val_checkpoint.pth",
+    # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
+    model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops/checkpoint.pth"
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth"
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs/checkpoint.pth",
     config = essentials.Config(
-        # model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
-        # model_name="/retrained_models/with_cross_scan_matching/checkpoint.pth",
-        # model_name="/retrained_models/with_0.025_hit_ratio/checkpoint.pth",
-        # model_name="/retrained_models/with_0.025_hit_ratio/best_val_checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.025_hit_ratio/best_val_checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.025_hit_ratio/checkpoint.pth",
-        #model_name="/retrained_models/with_cropping_0.075_hit_ratio/checkpoint.pth", # Works well
-        # model_name="/retrained_models/with_cropping_0.075_hit_ratio/best_val_checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/checkpoint.pth", # Works well
-        # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/best_val_checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/best_val_checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
-        # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops/checkpoint.pth",
-        model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth",
-
-
-        # model_name="best_val_checkpoint.pth",
-        # model_name="/retrained_models/best_val_checkpoint.pth",
         repos_dir=os.getenv("HOME")+"/repos/inspectrone/",
-        # model_name="/retrained_models/checkpoint.pth",
+        model_name=model_name,
         static_ply_name="ballast_tank.ply",
         #static_ply_name="pcl_ballast_tank.ply",
         )
@@ -142,7 +141,7 @@ if __name__ == "__main__":
     # setattr(config, "voxel_size", 0.06)
     # setattr(config, "voxel_size", 0.08)
     setattr(config, "voxel_size", 0.025) # try with this # can't do matching properly
-    setattr(config, "voxel_size", 0.04) # try with this 
+    # setattr(config, "voxel_size", 0.04) # try with this 
     setattr(config, "NOISE_BOUND", config.voxel_size)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
@@ -155,6 +154,7 @@ if __name__ == "__main__":
     setattr(config, "debug_viz", False)  # visualized the match
     setattr(config, "debug_calc_feat_dist", False)  # calculates the distance of each feature correspondence (Visualized with debug_viz True)
     setattr(config, "limit_max_correspondences", 1000)  # <= 0 means don't limit
+    setattr(config, "limit_corr_type", 1)  # <= 0 random, 1 best
     setattr(config, "covariance_type", 1)  # 0=Outlier_based, 1=Fitness_based (default)
 
     metrics = extensions.PerformanceMetrics()
@@ -201,7 +201,7 @@ if __name__ == "__main__":
             if config.debug_calc_feat_dist:
                 with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
                     print(np.vstack(matcher.avg_feat_dist))
-            rospy.loginfo("No Publsihed Pointclouds, trying again in 0.2 sec")
+            rospy.loginfo("No published Pointclouds, trying again in 0.2 sec")
             while(True):
                 try:
                     rospy.sleep(0.2)

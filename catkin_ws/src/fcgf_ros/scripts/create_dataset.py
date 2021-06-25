@@ -10,7 +10,7 @@ base_path="$HOME/repos/inspectrone"
 dw_path="$base_path/catkin_ws/downloads"
 python3.7 retrain.py \
 --batch_size 4 \
---weights "" \
+--weights "$dw_path/ResUNetBN2C-32feat-3conv.pth" \
 --voxel_size 0.04 \
 --hit_ratio 0.1 \
 --max_epoch 300 \
@@ -41,18 +41,17 @@ def main():
     setattr(config, "reference", config.ply_files[0])  # use
 
     # Matching Type
-    setattr(config, "use_cross_match_scan", False)  # not tested yet
-    setattr(config, "use_cross_match_tank", False)  # not tested yet
+    setattr(config, "use_cross_match_scan", False)  # not properly tested yet
+    setattr(config, "use_cross_match_tank", False)  # not properly tested yet
     # cropping
     setattr(config, "use_cropping", True)
     setattr(config, "use_cubic_crop", True)
     setattr(config, "max_random_crop_iterations", 100)
     # noise
     setattr(config, "use_noise", False)
-    setattr(config, "max_noise_level", 0.1)  # max noise level pr meter
-    setattr(config, "noise_origins", 4)  # How many origins (More noise the further away)
-    only_use_noise = True  # if you don't want noiseless data
+    setattr(config, "max_noise_level", 0.1)  # max noise level pr meter(More noise the further away from origin)
 
+    setattr(config, "noise_origins", 4)  # How many origins 
     # generation
     setattr(config, "sample_size", 8)
     setattr(config, "overlaps", [0.30, 0.50, 0.70])
@@ -74,7 +73,7 @@ def main():
 
     ios.check_configured_path()
     pcd_gen.create_pointcloud_dataset()
-    txt_gen.create_matching_file()
+    txt_gen.create_matching_file() # This file creates and calculates overlaps between matches
     if config.use_noise:
         noise_gen.create_noisy_files()
     
