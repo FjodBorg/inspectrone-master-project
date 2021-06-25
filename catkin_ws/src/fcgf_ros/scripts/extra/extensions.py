@@ -7,7 +7,7 @@ class PerformanceMetrics():
     def __init__(self, parent=None):
         self.timings = dict()
         self.id = 0
-        self.f = open("timings.txt", "w")
+        self.f = open("/home/fjod/repos/inspectrone/docs/performance/0.04_timings.txt", "w")
 
     def start_time(self, name):
         self.id += 1
@@ -43,11 +43,12 @@ class PerformanceMetrics():
     def save_all_timings(self, fitness):
         # flat out nested lists
         names = [name for name in self.timings]
-        string = "\n\n####\n{:2.5f}".format(fitness)
+        # print(fitness)
+        string = "\n\n####\n{:3d} {:30s}:{:2.5}".format(0, "fitness", fitness)
         for name in names:
             values = self.timings[name]
             for index, t in values:
-                string = string + "\n# {:3d}:  {:30s} took: {:2.5f} sec".format(index, name, t)
+                string = string + "\n{:3d} {:30s}:{:2.5f}".format(index, name, t)
 
         self.f.write(string)
 
