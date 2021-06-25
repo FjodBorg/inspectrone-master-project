@@ -14,7 +14,7 @@ def is_float(string):
 
 
 
-log_dir = "/home/fjod/repos/inspectrone/docs/performance"
+log_dir = "/home/fjod/repos/inspectrone/docs/performance/bad"
 log_names = ["0.025_timings.txt", "0.040_timings.txt"]
 legends = ["0.025m", "0.040m"]
 
@@ -28,21 +28,41 @@ for i, log_name in enumerate(log_names):
     transform_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "6 find" in line]]
     pub_pcd_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "7 publish" in line]]
     pub_pose_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "8 publish" in line]]
-    fitness_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "0 fit" in line]]
+    fitness_percent = [float(time.split(':')[1]) * 100 for time in [line for line in content.split('\n') if "0 fit" in line]]
     pcd_id = [int(float(time.split(':')[1])) for time in [line for line in content.split('\n') if "0 pcd" in line]]
 
     # print(pcd_id)
     
-    lists = [process_times, transform_times, pub_pcd_times, pub_pose_times, fitness_times]
+    lists = [process_times, transform_times, pub_pcd_times, pub_pose_times]
+    total_time = [sum(x) for x in (list(zip(*lists)))]
+    lists.append(fitness_percent)
+    lists.append(total_time)
+
     all_lists.append(lists)
+    
+
+
 
 # print(all_lists)
+# total_times = sum([process_times, transform_times, pub_pcd_times, pub_pose_times, fitness_percent])
+
+# print(total_times)
+
+# print( [x for x in all_lists[0]])
+print(len(all_lists[0]))
 all_lists = (list(zip(*all_lists)))
-all_labels = ["processing time", "transform time", "publish point cloud time", "publish pose time", "fitness"]
+# print(all_lists)
+# print()
+
+# print([x for x in all_lists])
+# print(all_lists)
+
+all_labels = ["Processing time [s]", "Transform time [s]", "Publish point cloud time [s]", "Publish pose time [s]", "Fitness [%]", "Total time [s]"]
 figsize = (10, 5)
 pltratio = [6,2]
 box_label_range = range(len(legends))
 linewidth=4
+
 
 for k, sets in enumerate(all_lists):
     data = list(zip(*sets))
@@ -121,8 +141,9 @@ for k, sets in enumerate(all_lists):
     #     # plt.show()
     #     string_prefix = "[{}]".format(log_names[i])
     #     string_suffix = "[{}]".format("_".join(hit_ratio_group))
-    #     file_name = "{}_{}_{}.eps".format(string_prefix, metric_name, string_suffix)
+    file_name = "{}.pdf".format(all_labels[k])
     #     print("saving file in", docs_path+file_name)
-    #     fig.savefig(docs_path+file_name, format='eps')
+    print(os.path.join(log_dir, file_name))
+    fig.savefig(os.path.join(log_dir, file_name), format='pdf')
 
 #print(final_lines)

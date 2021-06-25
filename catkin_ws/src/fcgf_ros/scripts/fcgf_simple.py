@@ -115,7 +115,7 @@ if __name__ == "__main__":
     feature_size = 32
     # model_name="best_val_checkpoint.pth",
     # model_name="/retrained_models/best_val_checkpoint.pth",
-    # model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size),
+    model_name="ResUNetBN2C-{}feat-3conv.pth".format(feature_size)
     # model_name="/retrained_models/with_cross_scan_matching/checkpoint.pth",
     # model_name="/retrained_models/with_0.025_hit_ratio/checkpoint.pth",
     # model_name="/retrained_models/with_0.025_hit_ratio/best_val_checkpoint.pth"

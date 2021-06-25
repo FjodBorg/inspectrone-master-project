@@ -583,7 +583,7 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
     def reset_eval(self):
         reg_qual = self._reg_quality
         if reg_qual is not None:
-            self.metrics.save_all_timings(reg_qual.fitness)
+            self.metrics.save_all_timings(reg_qual.fitness, self._pcd_listener.n)
         self.metrics.reset()
         self.metrics.start_time("total 1 pcd time")
 
