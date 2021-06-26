@@ -13,10 +13,15 @@ def is_float(string):
 
 
 
-
-log_dir = "/home/fjod/repos/inspectrone/docs/performance/bad"
+'''
+log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time"
 log_names = ["0.025_timings.txt", "0.040_timings.txt"]
 legends = ["0.025m", "0.040m"]
+'''
+
+log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/bad"
+log_names = ["0.025_16D_timings.txt", "0.025_32D_timings.txt"]
+legends = ["16D", "32D"]
 
 # Remeber to clean the file so only one log is present in the log files
 all_lists = []

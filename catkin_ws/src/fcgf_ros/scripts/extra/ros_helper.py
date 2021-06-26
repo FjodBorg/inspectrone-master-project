@@ -8,8 +8,11 @@ import tf2_ros
 import tf
 import sensor_msgs.point_cloud2 as pc2
 import math
+from std_srvs.srv import SetBool
 #import tf_conversions
 
+
+setBool = rospy.ServiceProxy('/player/pause_playback', SetBool)
 
 class PCListener:
     def __init__(self, topic_in_ply):
@@ -17,13 +20,17 @@ class PCListener:
         self.stamp = 0
         self.n = 0
         self.init_listener(topic_in_ply)
+        
 
     def init_listener(self, topic_in_ply):
         # rospy.Subscriber("/ballast_tank_ply", PointCloud2, self.callback)
         rospy.Subscriber(topic_in_ply, sensor_msgs.msg.PointCloud2, self.callback)
+        
+        
 
     def callback(self, points):
         # TODO, make sure that these variables doesn't get read and written at the same time. 
+        
         self.pc = points
         self.stamp = points.header
         self.n = self.n + 1
@@ -50,6 +57,7 @@ class PCBroadcaster:
     def publish_inital_map(self, pcd_map):
         self.stamp = rospy.Time.now()
         ros_pcd_map = self.open3d_to_ros(pcd_map, frame_id="map")
+
         self.pub_map.publish(ros_pcd_map)
 
     # Convert the datatype of point cloud from Open3D to ROS PointCloud2 (XYZRGB only)
@@ -140,6 +148,7 @@ class PoseBroadcaster:
         self.p.pose.covariance = self._covariance
         # print(self._covariance)
         self.pub.publish(self.p)
+        
 
     def init_covariance(self):
         return [0.0] * 36

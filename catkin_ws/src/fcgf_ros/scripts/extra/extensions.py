@@ -7,7 +7,7 @@ class PerformanceMetrics():
     def __init__(self, parent=None):
         self.timings = dict()
         self.id = 0
-        self.f = open("/home/fjod/repos/inspectrone/docs/performance/0_timings.txt", "w")
+        self.f = open("/home/fjod/repos/inspectrone/docs/performance_real_time/0_timings.txt", "w")
 
     def start_time(self, name):
         self.id += 1

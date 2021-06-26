@@ -19,6 +19,8 @@ from core.knn import find_knn_gpu
 # custom
 from extra import extensions
 
+from extra.ros_helper import setBool 
+
 # Faiss
 import faiss
 

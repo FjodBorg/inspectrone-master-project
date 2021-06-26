@@ -10,6 +10,8 @@ import copy
 # ros related
 import rospy
 
+from extra.ros_helper import setBool 
+
 # custom modules
 from extra import extensions, ros_helper, matching_helpers, essentials
 from util.visualization import get_colored_point_cloud_feature
@@ -21,6 +23,7 @@ def movingaverage(interval, window_size):
     return np.convolve(interval, window, 'same')
 
 def demo_func():
+    setBool(True)
     matcher.reset_eval()
 
     pcd_map = matcher.get_map()
@@ -32,8 +35,9 @@ def demo_func():
     pcd_map_down, map_features = matcher.get_open3d_features(pcd_map)
 
     pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)
-
+    setBool(False)
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
+
     reg_qual = matcher.eval_transform(pcd_scan_down, pcd_map_down, T)
     # if cloud is fit enough
     if rospy.get_param("/fcgf/fitness_thr") < reg_qual.fitness:
@@ -106,6 +110,7 @@ def demo_func():
             open3d.visualization.draw([pcd_map_down, pcd_scan_down_T, line_set_T])
 
 
+    
         
         
 
@@ -176,6 +181,7 @@ if __name__ == "__main__":
         rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
         while(True):
             try:
+
                 rospy.sleep(0.2)
                 break
             except rospy.ROSTimeMovedBackwardsException:
