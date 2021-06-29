@@ -9,7 +9,7 @@ class PerformanceMetrics():
         self.id = 0
         self.f = open("/home/fjod/repos/inspectrone/docs/performance_real_time/0_timings.txt", "w")
 
-    def start_time(self, name):
+    def start_time(self, name): 
         self.id += 1
         cur_time = time.time()
 

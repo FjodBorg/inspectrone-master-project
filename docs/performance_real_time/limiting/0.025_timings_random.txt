@@ -1,0 +1,769 @@
+
+
+####
+  0 fitness                       :0.95249
+  0 pcd_number                    :36.00000
+  1 total 1 pcd time              :2.94589
+  2 getting map                   :0.00000
+  3 getting scan                  :1.33064
+  4 processing ply                :0.00000
+  5 processing ply                :0.16504
+  6 finding transform             :1.12685
+  7 publishing pcd's              :0.13290
+  8 publishing pose               :0.12704
+
+####
+  0 fitness                       :0.94116
+  0 pcd_number                    :52.00000
+  1 total 1 pcd time              :2.01981
+  2 getting map                   :0.00000
+  3 getting scan                  :1.13102
+  4 processing ply                :0.00000
+  5 processing ply                :0.10687
+  6 finding transform             :0.49546
+  7 publishing pcd's              :0.12239
+  8 publishing pose               :0.12470
+
+####
+  0 fitness                       :0.94414
+  0 pcd_number                    :63.00000
+  1 total 1 pcd time              :1.83735
+  2 getting map                   :0.00000
+  3 getting scan                  :0.89388
+  4 processing ply                :0.00001
+  5 processing ply                :0.10223
+  6 finding transform             :0.55051
+  7 publishing pcd's              :0.12554
+  8 publishing pose               :0.14032
+
+####
+  0 fitness                       :0.93717
+  0 pcd_number                    :86.00000
+  1 total 1 pcd time              :2.07829
+  2 getting map                   :0.00000
+  3 getting scan                  :1.27660
+  4 processing ply                :0.00000
+  5 processing ply                :0.12211
+  6 finding transform             :0.36667
+  7 publishing pcd's              :0.12577
+  8 publishing pose               :0.12836
+
+####
+  0 fitness                       :0.91901
+  0 pcd_number                    :95.00000
+  1 total 1 pcd time              :1.87887
+  2 getting map                   :0.00000
+  3 getting scan                  :0.98760
+  4 processing ply                :0.00001
+  5 processing ply                :0.08469
+  6 finding transform             :0.54127
+  7 publishing pcd's              :0.11755
+  8 publishing pose               :0.12237
+
+####
+  0 fitness                       :0.88973
+  0 pcd_number                    :104.00000
+  1 total 1 pcd time              :1.61643
+  2 getting map                   :0.00000
+  3 getting scan                  :1.09794
+  4 processing ply                :0.00001
+  5 processing ply                :0.06105
+  6 finding transform             :0.21420
+  7 publishing pcd's              :0.11059
+  8 publishing pose               :0.11057
+
+####
+  0 fitness                       :0.97255
+  0 pcd_number                    :113.00000
+  1 total 1 pcd time              :1.65223
+  2 getting map                   :0.00000
+  3 getting scan                  :1.01423
+  4 processing ply                :0.00000
+  5 processing ply                :0.08554
+  6 finding transform             :0.31200
+  7 publishing pcd's              :0.11546
+  8 publishing pose               :0.10047
+
+####
+  0 fitness                       :0.99989
+  0 pcd_number                    :124.00000
+  1 total 1 pcd time              :1.77800
+  2 getting map                   :0.00000
+  3 getting scan                  :0.97469
+  4 processing ply                :0.00001
+  5 processing ply                :0.09210
+  6 finding transform             :0.41255
+  7 publishing pcd's              :0.12112
+  8 publishing pose               :0.12442
+
+####
+  0 fitness                       :0.99967
+  0 pcd_number                    :141.00000
+  1 total 1 pcd time              :2.14234
+  2 getting map                   :0.00000
+  3 getting scan                  :1.29661
+  4 processing ply                :0.00001
+  5 processing ply                :0.14116
+  6 finding transform             :0.42385
+  7 publishing pcd's              :0.12249
+  8 publishing pose               :0.13294
+
+####
+  0 fitness                       :0.99896
+  0 pcd_number                    :158.00000
+  1 total 1 pcd time              :1.74368
+  2 getting map                   :0.00000
+  3 getting scan                  :1.10514
+  4 processing ply                :0.00001
+  5 processing ply                :0.08957
+  6 finding transform             :0.26621
+  7 publishing pcd's              :0.11735
+  8 publishing pose               :0.11909
+
+####
+  0 fitness                       :0.9507
+  0 pcd_number                    :173.00000
+  1 total 1 pcd time              :2.22218
+  2 getting map                   :0.00000
+  3 getting scan                  :1.11506
+  4 processing ply                :0.00001
+  5 processing ply                :0.09764
+  6 finding transform             :0.72835
+  7 publishing pcd's              :0.12977
+  8 publishing pose               :0.12319
+
+####
+  0 fitness                       :0.93435
+  0 pcd_number                    :180.00000
+  1 total 1 pcd time              :1.49118
+  2 getting map                   :0.00000
+  3 getting scan                  :0.82922
+  4 processing ply                :0.00001
+  5 processing ply                :0.09536
+  6 finding transform             :0.31881
+  7 publishing pcd's              :0.12304
+  8 publishing pose               :0.10036
+
+####
+  0 fitness                       :0.76101
+  0 pcd_number                    :188.00000
+  1 total 1 pcd time              :1.62713
+  2 getting map                   :0.00000
+  3 getting scan                  :0.99973
+  4 processing ply                :0.00000
+  5 processing ply                :0.08654
+  6 finding transform             :0.27412
+  7 publishing pcd's              :0.11658
+  8 publishing pose               :0.11126
+
+####
+  0 fitness                       :0.52138
+  0 pcd_number                    :200.00000
+  1 total 1 pcd time              :1.62498
+  2 getting map                   :0.00000
+  3 getting scan                  :1.12056
+  4 processing ply                :0.00001
+  5 processing ply                :0.06728
+  6 finding transform             :0.16005
+  7 publishing pcd's              :0.11346
+  8 publishing pose               :0.11823
+
+####
+  0 fitness                       :0.91402
+  0 pcd_number                    :209.00000
+  1 total 1 pcd time              :1.55938
+  2 getting map                   :0.00000
+  3 getting scan                  :0.96173
+  4 processing ply                :0.00001
+  5 processing ply                :0.08357
+  6 finding transform             :0.25937
+  7 publishing pcd's              :0.11756
+  8 publishing pose               :0.10043
+
+####
+  0 fitness                       :0.94472
+  0 pcd_number                    :228.00000
+  1 total 1 pcd time              :2.22139
+  2 getting map                   :0.00000
+  3 getting scan                  :1.22418
+  4 processing ply                :0.00001
+  5 processing ply                :0.10968
+  6 finding transform             :0.59214
+  7 publishing pcd's              :0.12524
+  8 publishing pose               :0.12397
+
+####
+  0 fitness                       :0.93844
+  0 pcd_number                    :243.00000
+  1 total 1 pcd time              :2.12342
+  2 getting map                   :0.00000
+  3 getting scan                  :1.27425
+  4 processing ply                :0.00001
+  5 processing ply                :0.14009
+  6 finding transform             :0.44014
+  7 publishing pcd's              :0.12496
+  8 publishing pose               :0.11803
+
+####
+  0 fitness                       :0.94342
+  0 pcd_number                    :253.00000
+  1 total 1 pcd time              :1.90228
+  2 getting map                   :0.00000
+  3 getting scan                  :0.97147
+  4 processing ply                :0.00000
+  5 processing ply                :0.10829
+  6 finding transform             :0.53121
+  7 publishing pcd's              :0.12986
+  8 publishing pose               :0.11862
+
+####
+  0 fitness                       :0.93033
+  0 pcd_number                    :268.00000
+  1 total 1 pcd time              :2.13419
+  2 getting map                   :0.00000
+  3 getting scan                  :1.12572
+  4 processing ply                :0.00001
+  5 processing ply                :0.12395
+  6 finding transform             :0.60647
+  7 publishing pcd's              :0.13480
+  8 publishing pose               :0.11674
+
+####
+  0 fitness                       :0.90032
+  0 pcd_number                    :280.00000
+  1 total 1 pcd time              :2.02755
+  2 getting map                   :0.00000
+  3 getting scan                  :1.02230
+  4 processing ply                :0.00001
+  5 processing ply                :0.13313
+  6 finding transform             :0.59042
+  7 publishing pcd's              :0.14107
+  8 publishing pose               :0.11122
+
+####
+  0 fitness                       :0.99417
+  0 pcd_number                    :296.00000
+  1 total 1 pcd time              :2.25023
+  2 getting map                   :0.00000
+  3 getting scan                  :1.29644
+  4 processing ply                :0.00001
+  5 processing ply                :0.11431
+  6 finding transform             :0.51744
+  7 publishing pcd's              :0.12405
+  8 publishing pose               :0.12150
+
+####
+  0 fitness                       :0.89228
+  0 pcd_number                    :318.00000
+  1 total 1 pcd time              :2.21948
+  2 getting map                   :0.00000
+  3 getting scan                  :1.11415
+  4 processing ply                :0.00001
+  5 processing ply                :0.12861
+  6 finding transform             :0.67585
+  7 publishing pcd's              :0.13747
+  8 publishing pose               :0.13465
+
+####
+  0 fitness                       :0.8843
+  0 pcd_number                    :328.00000
+  1 total 1 pcd time              :1.90471
+  2 getting map                   :0.00000
+  3 getting scan                  :0.95465
+  4 processing ply                :0.00001
+  5 processing ply                :0.11208
+  6 finding transform             :0.55174
+  7 publishing pcd's              :0.13516
+  8 publishing pose               :0.12175
+
+####
+  0 fitness                       :0.86489
+  0 pcd_number                    :338.00000
+  1 total 1 pcd time              :1.67744
+  2 getting map                   :0.00000
+  3 getting scan                  :0.83598
+  4 processing ply                :0.00001
+  5 processing ply                :0.11208
+  6 finding transform             :0.46106
+  7 publishing pcd's              :0.13064
+  8 publishing pose               :0.11204
+
+####
+  0 fitness                       :0.87593
+  0 pcd_number                    :354.00000
+  1 total 1 pcd time              :2.03534
+  2 getting map                   :0.00000
+  3 getting scan                  :1.09561
+  4 processing ply                :0.00001
+  5 processing ply                :0.12696
+  6 finding transform             :0.53552
+  7 publishing pcd's              :0.13795
+  8 publishing pose               :0.11389
+
+####
+  0 fitness                       :0.87206
+  0 pcd_number                    :366.00000
+  1 total 1 pcd time              :2.12240
+  2 getting map                   :0.00000
+  3 getting scan                  :1.13965
+  4 processing ply                :0.00001
+  5 processing ply                :0.11987
+  6 finding transform             :0.58193
+  7 publishing pcd's              :0.13836
+  8 publishing pose               :0.11590
+
+####
+  0 fitness                       :0.87262
+  0 pcd_number                    :378.00000
+  1 total 1 pcd time              :2.06454
+  2 getting map                   :0.00000
+  3 getting scan                  :0.99352
+  4 processing ply                :0.00001
+  5 processing ply                :0.12462
+  6 finding transform             :0.63523
+  7 publishing pcd's              :0.13568
+  8 publishing pose               :0.11762
+
+####
+  0 fitness                       :0.87192
+  0 pcd_number                    :397.00000
+  1 total 1 pcd time              :1.99266
+  2 getting map                   :0.00000
+  3 getting scan                  :0.97882
+  4 processing ply                :0.00001
+  5 processing ply                :0.13932
+  6 finding transform             :0.59040
+  7 publishing pcd's              :0.13616
+  8 publishing pose               :0.11886
+
+####
+  0 fitness                       :0.89481
+  0 pcd_number                    :408.00000
+  1 total 1 pcd time              :1.86134
+  2 getting map                   :0.00000
+  3 getting scan                  :1.08322
+  4 processing ply                :0.00000
+  5 processing ply                :0.10195
+  6 finding transform             :0.40778
+  7 publishing pcd's              :0.12456
+  8 publishing pose               :0.11935
+
+####
+  0 fitness                       :0.91431
+  0 pcd_number                    :418.00000
+  1 total 1 pcd time              :1.86281
+  2 getting map                   :0.00000
+  3 getting scan                  :1.05799
+  4 processing ply                :0.00001
+  5 processing ply                :0.09977
+  6 finding transform             :0.43264
+  7 publishing pcd's              :0.12570
+  8 publishing pose               :0.10538
+
+####
+  0 fitness                       :0.99618
+  0 pcd_number                    :436.00000
+  1 total 1 pcd time              :2.20209
+  2 getting map                   :0.00000
+  3 getting scan                  :1.34446
+  4 processing ply                :0.00001
+  5 processing ply                :0.12153
+  6 finding transform             :0.46691
+  7 publishing pcd's              :0.12551
+  8 publishing pose               :0.11730
+
+####
+  0 fitness                       :0.97352
+  0 pcd_number                    :445.00000
+  1 total 1 pcd time              :1.78910
+  2 getting map                   :0.00000
+  3 getting scan                  :1.12870
+  4 processing ply                :0.00001
+  5 processing ply                :0.09317
+  6 finding transform             :0.30041
+  7 publishing pcd's              :0.11926
+  8 publishing pose               :0.10984
+
+####
+  0 fitness                       :0.28281
+  0 pcd_number                    :455.00000
+  1 total 1 pcd time              :1.72034
+  2 getting map                   :0.00000
+  3 getting scan                  :1.08050
+  4 processing ply                :0.00001
+  5 processing ply                :0.09603
+  6 finding transform             :0.27224
+  7 publishing pcd's              :0.11745
+  8 publishing pose               :0.12802
+
+####
+  0 fitness                       :0.96235
+  0 pcd_number                    :474.00000
+  1 total 1 pcd time              :1.91078
+  2 getting map                   :0.00000
+  3 getting scan                  :1.27959
+  4 processing ply                :0.00001
+  5 processing ply                :0.07296
+  6 finding transform             :0.30253
+  7 publishing pcd's              :0.11461
+  8 publishing pose               :0.11343
+
+####
+  0 fitness                       :0.089697
+  0 pcd_number                    :489.00000
+  1 total 1 pcd time              :2.06276
+  2 getting map                   :0.00000
+  3 getting scan                  :1.35647
+  4 processing ply                :0.00001
+  5 processing ply                :0.07864
+  6 finding transform             :0.35765
+  7 publishing pcd's              :0.12136
+  8 publishing pose               :0.12117
+
+####
+  0 fitness                       :0.26599
+  0 pcd_number                    :499.00000
+  1 total 1 pcd time              :1.98572
+  2 getting map                   :0.00000
+  3 getting scan                  :1.16069
+  4 processing ply                :0.00001
+  5 processing ply                :0.10138
+  6 finding transform             :0.44851
+  7 publishing pcd's              :0.12588
+  8 publishing pose               :0.12513
+
+####
+  0 fitness                       :0.13976
+  0 pcd_number                    :518.00000
+  1 total 1 pcd time              :2.32230
+  2 getting map                   :0.00000
+  3 getting scan                  :1.28298
+  4 processing ply                :0.00001
+  5 processing ply                :0.13647
+  6 finding transform             :0.59940
+  7 publishing pcd's              :0.12647
+  8 publishing pose               :0.12214
+
+####
+  0 fitness                       :0.084902
+  0 pcd_number                    :539.00000
+  1 total 1 pcd time              :2.07934
+  2 getting map                   :0.00000
+  3 getting scan                  :1.27155
+  4 processing ply                :0.00001
+  5 processing ply                :0.12471
+  6 finding transform             :0.42132
+  7 publishing pcd's              :0.12191
+  8 publishing pose               :0.11589
+
+####
+  0 fitness                       :0.11726
+  0 pcd_number                    :547.00000
+  1 total 1 pcd time              :1.70020
+  2 getting map                   :0.00000
+  3 getting scan                  :0.89493
+  4 processing ply                :0.00001
+  5 processing ply                :0.09171
+  6 finding transform             :0.39753
+  7 publishing pcd's              :0.12530
+  8 publishing pose               :0.11904
+
+####
+  0 fitness                       :0.21455
+  0 pcd_number                    :557.00000
+  1 total 1 pcd time              :1.87891
+  2 getting map                   :0.00000
+  3 getting scan                  :1.06985
+  4 processing ply                :0.00000
+  5 processing ply                :0.12855
+  6 finding transform             :0.41143
+  7 publishing pcd's              :0.12592
+  8 publishing pose               :0.11879
+
+####
+  0 fitness                       :0.20324
+  0 pcd_number                    :577.00000
+  1 total 1 pcd time              :2.19097
+  2 getting map                   :0.00000
+  3 getting scan                  :1.35040
+  4 processing ply                :0.00000
+  5 processing ply                :0.13598
+  6 finding transform             :0.43793
+  7 publishing pcd's              :0.12365
+  8 publishing pose               :0.10436
+
+####
+  0 fitness                       :0.18158
+  0 pcd_number                    :595.00000
+  1 total 1 pcd time              :2.03895
+  2 getting map                   :0.00000
+  3 getting scan                  :1.30792
+  4 processing ply                :0.00001
+  5 processing ply                :0.11618
+  6 finding transform             :0.34806
+  7 publishing pcd's              :0.12362
+  8 publishing pose               :0.10046
+
+####
+  0 fitness                       :0.072475
+  0 pcd_number                    :603.00000
+  1 total 1 pcd time              :1.55086
+  2 getting map                   :0.00000
+  3 getting scan                  :0.81359
+  4 processing ply                :0.00001
+  5 processing ply                :0.08633
+  6 finding transform             :0.39957
+  7 publishing pcd's              :0.12688
+  8 publishing pose               :0.10040
+
+####
+  0 fitness                       :0.99986
+  0 pcd_number                    :622.00000
+  1 total 1 pcd time              :2.02567
+  2 getting map                   :0.00000
+  3 getting scan                  :1.19167
+  4 processing ply                :0.00000
+  5 processing ply                :0.12169
+  6 finding transform             :0.40317
+  7 publishing pcd's              :0.12254
+  8 publishing pose               :0.10990
+
+####
+  0 fitness                       :0.99081
+  0 pcd_number                    :631.00000
+  1 total 1 pcd time              :1.62098
+  2 getting map                   :0.00000
+  3 getting scan                  :0.99162
+  4 processing ply                :0.00001
+  5 processing ply                :0.07198
+  6 finding transform             :0.29830
+  7 publishing pcd's              :0.11831
+  8 publishing pose               :0.11606
+
+####
+  0 fitness                       :0.1037
+  0 pcd_number                    :638.00000
+  1 total 1 pcd time              :1.55187
+  2 getting map                   :0.00000
+  3 getting scan                  :0.92143
+  4 processing ply                :0.00001
+  5 processing ply                :0.08217
+  6 finding transform             :0.29372
+  7 publishing pcd's              :0.11882
+  8 publishing pose               :0.10958
+
+####
+  0 fitness                       :0.92715
+  0 pcd_number                    :647.00000
+  1 total 1 pcd time              :1.44350
+  2 getting map                   :0.00000
+  3 getting scan                  :0.82757
+  4 processing ply                :0.00000
+  5 processing ply                :0.08739
+  6 finding transform             :0.27798
+  7 publishing pcd's              :0.11790
+  8 publishing pose               :0.10889
+
+####
+  0 fitness                       :0.31436
+  0 pcd_number                    :659.00000
+  1 total 1 pcd time              :1.73288
+  2 getting map                   :0.00000
+  3 getting scan                  :1.21632
+  4 processing ply                :0.00001
+  5 processing ply                :0.05582
+  6 finding transform             :0.20791
+  7 publishing pcd's              :0.11595
+  8 publishing pose               :0.11392
+
+####
+  0 fitness                       :0.9309
+  0 pcd_number                    :666.00000
+  1 total 1 pcd time              :1.54498
+  2 getting map                   :0.00000
+  3 getting scan                  :1.00645
+  4 processing ply                :0.00001
+  5 processing ply                :0.08334
+  6 finding transform             :0.20112
+  7 publishing pcd's              :0.11258
+  8 publishing pose               :0.11799
+
+####
+  0 fitness                       :0.17451
+  0 pcd_number                    :675.00000
+  1 total 1 pcd time              :1.62442
+  2 getting map                   :0.00000
+  3 getting scan                  :1.02973
+  4 processing ply                :0.00000
+  5 processing ply                :0.06078
+  6 finding transform             :0.28073
+  7 publishing pcd's              :0.11300
+  8 publishing pose               :0.11767
+
+####
+  0 fitness                       :0.81884
+  0 pcd_number                    :686.00000
+  1 total 1 pcd time              :1.71157
+  2 getting map                   :0.00000
+  3 getting scan                  :1.04020
+  4 processing ply                :0.00000
+  5 processing ply                :0.09449
+  6 finding transform             :0.32075
+  7 publishing pcd's              :0.11993
+  8 publishing pose               :0.11067
+
+####
+  0 fitness                       :0.94203
+  0 pcd_number                    :701.00000
+  1 total 1 pcd time              :1.86725
+  2 getting map                   :0.00000
+  3 getting scan                  :1.27706
+  4 processing ply                :0.00000
+  5 processing ply                :0.08156
+  6 finding transform             :0.25880
+  7 publishing pcd's              :0.11534
+  8 publishing pose               :0.11157
+
+####
+  0 fitness                       :0.98935
+  0 pcd_number                    :709.00000
+  1 total 1 pcd time              :1.42908
+  2 getting map                   :0.00000
+  3 getting scan                  :0.91908
+  4 processing ply                :0.00001
+  5 processing ply                :0.07391
+  6 finding transform             :0.18944
+  7 publishing pcd's              :0.11173
+  8 publishing pose               :0.10952
+
+####
+  0 fitness                       :0.97655
+  0 pcd_number                    :717.00000
+  1 total 1 pcd time              :1.57270
+  2 getting map                   :0.00000
+  3 getting scan                  :0.97677
+  4 processing ply                :0.00000
+  5 processing ply                :0.07217
+  6 finding transform             :0.22497
+  7 publishing pcd's              :0.11147
+  8 publishing pose               :0.13180
+
+####
+  0 fitness                       :0.10871
+  0 pcd_number                    :733.00000
+  1 total 1 pcd time              :1.87848
+  2 getting map                   :0.00000
+  3 getting scan                  :1.20980
+  4 processing ply                :0.00001
+  5 processing ply                :0.09447
+  6 finding transform             :0.28722
+  7 publishing pcd's              :0.11914
+  8 publishing pose               :0.11821
+
+####
+  0 fitness                       :0.99821
+  0 pcd_number                    :744.00000
+  1 total 1 pcd time              :2.06102
+  2 getting map                   :0.00000
+  3 getting scan                  :1.36658
+  4 processing ply                :0.00000
+  5 processing ply                :0.09263
+  6 finding transform             :0.34120
+  7 publishing pcd's              :0.11858
+  8 publishing pose               :0.11900
+
+####
+  0 fitness                       :0.9992
+  0 pcd_number                    :752.00000
+  1 total 1 pcd time              :1.71543
+  2 getting map                   :0.00000
+  3 getting scan                  :0.84100
+  4 processing ply                :0.00001
+  5 processing ply                :0.09176
+  6 finding transform             :0.50892
+  7 publishing pcd's              :0.11758
+  8 publishing pose               :0.13039
+
+####
+  0 fitness                       :0.9272
+  0 pcd_number                    :763.00000
+  1 total 1 pcd time              :1.97771
+  2 getting map                   :0.00000
+  3 getting scan                  :1.07094
+  4 processing ply                :0.00000
+  5 processing ply                :0.13965
+  6 finding transform             :0.50048
+  7 publishing pcd's              :0.12268
+  8 publishing pose               :0.11795
+
+####
+  0 fitness                       :0.93048
+  0 pcd_number                    :772.00000
+  1 total 1 pcd time              :1.85005
+  2 getting map                   :0.00000
+  3 getting scan                  :0.99165
+  4 processing ply                :0.00001
+  5 processing ply                :0.08528
+  6 finding transform             :0.51729
+  7 publishing pcd's              :0.12163
+  8 publishing pose               :0.10942
+
+####
+  0 fitness                       :0.93296
+  0 pcd_number                    :782.00000
+  1 total 1 pcd time              :2.02068
+  2 getting map                   :0.00000
+  3 getting scan                  :1.06050
+  4 processing ply                :0.00001
+  5 processing ply                :0.09428
+  6 finding transform             :0.56233
+  7 publishing pcd's              :0.12302
+  8 publishing pose               :0.13875
+
+####
+  0 fitness                       :0.93937
+  0 pcd_number                    :797.00000
+  1 total 1 pcd time              :2.06110
+  2 getting map                   :0.00000
+  3 getting scan                  :1.17729
+  4 processing ply                :0.00000
+  5 processing ply                :0.15236
+  6 finding transform             :0.44588
+  7 publishing pcd's              :0.12682
+  8 publishing pose               :0.12717
+
+####
+  0 fitness                       :0.93452
+  0 pcd_number                    :805.00000
+  1 total 1 pcd time              :1.62628
+  2 getting map                   :0.00000
+  3 getting scan                  :0.84967
+  4 processing ply                :0.00001
+  5 processing ply                :0.08874
+  6 finding transform             :0.43353
+  7 publishing pcd's              :0.12109
+  8 publishing pose               :0.11006
+
+####
+  0 fitness                       :0.93343
+  0 pcd_number                    :814.00000
+  1 total 1 pcd time              :1.65268
+  2 getting map                   :0.00000
+  3 getting scan                  :0.88633
+  4 processing ply                :0.00001
+  5 processing ply                :0.08142
+  6 finding transform             :0.42358
+  7 publishing pcd's              :0.11845
+  8 publishing pose               :0.11832
+
+####
+  0 fitness                       :0.92776
+  0 pcd_number                    :832.00000
+  1 total 1 pcd time              :1.98441
+  2 getting map                   :0.00000
+  3 getting scan                  :1.31659
+  4 processing ply                :0.00000
+  5 processing ply                :0.10456
+  6 finding transform             :0.28882
+  7 publishing pcd's              :0.12179
+  8 publishing pose               :0.11936

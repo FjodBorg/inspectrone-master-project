@@ -24,6 +24,18 @@ log_dirs = [["with_cropping_0.025_hit_ratio",
             ["with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel"]]
 log_names = ["cropping.txt", "crossmatch.txt", "termnial-log5-fjordor.txt"]
 titles = ["Using Cropping", "Using Cross-matching", "new"]
+
+
+log_dirs = [["with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel",
+            "with_cropping_0.075_hit_ratio_100_square_crops", 
+            "with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs"]]
+log_names = ["log.txt"]
+titles = ["Using Cropping"]
+legends = ["0.04", "0.075", "0.04"]
+
+
+
+
 metric_names = ["loss", "RTE", "RRE", "hit_ratio", "match_ratio"]
 
 
@@ -79,7 +91,10 @@ for i, log_dir_group in enumerate(log_dirs):
             
             plt.plot(metric, linewidth=4)
         
-        plt.legend(["hr="+hit_ratio for hit_ratio in hit_ratio_group])
+        if legends is None:
+            plt.legend(["hr="+hit_ratio for hit_ratio in hit_ratio_group])
+        else:
+            plt.legend(legends)
         plt.ylabel(metric_name)
         plt.yticks(np.arange(0, max_met+0.01, step=max_met/8))
         plt.xlabel("epoch")
@@ -90,8 +105,8 @@ for i, log_dir_group in enumerate(log_dirs):
         # plt.show()
         string_prefix = "[{}]".format(log_names[i])
         string_suffix = "[{}]".format("_".join(hit_ratio_group))
-        file_name = "{}_{}_{}.eps".format(string_prefix, metric_name, string_suffix)
+        file_name = "{}_{}_{}.pdf".format(string_prefix, metric_name, string_suffix)
         print("saving file in", docs_path+file_name)
-        fig.savefig(docs_path+file_name, format='eps')
+        fig.savefig(docs_path+file_name, format='pdf')
 
         #print(final_lines)

@@ -13,15 +13,31 @@ def is_float(string):
 
 
 
-'''
 log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time"
 log_names = ["0.025_timings.txt", "0.040_timings.txt"]
 legends = ["0.025m", "0.040m"]
-'''
 
-log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/bad"
-log_names = ["0.025_16D_timings.txt", "0.025_32D_timings.txt"]
-legends = ["16D", "32D"]
+log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time"
+log_names = ["0.025_timings_random.txt", "0.040_timings_random.txt"]
+legends = ["0.025m", "0.040m"]
+
+# log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/bad"
+# log_names = ["0.025_16D_timings.txt", "0.025_32D_timings.txt"]
+# legends = ["16D", "32D"]
+
+# log_dir = "/home/fjod/repos/inspectrone/docs/performance_frames"
+# log_names = ["0.025_timings.txt", "0.040_timings.txt"]
+# legends = ["0.025m", "0.040m"]
+
+# log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/limiting"
+# log_names = ["0.025_timings.txt", "0.040_timings.txt", "0.025_timings_random.txt", "0.040_timings_random.txt"]
+# legends = ["0.025m dist", "0.040m dist", "0.025m ran", "0.040m ran"]
+
+
+
+log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/best_model"
+log_names = ["0.040_timings_last.txt", "0.040_timings_best.txt"]
+legends = ["0.040m last", "0.040m best"]
 
 # Remeber to clean the file so only one log is present in the log files
 all_lists = []
@@ -64,9 +80,9 @@ all_lists = (list(zip(*all_lists)))
 
 all_labels = ["Processing time [s]", "Transform time [s]", "Publish point cloud time [s]", "Publish pose time [s]", "Fitness [%]", "Total time [s]"]
 figsize = (10, 5)
-pltratio = [6,2]
+pltratio = [8,4]
 box_label_range = range(len(legends))
-linewidth=4
+linewidth=2
 
 
 for k, sets in enumerate(all_lists):

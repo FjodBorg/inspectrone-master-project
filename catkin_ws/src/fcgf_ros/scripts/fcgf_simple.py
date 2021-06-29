@@ -18,12 +18,15 @@ from util.visualization import get_colored_point_cloud_feature
 
 os.system("export OMP_NUM_THREADS=12")
 
+
+use_real_time = False
+
 def movingaverage(interval, window_size):
     window = np.ones(int(window_size))/float(window_size)
     return np.convolve(interval, window, 'same')
 
 def demo_func():
-    setBool(True)
+    # setBool(use_real_time)
     matcher.reset_eval()
 
     pcd_map = matcher.get_map()
@@ -35,14 +38,15 @@ def demo_func():
     pcd_map_down, map_features = matcher.get_open3d_features(pcd_map)
 
     pcd_scan_down, scan_features = matcher.get_open3d_features(pcd_scan)
-    setBool(False)
     T = matcher.find_transform_generic(pcd_scan_down, pcd_map_down, scan_features, map_features)
 
     reg_qual = matcher.eval_transform(pcd_scan_down, pcd_map_down, T)
     # if cloud is fit enough
     if rospy.get_param("/fcgf/fitness_thr") < reg_qual.fitness:
         matcher.publish_pcds(pcd_scan_down, pcd_map_down)
+        # setBool(False)
         matcher.publish_transform(T)  # TODO add correct stamp 
+    # setBool(False)
 
     matcher.eval()
     
@@ -109,7 +113,8 @@ def demo_func():
             open3d.visualization.draw([pcd_map_down, pcd_scan_down_T])
             open3d.visualization.draw([pcd_map_down, pcd_scan_down_T, line_set_T])
 
-
+    
+    
     
         
         
@@ -132,8 +137,10 @@ if __name__ == "__main__":
     # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_crops/best_val_checkpoint.pth",
     # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/best_val_checkpoint.pth",
     # model_name="/retrained_models/with_cropping_0.125_hit_ratio_100_square_crops/checkpoint.pth",
-    model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops/checkpoint.pth"
+    model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops/checkpoint.pth" # WORks very well with new technique 
     model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth"
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_16_feat/checkpoint.pth"
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/best_val_checkpoint.pth"
     # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs/checkpoint.pth",
     config = essentials.Config(
         repos_dir=os.getenv("HOME")+"/repos/inspectrone/",
@@ -159,7 +166,7 @@ if __name__ == "__main__":
     setattr(config, "debug_viz", False)  # visualized the match
     setattr(config, "debug_calc_feat_dist", False)  # calculates the distance of each feature correspondence (Visualized with debug_viz True)
     setattr(config, "limit_max_correspondences", 1000)  # <= 0 means don't limit
-    setattr(config, "limit_corr_type", 1)  # <= 0 random, 1 best
+    setattr(config, "limit_corr_type", 0)  # <= 0 random, 1 best
     setattr(config, "covariance_type", 1)  # 0=Outlier_based, 1=Fitness_based (default)
 
     metrics = extensions.PerformanceMetrics()
@@ -175,14 +182,14 @@ if __name__ == "__main__":
 
     #  updater = Main(listener)
     rospy.loginfo("start")
+    rospy.set_param('/fcgf/fitness_thr', 0.80)
     
     matcher.publish_inital_map()
     while pcd_listener.pc is None:
-        rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
+        rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.05 sec")
         while(True):
             try:
-
-                rospy.sleep(0.2)
+                rospy.sleep(0.05)
                 break
             except rospy.ROSTimeMovedBackwardsException:
                 pass
@@ -207,10 +214,10 @@ if __name__ == "__main__":
             if config.debug_calc_feat_dist:
                 with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
                     print(np.vstack(matcher.avg_feat_dist))
-            rospy.loginfo("No published Pointclouds, trying again in 0.2 sec")
+            rospy.loginfo("No published Pointclouds, trying again in 0.05 sec")
             while(True):
                 try:
-                    rospy.sleep(0.2)
+                    rospy.sleep(0.05)
                     break
                 except rospy.ROSTimeMovedBackwardsException:
                     pass
