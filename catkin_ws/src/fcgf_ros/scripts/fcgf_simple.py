@@ -170,7 +170,8 @@ if __name__ == "__main__":
 
     #  updater = Main(listener)
     rospy.loginfo("start")
-    
+    rospy.set_param('/fcgf/fitness_thr', 0.85)
+
     matcher.publish_inital_map()
     while pcd_listener.pc is None:
         rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.2 sec")
