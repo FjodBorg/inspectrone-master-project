@@ -185,6 +185,51 @@ class MatcherHelper(MatcherBase):
         print(self._reg_quality)
         return self._reg_quality
 
+    def limit_correspondences(self, feat0, feat1, corres_idx0, corres_idx1):
+        if len(corres_idx1) >= self._config.limit_max_correspondences and self._config.limit_max_correspondences > 0 :
+            # Matches "distance" in each feature
+            max_feats = self._config.limit_max_correspondences
+
+            #with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
+            end = len(corres_idx1)
+
+            if self._config.limit_corr_type == 0:
+                # random
+                feat_indicies = np.arange(end) #np.array(list(range(end)))
+                np.random.shuffle(feat_indicies)
+
+                excluded_feat_indicies = feat_indicies[max_feats:]
+                
+                corres_idx0 = np.delete(corres_idx0, excluded_feat_indicies)
+                corres_idx1 = np.delete(corres_idx1, excluded_feat_indicies)
+
+                print("\n\n\n", len(corres_idx0))
+
+            elif self._config.limit_corr_type == 1:
+                # select best
+                # TODO find faster way to do this!
+                feat_dist = np.linalg.norm(feat0[corres_idx1[0:end]] - feat1[corres_idx0[0:end]], axis=1)
+                sorted_feat_indicies = np.argsort(feat_dist)
+                # select the n best feature indices
+                #print("\n\n\n\n\n\n", len(sorted_feat_indicies), sorted_feat_indicies.shape)
+                worst_feat_indicies = sorted_feat_indicies[max_feats:]
+                #print(len(worst_feat_indicies))
+                #print(len(corres01_idx0))
+                # delete the worst
+                corres_idx0 = np.delete(corres_idx0, worst_feat_indicies)
+                corres_idx1 = np.delete(corres_idx1, worst_feat_indicies)
+                #print(max_feats)
+                # print(len(corres_idx0))
+                #print(worst_feat_indicies)
+                # print(feat_dist)
+                # print the average distance of each feature of all correspondences:
+                # avg_feat_dist = np.sum(feat_dist/(end-start), 0)
+                # self.avg_feat_dist.append([np.insert(avg_feat_dist, 0, 0)])
+                #print(avg_feat_dist)
+                #print(self.avg_feat_dist)
+        return corres_idx0, corres_idx1
+
+
     class OutlierBasedCovariance():
         def __init__(self, outer_instance):
             self.parent = outer_instance
@@ -283,9 +328,13 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         # corres10_idx1 = corres10_idx1.detach().cpu().numpy()
         # corres10_idx0 = corres10_idx0.detach().cpu().numpy()
 
+        feat0 = feats1.detach().cpu().numpy()
+        feat1 = feats0.detach().cpu().numpy()
         mutual_filter = corres10_idx0[corres01_idx1] == corres01_idx0
         corres_idx0 = corres01_idx0[mutual_filter]
         corres_idx1 = corres01_idx1[mutual_filter]
+
+        corres_idx0, corres_idx1 = self.limit_correspondences(feat0, feat1, corres_idx0, corres_idx1)
 
         return corres_idx0, corres_idx1
 
@@ -348,9 +397,9 @@ class MatcherTeaser(MatcherHelper):  # parent __init__ is inherited
         T_teaser = self.Rt2T(R_teaser, t_teaser)
         return T_teaser
 
-    def find_transform_generic(self, source_down, target_down, source_fpfh, target_fpfh):
+    def find_transform_generic(self, source_down, target_down, source_feat, target_feat):
         corrs_A, corrs_B = self.find_correspondences(
-            source_fpfh, target_fpfh, mutual_filter=True
+            source_feat, target_feat, mutual_filter=True
         )
         np_corrs_A, np_corrs_B = self.convert_correspondences(
             source_down, target_down, corrs_A, corrs_B
@@ -479,58 +528,18 @@ class MatcherWithFaiss(MatcherTeaser):
                 #print(avg_feat_dist)
                 #print(self.avg_feat_dist)
 
-        if len(corres_idx1) >= self._config.limit_max_correspondences and self._config.limit_max_correspondences > 0 :
-            # Matches "distance" in each feature
-            max_feats = self._config.limit_max_correspondences
-
-            #with np.printoptions(precision=3, suppress=True, linewidth=160, threshold=16000):
-            end = len(corres_idx1)
-
-            if self._config.limit_corr_type == 0:
-                # random
-                feat_indicies = np.arange(end) #np.array(list(range(end)))
-                np.random.shuffle(feat_indicies)
-
-                excluded_feat_indicies = feat_indicies[max_feats:]
-                
-                corres_idx0 = np.delete(corres_idx0, excluded_feat_indicies)
-                corres_idx1 = np.delete(corres_idx1, excluded_feat_indicies)
-
-                print("\n\n\n", len(corres_idx0))
-
-            elif self._config.limit_corr_type == 1:
-                # select best
-                # TODO find faster way to do this!
-                feat_dist = np.linalg.norm(feat0[corres_idx1[0:end]] - feat1[corres_idx0[0:end]], axis=1)
-                sorted_feat_indicies = np.argsort(feat_dist)
-                # select the n best feature indices
-                #print("\n\n\n\n\n\n", len(sorted_feat_indicies), sorted_feat_indicies.shape)
-                worst_feat_indicies = sorted_feat_indicies[max_feats:]
-                #print(len(worst_feat_indicies))
-                #print(len(corres01_idx0))
-                # delete the worst
-                corres_idx0 = np.delete(corres_idx0, worst_feat_indicies)
-                corres_idx1 = np.delete(corres_idx1, worst_feat_indicies)
-                #print(max_feats)
-                # print(len(corres_idx0))
-                #print(worst_feat_indicies)
-                # print(feat_dist)
-                # print the average distance of each feature of all correspondences:
-                # avg_feat_dist = np.sum(feat_dist/(end-start), 0)
-                # self.avg_feat_dist.append([np.insert(avg_feat_dist, 0, 0)])
-                #print(avg_feat_dist)
-                #print(self.avg_feat_dist)
+        corres_idx0, corres_idx1 = self.limit_correspondences(feat0, feat1, corres_idx0, corres_idx1)
 
         return corres_idx0, corres_idx1
 
 # append print statements to already defined functions from parent
 class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
     # TODO when this is called everything is initialized a second time, find a way to fix it
-    def __init__(self, _parent, config, ros_col):
+    def __init__(self, _parent):
         # store chosen parent class
-        self.matcher = _parent.__class__
+        self.matcher = _parent
         
-        self.matcher.__init__(self, config, ros_col)
+        # self.matcher.__init__(config, ros_col)
 
         #print(_parent._parent_class, "\n\n\n")
         # else:
@@ -548,7 +557,7 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
     def find_transform_generic(self, *args, timer_name="finding transform", **kwargs):  # define new find_transform
         self.metrics.start_time(timer_name)
         # since find_transform_generic calls parent funtions it needs to be super() and not self
-        T = self.matcher.find_transform_generic(self, *args, **kwargs)  # call parent function
+        T = self.matcher.find_transform_generic(*args, **kwargs)  # call parent function
         #T = self.matcher.find_transform_generic(self, *args, **kwargs)  # call parent function
         self.metrics.stop_time(timer_name)
         return T
@@ -568,13 +577,13 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
 
     def get_open3d_features(self, *args, timer_name="processing ply"):
         self.metrics.start_time(timer_name)
-        extrac = self.matcher.get_open3d_features(self, *args)
+        extrac = self.matcher.get_open3d_features(*args)
         self.metrics.stop_time(timer_name)
         return extrac
 
     def apply_transform(self, *args, timer_name="apply transform"):
         self.metrics.start_time(timer_name)
-        transformed = self.matcher.apply_transform(self, *args)
+        transformed = self.matcher.apply_transform(*args)
         self.metrics.stop_time(timer_name)
         return transformed
 
@@ -591,24 +600,30 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
 
     def get_map(self, timer_name="getting map"):
         self.metrics.start_time(timer_name)
-        pcd = self.matcher.get_map(self)
+        pcd = self.matcher.get_map()
         self.metrics.stop_time(timer_name)
         return pcd
 
     def get_scan(self, timer_name="getting scan"):
         self.metrics.start_time(timer_name)
-        pcd = self.matcher.get_scan(self)
+        pcd = self.matcher.get_scan()
         self.metrics.stop_time(timer_name)
         return pcd
 
     def publish_pcds(self, *args, timer_name="publishing pcd's"):
         self.metrics.start_time(timer_name)
-        self.matcher.publish_pcds(self, *args)
-        self.metrics.stop_time(timer_name)
+        self.matcher.publish_pcds(*args)
+        self.metrics.stop_time(timer_name)   
+
+    def publish_inital_map(self, *args):
+        return self.matcher.publish_inital_map(*args)
+
+    def eval_transform(self, *args):
+        return self.matcher.eval_transform(*args)
 
     def publish_transform(self, *args, timer_name="publishing pose"):
         self.metrics.start_time(timer_name)
-        self.matcher.publish_transform(self, *args)
+        self.matcher.publish_transform(*args)
         self.metrics.stop_time(timer_name)
 
 
@@ -627,7 +642,7 @@ class Matcher():
             matcher = MatcherRansac(config, ros_col)
 
         if config.add_metrics is True:
-            matcher = _MatcherAddMetrics(matcher, config, ros_col) # Make child of current matcher
+            matcher = _MatcherAddMetrics(matcher) # Make child of current matcher
 
         return matcher
 

@@ -160,7 +160,7 @@ if __name__ == "__main__":
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
     setattr(config, "teaser", True)
-    setattr(config, "faiss", True)  # teaser false needs add_metrics false
+    setattr(config, "faiss", False)  # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
     setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
     setattr(config, "debug_viz", False)  # visualized the match
@@ -182,8 +182,8 @@ if __name__ == "__main__":
 
     #  updater = Main(listener)
     rospy.loginfo("start")
-    rospy.set_param('/fcgf/fitness_thr', 0.80)
-    
+    rospy.set_param('/fcgf/fitness_thr', 0.85)
+
     matcher.publish_inital_map()
     while pcd_listener.pc is None:
         rospy.loginfo("No Publsihed Pointclouds Yet, trying again in 0.05 sec")
