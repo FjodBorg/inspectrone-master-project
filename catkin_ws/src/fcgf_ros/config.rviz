@@ -6,10 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /TF1
-        - /TF1/Frames1
-        - /PoseWithCovariance2
         - /Odometry1/Shape1
+        - /Path1
       Splitter Ratio: 0.5
     Tree Height: 513
   - Class: rviz/Selection
@@ -525,6 +523,29 @@ Visualization Manager:
         "": true
       Queue Size: 100
       Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 25; 255; 0
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Lines
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /tagslam/path/body_rig
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -553,25 +574,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.152259826660156
+      Distance: 6.237009048461914
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 1.9124972820281982
-        Y: 0.641315758228302
-        Z: 1.4240975379943848
+        X: 2.445904016494751
+        Y: 0.6175772547721863
+        Z: 1.5396835803985596
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4347977638244629
+      Pitch: 0.25479787588119507
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 4.363521099090576
+      Yaw: 4.333528518676758
     Saved: ~
 Window Geometry:
   Displays:

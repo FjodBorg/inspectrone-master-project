@@ -64,7 +64,7 @@ class PoseGraphOptimization(g2o.SparseOptimizer):
         
         super().initialize_optimization()
         super().compute_initial_guess()
-        super().set_verbose(True)
+        # super().set_verbose(True)
         # super().optimize(10)
         # super().initialize_optimization()
         super().optimize(max_iterations)

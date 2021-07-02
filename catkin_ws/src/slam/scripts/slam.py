@@ -13,6 +13,7 @@ import geometry_msgs.msg
 import nav_msgs.msg
 import math
 import tf2_ros
+import signal
 
 # https://github.com/UditSinghParihar/g2o_tutorial
 # https://github.com/uoip/g2opy/blob/master/python/examples/ba_demo.py
@@ -30,15 +31,15 @@ class Markers():
         self.marker_array_msg = visualization_msgs.msg.MarkerArray()
         self.marker_array_pub = rospy.Publisher('/graph', visualization_msgs.msg.MarkerArray, queue_size=10)
 
-    def add_marker(self, pose):
+    def add_marker(self, pose, id=None, infoType=None):
         marker = visualization_msgs.msg.Marker()
         marker.header.frame_id = "map"
         marker.header.stamp = rospy.Time.now()
-        marker.id = pose.time_stamp
+        
         marker.type = marker.SPHERE
         # marker.frame_locked = False
         # print(pose, type(pose), isinstance(pose, OdomInfo))
-        if isinstance(pose, OdomInfo):
+        if isinstance(pose, OdomInfo) or infoType == "odom":
             marker.scale.x = 0.05
             marker.scale.y = 0.05
             marker.scale.z = 0.05
@@ -46,7 +47,7 @@ class Markers():
             marker.color.g = 0.0
             marker.color.b = 1
             marker.color.a = 1.0
-        elif isinstance(pose, PoseInfo):
+        elif isinstance(pose, PoseInfo) or infoType == "pose" :
             marker.scale.x = 0.05
             marker.scale.y = 0.05
             marker.scale.z = 0.05
@@ -56,8 +57,15 @@ class Markers():
             marker.color.a = 1.0
         # marker.action = 2
         marker.pose = geometry_msgs.msg.Pose()
-        marker.pose.position = pose.position
-        marker.pose.orientation = pose.orientation
+        if id is not None:
+            marker.id = id
+            marker.pose.position.x = pose[0]
+            marker.pose.position.y = pose[1]
+            marker.pose.position.z = pose[2]
+        else:
+            marker.id = pose.time_stamp
+            marker.pose.position = pose.position
+            marker.pose.orientation = pose.orientation
         # marker.lifetime.secs = 1000
         # print(marker)
         # print(pose.position)
@@ -68,10 +76,10 @@ class Markers():
         self.marker_array_pub.publish(self.marker_array_msg)
 
     def add_marker_edge(self, graph, idx_from, idx_to, rgb=[1,0,0]):
-        print(idx_from, idx_to)
+        # print(idx_from, idx_to)
         pos_from = graph.get_pose(idx_from).translation()
         pos_to = graph.get_pose(idx_to).translation()
-        print("yee", pos_from, pos_to)
+        # print("yee", pos_from, pos_to)
 
         marker2 = visualization_msgs.msg.Marker() 
         marker2.header.frame_id = "/map" 
@@ -134,13 +142,38 @@ class Markers():
         # self.marker_array_msg.markers.append(marker)
         # self.marker_idx += 1
         # self.marker_array_pub.publish(self.marker_array_msg)
-        
+    def republish_markers(self, vers, edges):
+        # print(vers)
+        print(edges)
+        print(edges.__dir__())
+        # print(vers.__dir__())
+        # print(self.marker_array_msg.markers)
+        self.marker_array_msg.markers = []
+        # print(self.marker_array_msg.markers)
+
+        for key in vers:
+            # print(key, vers[key].estimate().translation())
+            if key % 2 == 0:
+                infoType = "odom"
+            else:
+                infoType = "pose"
+            self.add_marker(vers[key].estimate().translation(), key, infoType)
+        for edge in edges:
+            # print(key, vers[key].estimate().translation())
+            print(edge.__dir__())
+            print(edge.vertices().__dir__())
+            
+            # self.add_marker(vers[key].estimate().translation(), key, infoType)
+        # print(edges.keys())
+        # print(edges.__dict__)
+        # print(self.marker_array_msg.markers)
+        return 0     
 
 class OdomInfo():
     def __init__(self) -> None:
         self.position = None
         self.orientation = None
-        self.infomation = None
+        self.information = None
         self.start_time = None
         self.time_stamp = None
         self.lock = False
@@ -154,7 +187,7 @@ class OdomInfo():
         self.position = data.pose.pose.position
         self.orientation = data.pose.pose.orientation
         covar = np.array(data.pose.covariance).reshape(6,6)
-        self.infomation = np.linalg.pinv(covar)
+        self.information = np.linalg.pinv(covar)
         self.got_new = True  # ensure no one reads it while being written
 
     def set_start_time(self, start_time):
@@ -164,8 +197,8 @@ class PoseInfo():
     def __init__(self) -> None:
         self.position = None
         self.orientation = None
-        self.infomation = None
-        self.prev_infomation = None
+        self.information = None
+        self.prev_information = None
         self.first_fixed = False
         self.start_time = None
         self.time_stamp = None
@@ -180,7 +213,7 @@ class PoseInfo():
         self.position = data.pose.pose.position
         self.orientation = data.pose.pose.orientation
         self.covar = np.array(data.pose.covariance).reshape(6,6)
-        self.infomation = np.linalg.pinv(self.covar)
+        self.information = np.linalg.pinv(self.covar)
         self.got_new = True  # ensure no one reads it while being written
 
     def set_start_time(self, start_time):
@@ -199,6 +232,9 @@ class Slam():
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         self.world_offset = None
+
+    def republish_graph(self):
+        self.markerArray.republish_markers(self.graph.vertices(), self.graph.edges())
 
     def set_start_time(self):
         self.odom.set_start_time(self.start_time)
@@ -251,7 +287,7 @@ class Slam():
 
         # print(start_time)
 
-    def add_edge_to_best_odom(self, pose_vertex, pose_time, infomation_now):
+    def add_edge_to_best_odom(self, pose_vertex, pose_time, information_now):
         best_dif_time = math.inf
         best_id = math.inf
         
@@ -271,14 +307,14 @@ class Slam():
                 break
 
         meas_eig = np.identity(4)
-        infomation = infomation_now
+        information = information_now
         # TODO, this might break the optimization e.g. if pose pose is wrong and it has 0 info to odom pose, what would happen? Perhaps use info_in  instead?
-        # infomation = np.zeros((6, 6))
+        # information = np.zeros((6, 6))
         meas = g2o.Isometry3d(meas_eig)
 
         odom_vertex = self.graph.vertex(best_id)
 
-        self.graph.add_edge([odom_vertex, pose_vertex], meas, infomation)
+        self.graph.add_edge([odom_vertex, pose_vertex], meas, information)
         self.markerArray.add_marker_edge(self.graph, best_id, self.ids[self.index], [1,1,0])
 
     def process_pose(self):
@@ -288,7 +324,7 @@ class Slam():
         quad = [self.pose.orientation.x, self.pose.orientation.y, self.pose.orientation.z, self.pose.orientation.w]
 
 
-        print("\nNew Pose", time_stamp)
+        # print("\nNew Pose", time_stamp)
         if any(self.pose.covar[0] > 0.1):
             print("covariance was too large, no edge added")
             return -1
@@ -305,8 +341,9 @@ class Slam():
         # T = np.matmul(T, rot_fix)
         pose = g2o.Isometry3d(T)
         # print(pose.to_vector())
-        # TODO try with 1 fixed and with all fixed (infomation is now fixed)
-        if not self.pose.first_fixed:
+        # TODO try with 1 fixed and with all fixed (information is now fixed)
+        if not self.pose.first_fixed or np.max(self.pose.covar) < 0.001:
+            print("Worst FCGF covar:", np.max(self.pose.covar))
             self.graph.add_pose(time_stamp, pose, True)
             self.pose.first_fixed = True
         else:
@@ -314,7 +351,7 @@ class Slam():
         self.markerArray.add_marker(self.pose)
             
         # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/types/slam3d/isometry3d_mappings.h
-        print(time_stamp, self.graph.get_pose(time_stamp).translation()) # eigen type
+        # print(time_stamp, self.graph.get_pose(time_stamp).translation()) # eigen type
 
         # add edge
         if len(self.graph.vertices()) > 1:
@@ -339,16 +376,16 @@ class Slam():
             meas = g2o.Isometry3d(meas_eig)
             # Use the largest covariance from the current and last pose
                 
-            if self.pose.prev_infomation is not None and np.sum(self.pose.prev_infomation) < np.sum(self.pose.infomation):
+            if self.pose.prev_information is not None and np.sum(self.pose.prev_information) < np.sum(self.pose.information):
                 # covariance: prev > now    
-                # infomation: prev < now
+                # information: prev < now
                 # if last last pose was the worst:
-                infomation = self.pose.prev_infomation
+                information = self.pose.prev_information
             else:
                 # if the current pose is the worst
-                infomation = self.pose.infomation
+                information = self.pose.information
 
-            self.graph.add_edge([ver_prev, ver], meas, infomation)
+            self.graph.add_edge([ver_prev, ver], meas, information)
             self.markerArray.add_marker_edge(self.graph, self.ids[self.index - i], self.ids[self.index], [1,0,0])
 
             # print(self.graph.edges())
@@ -366,11 +403,11 @@ class Slam():
             # print(globals(self.graph.edges()))
 
             # add edge between teaser and rovio
-            # use self.pose.infomation, since we're link from the current pose to the matching odom and not the previous pose 
-            self.add_edge_to_best_odom(ver, time_stamp, self.pose.infomation)
+            # use self.pose.information, since we're link from the current pose to the matching odom and not the previous pose 
+            self.add_edge_to_best_odom(ver, time_stamp, self.pose.information)
 
-        self.pose.prev_infomation = self.pose.infomation
-        self.graph.optimize(20)
+        self.pose.prev_information = self.pose.information
+        # self.graph.optimize(20)
         return 0
 
     def process_odom(self):
@@ -378,12 +415,12 @@ class Slam():
 
         pos = [self.odom.position.x, self.odom.position.y, self.odom.position.z]
         quad = [self.odom.orientation.x, self.odom.orientation.y, self.odom.orientation.z, self.odom.orientation.w]
-        infomation = self.odom.infomation
+        information = self.odom.information
 
-        # TODO maybe add multiplication to odom infomation
-        infomation *= 100000.0
+        # TODO maybe add multiplication to odom information
+        information *= 10.0
 
-        print("New Odom", time_stamp)
+        # print("New Odom", time_stamp)
         self.ids.append(time_stamp) 
             
         rot = tf.transformations.quaternion_matrix(quad)
@@ -399,7 +436,7 @@ class Slam():
         self.markerArray.add_marker(self.odom)
             
         # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/types/slam3d/isometry3d_mappings.h
-        print(time_stamp, self.graph.get_pose(time_stamp).translation()) # eigen type
+        # print(time_stamp, self.graph.get_pose(time_stamp).translation()) # eigen type
 
         # add vertex 
         if len(self.graph.vertices()) > 1:
@@ -433,11 +470,10 @@ class Slam():
             # TODO Use odometry Twist as measurement!
             # pyquaternion.Quaternion.absolute_distance(q0, q1)
             # print(meas)
-            self.graph.add_edge([ver_prev, ver], meas, infomation)
+            self.graph.add_edge([ver_prev, ver], meas, information)
             self.markerArray.add_marker_edge(self.graph, self.ids[self.index - i], self.ids[self.index], [0,1,0])
             # print(ver.to_vector())
             # print(graph.get_pose(index).to_vector())
-        
 
 
         # if index == 5:
@@ -446,6 +482,7 @@ class Slam():
         #     meas_np = pos_np - ver_prev.estimate().translation()
         #     meas = g2o.Isometry3d(np.identity(3), meas_np)
         #     graph.add_edge([ver, ver_prev], meas)
+        # self.graph.optimize(20) # TODO remove this
         return 0
 
     def main_loop(self):
@@ -509,29 +546,47 @@ class Slam():
     #     # print(start_time)
     #     # print(time_stamp)
     #     time_stamps.append(time_stamp)
-    
+
+def signal_handler2(signum, frame):
+    global interupt
+    interupt +=1 
+    print("Interupt at: ", interupt, "exit at 3")
+    if interupt >= 2:
+        exit()
 
 if __name__ == "__main__":
+    global interupt
+    interupt = 0
+
     rospy.init_node('slam')
     # 
     # rospy.init_node('slam')
     # rospy.Subscriber("/matcher_pose", geometry_msgs.msg.PoseWithCovarianceStamped, callback)
+    signal.signal(signal.SIGINT, signal_handler2)
     slam = Slam()
     rospy.Subscriber("/rovio/odometry", nav_msgs.msg.Odometry, slam.odomCB)
     rospy.Subscriber("/matcher_pose", geometry_msgs.msg.PoseWithCovarianceStamped, slam.poseCB)
+
     while(True):
         slam.main_loop()
 
         try:
+            if interupt:
+                slam.graph.optimize(20)
+                slam.graph.save("yes_opt.g2o")
+                while(interupt < 3):
+                    slam.republish_graph()
+                    # rospy.spin()
+                    # rospy.sleep(1)
+                    rospy.sleep(0.1)
+                exit()
             rospy.sleep(0.1)
+
         except rospy.ROSTimeMovedBackwardsException:
             # Sometimes sleep throws this exception when running it on a bag file...
             pass
 
-        except rospy.ROSInterruptException:
-            slam.graph.optimize(20)
-            slam.graph.save("yes_opt.g2o")
-            break
+        # except rospy.ROSInterruptException:
 
     rospy.spin()
 
