@@ -160,7 +160,7 @@ if __name__ == "__main__":
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
     setattr(config, "teaser", True)
-    setattr(config, "faiss", False)  # teaser false needs add_metrics false
+    setattr(config, "faiss", True)  # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
     setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
     setattr(config, "debug_viz", False)  # visualized the match
