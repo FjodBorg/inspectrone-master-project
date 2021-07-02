@@ -308,6 +308,7 @@ class Slam():
         # TODO try with 1 fixed and with all fixed (infomation is now fixed)
         if not self.pose.first_fixed:
             self.graph.add_pose(time_stamp, pose, True)
+            self.pose.first_fixed = True
         else:
             self.graph.add_pose(time_stamp, pose)
         self.markerArray.add_marker(self.pose)
@@ -369,7 +370,7 @@ class Slam():
             self.add_edge_to_best_odom(ver, time_stamp, self.pose.infomation)
 
         self.pose.prev_infomation = self.pose.infomation
-
+        self.graph.optimize(20)
         return 0
 
     def process_odom(self):
@@ -508,7 +509,7 @@ class Slam():
     #     # print(start_time)
     #     # print(time_stamp)
     #     time_stamps.append(time_stamp)
-
+    
 
 if __name__ == "__main__":
     rospy.init_node('slam')

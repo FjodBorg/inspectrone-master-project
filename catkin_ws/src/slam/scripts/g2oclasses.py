@@ -54,12 +54,19 @@ class BundleAdjustment(g2o.SparseOptimizer):
 class PoseGraphOptimization(g2o.SparseOptimizer):
     def __init__(self):
         super().__init__()
+        
         solver = g2o.BlockSolverSE3(g2o.LinearSolverCholmodSE3())
+        # solver = g2o.BlockSolverSE3(g2o.LinearSolverCSparseSE3())
         solver = g2o.OptimizationAlgorithmLevenberg(solver)
         super().set_algorithm(solver)
 
     def optimize(self, max_iterations=20):
+        
         super().initialize_optimization()
+        super().compute_initial_guess()
+        super().set_verbose(True)
+        # super().optimize(10)
+        # super().initialize_optimization()
         super().optimize(max_iterations)
 
     # def add_landmark(self, i, pose, fixed=False):
