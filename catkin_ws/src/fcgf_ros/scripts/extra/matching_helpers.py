@@ -88,7 +88,7 @@ class MatcherHelper(MatcherBase):
         self._pcd_map_features = None
         self._pose_time_stamp = None
         self._time_stamp = None
-        self._reg_quality = None
+        self._reg_quality = 0
 
         # select the method to use
         if config.covariance_type == 0:
@@ -592,9 +592,9 @@ class _MatcherAddMetrics(MatcherWithFaiss, MatcherTeaser, MatcherRansac):
         self.metrics.print_all_timings()
 
     def reset_eval(self):
-        reg_qual = self._reg_quality
-        if reg_qual is not None:
-            self.metrics.save_all_timings(reg_qual.fitness, self._pcd_listener.n)
+        reg_qual = self.matcher._reg_quality
+        if reg_qual != 0:
+            self.metrics.save_all_timings(reg_qual.fitness, self.matcher._pcd_listener.n)
         self.metrics.reset()
         self.metrics.start_time("total 1 pcd time")
 
