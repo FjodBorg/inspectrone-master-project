@@ -5,16 +5,39 @@ import numpy as np
 import rosbag
 
 
-figsize = (16, 8)
+figsize = (16, 16)
 #pltratio = [8,4]
-linewidth=2
+linewidth=4
 bag_dir = "/home/fjod/repos/inspectrone/docs/results/"
 log_dir = "/home/fjod/repos/inspectrone/docs/results/"
 bag_file = "2021-07-02-15-20-13.bag"
 topics = ["/graph", "/tagslam/path/body_rig", "/graph",]
+fname = "ground_truth_vs_graph"
 
-legends = ["FCGF+ROVIO", "tagslam", "FCGF+ROVIO offset"]
-xlabels = ["x pos", "y pos", "z pos"]
+'''
+bag_dir = "/home/fjod/"
+log_dir = "/home/fjod/repos/inspectrone/docs/results/"
+bag_file = "2021-07-02-19-24-42.bag"
+topics = ["/graph", "/tagslam/path/body_rig", "/graph",]
+fname = "ground_truth_vs_graph2"
+'''
+
+
+sets = [
+["tagslam", 		"/tagslam/path/body_rig",],
+["FCGF+ROVIO", 		"/graph",],
+["FCGF+ROVIO offset", 	"/graph",],
+]
+
+sets = list(zip(*sets))
+print(sets)
+
+
+legends = sets[0] #["tagslam", "FCGF+ROVIO", "FCGF+ROVIO offset"]
+topics = sets[1]  #["/tagslam/path/body_rig", "/graph", "/graph",]
+
+ylabels = ["x pos", "y pos", "z pos"]
+
 
 def get_bag_info(bag_file):
 	bag = rosbag.Bag(bag_dir + bag_file)  # load bag
@@ -35,7 +58,7 @@ def get_bag_data(topic, legend):
 
 
 	# print(pc_bag)
-	if legends[0]==legend:
+	if "FCGF" in legend and "offset" not in legend:
 		msg = None
 		times = []
 		#times2 = []
@@ -96,7 +119,7 @@ def get_bag_data(topic, legend):
 		data = data.reshape(4,-1)
 		return data
 
-	elif legends[1]==legend:
+	elif "tagslam" in legend:
 		msg = None
 		for (topic, msg, t) in pc_bag:
 			pass
@@ -115,7 +138,7 @@ def get_bag_data(topic, legend):
 		data = data.reshape(4,-1)
 		return data
 
-	elif legends[2]==legend:
+	elif "FCGF" in legend and "offset" in legend:
 		msg = None
 		times = []
 		#times2 = []
@@ -179,16 +202,16 @@ def get_bag_data(topic, legend):
 
 #print(data)
 
-plt.rcParams.update({'font.size': 18,
-                'axes.titlesize': 22})
-fig, axs = plt.subplots(3, 1, figsize=figsize)#, gridspec_kw={'width_ratios': pltratio})
+plt.rcParams.update({'font.size': 22,
+                'axes.titlesize': 26})
+fig, axs = plt.subplots(len(legends), 1, figsize=figsize)#, gridspec_kw={'width_ratios': pltratio})
 
 #axs[1].set(xlabel='time [s]', ylabel='pos [m]')
 #axs[1].legend(legends)
 #axs[2].set(xlabel='time [s]', ylabel='pos [m]')
 #axs[2].legend(legends)
 
-axs[0].legend(legends[0], bbox_to_anchor=(1.1, 1.05))
+
 for i, topic in enumerate(topics):
 	data = get_bag_data(topic, legends[i])
 
@@ -202,20 +225,25 @@ for i, topic in enumerate(topics):
 		axs[2].plot(data[0], data[3], linewidth=linewidth)
 
 
-for ax in axs:
-	ax.legend(legends, bbox_to_anchor=(1.1, 1.05))
-	ax.grid(b=True,which='both')
-	ax.set(xlabel='time [s]', ylabel='pos [m]')
-	ax.legend(legends, bbox_to_anchor=(1.1, 1.05))
+for i, ax in enumerate(axs):
+	ax.grid(b=True, which='major', color='k', linestyle='-')
+	ax.grid(b=True, which='minor', color='r', linestyle='-', alpha=0.2)
+	ax.minorticks_on()
+	ax.set(ylabel=ylabels[i])
+	#ax.tight_layout()
+	#ax.legend(legends, bbox_to_anchor=(1.1, 1.05))
 
 #axs[1].set(ylabel=all_labels[k])
 #axs[1].set_xticks(box_label_range)
 #axs[1].set_xticklabels(legends, rotation=40)
 
 
-plt.tight_layout()
+#axs[0].legend(legends, loc="upper right")#, bbox_to_anchor=(0.8, 1.2))
+axs[0].legend(legends, loc='lower left', ncol=len(legends), bbox_to_anchor=(0, 1.04, 1, 0.2), mode='expand', borderaxespad=0)
+axs[-1].set(xlabel='time [s]')
+fig.tight_layout(rect=[0.01, 0.03, 1, 1])
 plt.show()
 
-file_name = "{}.pdf".format("ground_truth_vs_graph")
+file_name = "{}.pdf".format(fname)
 print(os.path.join(log_dir, file_name))
 fig.savefig(os.path.join(log_dir, file_name), format='pdf')
