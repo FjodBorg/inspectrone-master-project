@@ -144,8 +144,8 @@ class Markers():
         # self.marker_array_pub.publish(self.marker_array_msg)
     def republish_markers(self, vers, edges):
         # print(vers)
-        print(edges)
-        print(edges.__dir__())
+        # print(edges)
+        # print(edges.__dir__())
         # print(vers.__dir__())
         # print(self.marker_array_msg.markers)
         self.marker_array_msg.markers = []
@@ -158,10 +158,10 @@ class Markers():
             else:
                 infoType = "pose"
             self.add_marker(vers[key].estimate().translation(), key, infoType)
-        for edge in edges:
+        # for edge in edges:
             # print(key, vers[key].estimate().translation())
-            print(edge.__dir__())
-            print(edge.vertices().__dir__())
+            # print(edge.__dir__())
+            # print(edge.vertices().__dir__())
             
             # self.add_marker(vers[key].estimate().translation(), key, infoType)
         # print(edges.keys())
@@ -342,7 +342,7 @@ class Slam():
         pose = g2o.Isometry3d(T)
         # print(pose.to_vector())
         # TODO try with 1 fixed and with all fixed (information is now fixed)
-        if not self.pose.first_fixed or np.max(self.pose.covar) < 0.001:
+        if not self.pose.first_fixed or np.max(self.pose.covar) < 0.00001:
             print("Worst FCGF covar:", np.max(self.pose.covar))
             self.graph.add_pose(time_stamp, pose, True)
             self.pose.first_fixed = True
@@ -371,12 +371,12 @@ class Slam():
             # we want ver_prev->ver:
             # see line 86 on:
             # https://github.com/RainerKuemmerle/g2o/blob/master/g2o/examples/line_slam/simulator_3d_line.cpp 
+            
             meas_eig = ver_prev.estimate().inverse() * ver.estimate()
-
-            meas = g2o.Isometry3d(meas_eig)
+            
             # Use the largest covariance from the current and last pose
                 
-            if self.pose.prev_information is not None and np.sum(self.pose.prev_information) < np.sum(self.pose.information):
+            if self.pose.prev_information is not None and np.sum(self.pose.prev_information) > np.sum(self.pose.information):
                 # covariance: prev > now    
                 # information: prev < now
                 # if last last pose was the worst:
@@ -384,6 +384,14 @@ class Slam():
             else:
                 # if the current pose is the worst
                 information = self.pose.information
+
+            motion = np.sum(np.abs(ver_prev.estimate().translation() - ver.estimate().translation()))
+            if motion > 2:
+                print("before: ", information)
+                information = information / (10000 * motion**2)
+                print("After: ", information)
+
+            meas = g2o.Isometry3d(meas_eig)
 
             self.graph.add_edge([ver_prev, ver], meas, information)
             self.markerArray.add_marker_edge(self.graph, self.ids[self.index - i], self.ids[self.index], [1,0,0])
@@ -418,7 +426,7 @@ class Slam():
         information = self.odom.information
 
         # TODO maybe add multiplication to odom information
-        information *= 10.0
+        information /= 10.0
 
         # print("New Odom", time_stamp)
         self.ids.append(time_stamp) 
