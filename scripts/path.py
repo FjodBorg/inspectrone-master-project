@@ -9,6 +9,7 @@ figsize = (8, 8)
 #pltratio = [8,4]
 linewidth=2
 bag_dir = "/home/fjod/repos/inspectrone/docs/results/"
+log_dir = "/home/fjod/repos/inspectrone/docs/results/"
 bag_file = "2021-07-02-15-20-13.bag"
 topics = ["/graph", "/tagslam/path/body_rig"]
 
@@ -146,6 +147,6 @@ for ax in axs:
 plt.tight_layout()
 plt.show()
 
-file_name = "{}.pdf".format(all_labels[k])
+file_name = "{}.pdf".format("ground_truth_vs_graph")
 print(os.path.join(log_dir, file_name))
 fig.savefig(os.path.join(log_dir, file_name), format='pdf')
