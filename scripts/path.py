@@ -192,7 +192,7 @@ axs[0].legend(legends[0], bbox_to_anchor=(1.1, 1.05))
 for i, topic in enumerate(topics):
 	data = get_bag_data(topic, legends[i])
 
-	if "offset" in lengends[i]:
+	if "offset" in legends[i]:
 		axs[0].plot(data[0], data[1], "--", linewidth=linewidth)
 		axs[1].plot(data[0], data[2], "--", linewidth=linewidth)
 		axs[2].plot(data[0], data[3], "--", linewidth=linewidth)
