@@ -21,17 +21,17 @@ log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time"
 log_names = ["0.025_timings_random.txt", "0.040_timings_random.txt"]
 legends = ["0.025m", "0.040m"]
 
-# log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/bad"
-# log_names = ["0.025_16D_timings.txt", "0.025_32D_timings.txt"]
-# legends = ["16D", "32D"]
+#log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/bad"
+#log_names = ["0.025_16D_timings.txt", "0.025_32D_timings.txt"]
+#legends = ["16D", "32D"]
 
-# log_dir = "/home/fjod/repos/inspectrone/docs/performance_frames"
-# log_names = ["0.025_timings.txt", "0.040_timings.txt"]
-# legends = ["0.025m", "0.040m"]
+#log_dir = "/home/fjod/repos/inspectrone/docs/performance_frames"
+#log_names = ["0.025_timings.txt", "0.040_timings.txt"]
+#legends = ["0.025m", "0.040m"]
 
-# log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/limiting"
-# log_names = ["0.025_timings.txt", "0.040_timings.txt", "0.025_timings_random.txt", "0.040_timings_random.txt"]
-# legends = ["0.025m dist", "0.040m dist", "0.025m ran", "0.040m ran"]
+#log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/limiting"
+#log_names = ["0.025_timings.txt", "0.040_timings.txt", "0.025_timings_random.txt", "0.040_timings_random.txt"]
+#legends = ["0.025m dist", "0.040m dist", "0.025m ran", "0.040m ran"]
 
 
 
@@ -39,12 +39,31 @@ log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/best_model"
 log_names = ["0.040_timings_last.txt", "0.040_timings_best.txt"]
 legends = ["0.040m last", "0.040m best"]
 
+#log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/scratch"
+#log_names = ["timings_retraining.txt", "timings_scratch.txt"]
+#legends = ["retraining", "scratch"]
+
+#log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/mynteye_vs_kinect"
+#log_names = ["0.040_timings_kinect.txt", "0.040_timings_mynteye.txt"]
+#legends = ["Kinect", "Mynteye"]
+
+log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/methods"
+log_names = ["no_limit_ransac.txt", "no_limit.txt"]
+legends = ["ransac", "teaser+faiss"]
+
+log_dir = "/home/fjod/repos/inspectrone/docs/performance_real_time/methods_limited"
+log_names = ["limit_ransac.txt", "limit_teaser.txt", "limit_faiss.txt"]
+legends = ["ransac", "teaser", "teaser+faiss"]
+
+all_labels = ["Getting Scan [s]", "Processing time [s]", "Transform time [s]", "Publish point cloud time [s]", "Publish pose time [s]", "Fitness [%]", "Total time [s]"]
 # Remeber to clean the file so only one log is present in the log files
 all_lists = []
+pcd_ids = []
 for i, log_name in enumerate(log_names):
     f = open(os.path.join(log_dir, log_name), "r")
     content = f.read()
     f.close()
+    read_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "3 getting scan" in line]]
     process_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "5 process" in line]]
     transform_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "6 find" in line]]
     pub_pcd_times = [float(time.split(':')[1]) for time in [line for line in content.split('\n') if "7 publish" in line]]
@@ -52,17 +71,18 @@ for i, log_name in enumerate(log_names):
     fitness_percent = [float(time.split(':')[1]) * 100 for time in [line for line in content.split('\n') if "0 fit" in line]]
     pcd_id = [int(float(time.split(':')[1])) for time in [line for line in content.split('\n') if "0 pcd" in line]]
 
-    # print(pcd_id)
     
-    lists = [process_times, transform_times, pub_pcd_times, pub_pose_times]
-    total_time = [sum(x) for x in (list(zip(*lists)))]
+    lists = [read_times, process_times, transform_times, pub_pcd_times, pub_pose_times]
+    total_time = [sum(x) for x in (list(zip(*(lists[1:]))))]
     lists.append(fitness_percent)
     lists.append(total_time)
-
+    
+    pcd_ids.append(pcd_id)
     all_lists.append(lists)
     
 
-
+#print(len(all_lists[0][0]))
+#print(len(all_lists[1][0]))
 
 # print(all_lists)
 # total_times = sum([process_times, transform_times, pub_pcd_times, pub_pose_times, fitness_percent])
@@ -70,23 +90,23 @@ for i, log_name in enumerate(log_names):
 # print(total_times)
 
 # print( [x for x in all_lists[0]])
-print(len(all_lists[0]))
+#print(len(all_lists[0]))
 all_lists = (list(zip(*all_lists)))
-# print(all_lists)
+#print(len(all_lists[0][0]))
+#print(len(all_lists[0][1]))
 # print()
 
 # print([x for x in all_lists])
 # print(all_lists)
 
-all_labels = ["Processing time [s]", "Transform time [s]", "Publish point cloud time [s]", "Publish pose time [s]", "Fitness [%]", "Total time [s]"]
 figsize = (10, 5)
 pltratio = [8,4]
 box_label_range = range(len(legends))
 linewidth=2
 
+print((all_lists[3][0]))
 
 for k, sets in enumerate(all_lists):
-    data = list(zip(*sets))
     plt.rcParams.update({'font.size': 18,
                         'axes.titlesize': 22})
     fig, axs = plt.subplots(1, 2, gridspec_kw={'width_ratios': pltratio}, figsize=figsize)
@@ -95,8 +115,9 @@ for k, sets in enumerate(all_lists):
         # print(data_1)
     for ax in axs:
         ax.grid()
-
-    axs[0].plot(data, linewidth=linewidth)
+    for i, data in enumerate(sets):
+        print(i, len(pcd_ids[i]), len(data))
+        axs[0].plot(pcd_ids[i], data, linewidth=linewidth)
     axs[0].set(xlabel='pcd id', ylabel=all_labels[k])
     axs[0].legend(legends)
     # plt.legend(["hr="+hit_ratio for hit_ratio in hit_ratio_group])

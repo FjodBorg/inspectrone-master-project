@@ -8,6 +8,7 @@ class PerformanceMetrics():
         self.timings = dict()
         self.id = 0
         self.f = open("/home/fjod/repos/inspectrone/docs/performance_real_time/0_timings.txt", "w")
+        self.f.close()
 
     def start_time(self, name): 
         self.id += 1
@@ -50,8 +51,9 @@ class PerformanceMetrics():
             values = self.timings[name]
             for index, t in values:
                 string = string + "\n{:3d} {:30s}:{:2.5f}".format(index, name, t)
-
+        self.f = open("/home/fjod/repos/inspectrone/docs/performance_real_time/0_timings.txt", "a")
         self.f.write(string)
+        self.f.close()
 
     def reset(self):
         self.id = 0

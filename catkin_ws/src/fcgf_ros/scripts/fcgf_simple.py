@@ -141,7 +141,8 @@ if __name__ == "__main__":
     model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/checkpoint.pth"
     # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_16_feat/checkpoint.pth"
     # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel/best_val_checkpoint.pth"
-    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs/checkpoint.pth",
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs/checkpoint.pth"
+    # model_name="/retrained_models/with_cropping_0.075_hit_ratio_100_square_crops_0.04_voxel_300_epochs_from_scratch/checkpoint.pth"
     config = essentials.Config(
         repos_dir=os.getenv("HOME")+"/repos/inspectrone/",
         model_name=model_name,
@@ -154,12 +155,12 @@ if __name__ == "__main__":
     # setattr(config, "voxel_size", 0.08)
     setattr(config, "voxel_size", 0.025) # try with this # can't do matching properly
     setattr(config, "voxel_size", 0.04) # try with this 
-    setattr(config, "NOISE_BOUND", config.voxel_size)
+    setattr(config, "NOISE_BOUND", config.voxel_size * 5)
     setattr(config, "topic_in_ply", "/points_in")
     setattr(config, "topic_ballast_ply", "/ballest_tank")
     setattr(config, "topic_scan_ply", "/scan_ply")
     setattr(config, "topic_pose", "/matcher_pose")
-    setattr(config, "teaser", True)
+    setattr(config, "teaser", True )
     setattr(config, "faiss", True)  # teaser false needs add_metrics false
     setattr(config, "add_metrics", True)  # might decrease performance by a fraction if true
     setattr(config, "super_debug", False)  # VERY SLOW increase voxel_size for speed up
@@ -169,7 +170,7 @@ if __name__ == "__main__":
     setattr(config, "limit_corr_type", 0)  # <= 0 random, 1 best
     setattr(config, "covariance_type", 1)  # 0=Outlier_based, 1=Fitness_based (default)
 
-    metrics = extensions.PerformanceMetrics()
+    # metrics = extensions.PerformanceMetrics()
     ros_helper.Inits()
     pcd_listener = ros_helper.PCListener(config.topic_in_ply)
     pcd_broadcaster = ros_helper.PCBroadcaster(config.topic_ballast_ply, config.topic_scan_ply)
@@ -182,7 +183,7 @@ if __name__ == "__main__":
 
     #  updater = Main(listener)
     rospy.loginfo("start")
-    rospy.set_param('/fcgf/fitness_thr', 0.85)
+    rospy.set_param('/fcgf/fitness_thr', 0)
 
     matcher.publish_inital_map()
     while pcd_listener.pc is None:
@@ -222,6 +223,7 @@ if __name__ == "__main__":
                 except rospy.ROSTimeMovedBackwardsException:
                     pass
                 except rospy.ROSInterruptException:
+                    matcher.metrics.f.close() # hotfix for teaser metrics
                     # if e.g ctrl + c
                     break
 

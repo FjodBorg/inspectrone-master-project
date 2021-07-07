@@ -12,7 +12,7 @@ bag_dir = "/home/fjod/repos/inspectrone/docs/results/"
 log_dir = "/home/fjod/repos/inspectrone/docs/results/"
 bag_file = "2021-07-02-15-20-13.bag"
 topics = ["/graph", "/tagslam/path/body_rig", "/graph",]
-fname = "ground_truth_vs_graph"
+fname = "ground_truth_vs_graph3"
 
 '''
 bag_dir = "/home/fjod/"
@@ -27,6 +27,7 @@ sets = [
 ["tagslam", 		"/tagslam/path/body_rig",],
 ["FCGF+ROVIO", 		"/graph",],
 ["FCGF+ROVIO offset", 	"/graph",],
+["FCGF offset", 	"/matcher_pose",],
 ]
 
 sets = list(zip(*sets))
@@ -36,7 +37,7 @@ print(sets)
 legends = sets[0] #["tagslam", "FCGF+ROVIO", "FCGF+ROVIO offset"]
 topics = sets[1]  #["/tagslam/path/body_rig", "/graph", "/graph",]
 
-ylabels = ["x pos", "y pos", "z pos"]
+ylabels = ["x-pos [m]", "y-pos [m]", "z-pos [m]"]
 
 
 def get_bag_info(bag_file):
@@ -58,7 +59,7 @@ def get_bag_data(topic, legend):
 
 
 	# print(pc_bag)
-	if "FCGF" in legend and "offset" not in legend:
+	if "FCGF" in legend and "offset" not in legend and "ROVIO" in legend:
 		msg = None
 		times = []
 		#times2 = []
@@ -138,7 +139,7 @@ def get_bag_data(topic, legend):
 		data = data.reshape(4,-1)
 		return data
 
-	elif "FCGF" in legend and "offset" in legend:
+	elif "FCGF" in legend and "offset" in legend and "ROVIO" in legend:
 		msg = None
 		times = []
 		#times2 = []
@@ -200,11 +201,32 @@ def get_bag_data(topic, legend):
 		data = data.reshape(4,-1)
 		return data
 
+	elif "FCGF" in legend and "offset" in legend and "ROVIO" not in legend:
+		data = []
+		for (topic, msg, t) in pc_bag:
+			pos = msg.pose.pose.position
+			time = msg.header.stamp.to_sec() + 5.0
+			data.append([time, pos.x, pos.y, pos.z])
+
+		#for i, pose in enumerate(msg.poses):
+		#	pos = pose.pose.position
+		#	time = msg.poses[i].header.stamp.to_sec()
+		#	data.append([time, pos.x, pos.y, pos.z])
+		#	#print([time.to_sec(), pos.x, pos.y, pos.z])
+		data = list(zip(*data))
+		data = np.array(data)
+		data[0,:] = data[0,:] - data[0,0]
+		data[3,:] = data[3,:] - 0.1
+
+		print(data)
+		data = data.reshape(4,-1)
+		return data
+
 #print(data)
 
 plt.rcParams.update({'font.size': 22,
                 'axes.titlesize': 26})
-fig, axs = plt.subplots(len(legends), 1, figsize=figsize)#, gridspec_kw={'width_ratios': pltratio})
+fig, axs = plt.subplots(3, 1, figsize=figsize)#, gridspec_kw={'width_ratios': pltratio})
 
 #axs[1].set(xlabel='time [s]', ylabel='pos [m]')
 #axs[1].legend(legends)
@@ -215,7 +237,11 @@ fig, axs = plt.subplots(len(legends), 1, figsize=figsize)#, gridspec_kw={'width_
 for i, topic in enumerate(topics):
 	data = get_bag_data(topic, legends[i])
 
-	if "offset" in legends[i]:
+	if "FCGF offset" in legends[i]:
+		axs[0].plot(data[0], data[1], "o", linewidth=linewidth)
+		axs[1].plot(data[0], data[2], "o", linewidth=linewidth)
+		axs[2].plot(data[0], data[3], "o", linewidth=linewidth)
+	elif "offset" in legends[i]:
 		axs[0].plot(data[0], data[1], "--", linewidth=linewidth)
 		axs[1].plot(data[0], data[2], "--", linewidth=linewidth)
 		axs[2].plot(data[0], data[3], "--", linewidth=linewidth)
@@ -223,7 +249,7 @@ for i, topic in enumerate(topics):
 		axs[0].plot(data[0], data[1], linewidth=linewidth)
 		axs[1].plot(data[0], data[2], linewidth=linewidth)
 		axs[2].plot(data[0], data[3], linewidth=linewidth)
-
+	
 
 for i, ax in enumerate(axs):
 	ax.grid(b=True, which='major', color='k', linestyle='-')
