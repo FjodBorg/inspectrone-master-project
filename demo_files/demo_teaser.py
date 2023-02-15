@@ -26,6 +26,7 @@ if not os.path.isfile('ResUNetBN2C-16feat-3conv.pth'):
 def pcd2xyz(pcd):
     return np.asarray(pcd.points).T
 
+# This is not fais!
 def find_correspondences(feats0, feats1, mutual_filter=True):
   nns01 = find_knn_gpu(feats0, feats1, nn_max_n=250, knn=1, return_distance=False)
   #corres01_idx0 = (torch.arange(len(nns01))

@@ -3,7 +3,7 @@ import os
 import open3d
 import open3d as o3d
 
-if any(File.endswith(".npz") for File in os.listdir("/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/")):
+if any(File.endswith(".npz") for File in os.listdir("/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/")):
     print("true")
 else:
     print("false")
@@ -11,21 +11,21 @@ else:
 
 
 
-outfile1 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/threedmatch/7-scenes-chess@seq-01_004.npz"
-outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/threedmatch/7-scenes-chess@seq-01_008.npz"
+outfile1 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/threedmatch/7-scenes-chess@seq-01_004.npz"
+outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/threedmatch/7-scenes-chess@seq-01_008.npz"
 
-outfile1 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00134.npz"; outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
+outfile1 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00134.npz"; outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
 
-outfile1 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00742.npz"; outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
+outfile1 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00742.npz"; outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
 
-outfile1 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00204.npz"; outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/noisy_3_groundtruth_imu_frame@seq_00204.npz"
+# outfile1 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00204.npz"; outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/noisy_3_groundtruth_imu_frame@seq_00204.npz"
 
-#outfile1 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00633.npz"; outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
+#outfile1 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00633.npz"; outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
 
-#outfile1 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00289.npz"; outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
+#outfile1 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/groundtruth_imu_frame@seq_00289.npz"; outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/pcl_ballast_tank[-0.05_1.40_0.08][5.53_3.05_2.26].npz"
 
 
-#outfile2 = "/home/fjod/repos/inspectrone/catkin_ws/downloads/datasets/ballast_tank/ballast_tank.npz"
+#outfile2 = "/home/fjod/repos/inspectrone-master-project/catkin_ws/downloads/datasets/ballast_tank/ballast_tank.npz"
 npzfile1 = np.load(outfile1)
 npzfile2 = np.load(outfile2)
 print(npzfile1.files)
